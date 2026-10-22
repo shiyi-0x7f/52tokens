@@ -1,0 +1,110 @@
+---
+import JsonLd from "../../components/JsonLd.astro";
+import BaseLayout from "../../layouts/BaseLayout.astro";
+import { internalGet, isNotFound } from "../../lib/api";
+import { formatContext, formatPrice, formatRelative } from "../../lib/format";
+import type { ModelDetail } from "../../lib/types";
+
+const slug = Astro.params.slug ?? "";
+let model: ModelDetail;
+try {
+  model = await internalGet<ModelDetail>(`/models/${encodeURIComponent(slug)}`);
+} catch (err) {
+  if (isNotFound(err)) return Astro.rewrite("/404");
+  throw err;
+}
+
+const cnyOutputs = model.prices
+  .filter((p) => p.currency === "CNY" && p.output_price !== null)
+  .map((p) => Number(p.output_price));
+const lowest = cnyOutputs.length > 0 ? Math.min(...cnyOutputs) : null;
+const hasFree = model.prices.some((p) => p.is_free);
+const summary = hasFree
+  ? `${model.name} 有免费可用的渠道`
+  : lowest !== null
+    ? `${model.name} 官方 API 输出价最低 ¥${lowest.toFixed(2)} / 百万 tokens`
+    : `${model.name} 官方 API 价格`;
+---
+
+<BaseLayout
+  title={`${model.name} API 价格与免费额度 · 52tokens`}
+  description={`${summary}。对比 ${model.prices.length} 个平台的输入输出价格，标注出处与最近核实时间。`}
+>
+  <JsonLd
+    slot="head"
+    data={{
+      "@context": "https://schema.org",
+      "@type": "BreadcrumbList",
+      itemListElement: [
+        {
+          "@type": "ListItem",
+          position: 1,
+          name: "模型价格",
+          item: new URL("/models", Astro.site).href,
+        },
+        { "@type": "ListItem", position: 2, name: model.name },
+      ],
+    }}
+  />
+
+  <nav class="mb-3 text-xs text-mute" aria-label="面包屑">
+    <a href="/models" class="no-underline">
+      模型价格
+    </a>{" "}
+    / {model.name}
+  </nav>
+  <header class="mb-5">
+    <h1 class="text-2xl font-black">{model.name} API 价格</h1>
+    <p class="mt-1 text-sm text-sub">
+      {summary}
+      {model.context_window !== null && ` · 上下文 ${formatContext(model.context_window)}`}
+    </p>
+    {model.description && <p class="mt-2 text-sm text-sub">{model.description}</p>}
+  </header>
+
+  <div class="overflow-x-auto rounded-(--radius-card) bg-card">
+    <table class="w-full min-w-[720px] text-sm">
+      <thead>
+        <tr class="border-b border-line text-left text-xs text-mute">
+          <th class="px-4 py-2.5 font-medium">平台</th>
+          <th class="px-4 py-2.5 text-right font-medium">输入 / 百万</th>
+          <th class="px-4 py-2.5 text-right font-medium">输出 / 百万</th>
+          <th class="px-4 py-2.5 text-right font-medium">缓存命中 / 百万</th>
+          <th class="px-4 py-2.5 font-medium">说明</th>
+          <th class="px-4 py-2.5 font-medium">最近核实</th>
+        </tr>
+      </thead>
+      <tbody>
+        {model.prices.map((p) => (
+          <tr class="border-b border-line last:border-b-0">
+            <td class="px-4 py-3 font-medium">{p.platform.name}</td>
+            <td class="px-4 py-3 text-right font-mono">
+              {p.is_free ? (
+                <span class="font-bold text-good">免费</span>
+              ) : (
+                formatPrice(p.input_price, p.currency)
+              )}
+            </td>
+            <td class="px-4 py-3 text-right font-mono font-bold">
+              {p.is_free ? (
+                <span class="text-good">免费</span>
+              ) : (
+                formatPrice(p.output_price, p.currency)
+              )}
+            </td>
+            <td class="px-4 py-3 text-right font-mono text-sub">
+              {formatPrice(p.cache_read_price, p.currency)}
+            </td>
+            <td class="px-4 py-3 text-xs text-sub">{p.free_note || "—"}</td>
+            <td class="px-4 py-3 text-xs">
+              <a href={p.source_url} rel="nofollow noopener" target="_blank" class="text-mute">
+                {formatRelative(p.confirmed_at)} · 出处
+              </a>
+            </td>
+          </tr>
+        ))}
+      </tbody>
+    </table>
+  </div>
+  <p class="mt-3 text-xs text-mute">价格以各平台官网为准；美元价格按原币种展示，未换算。</p>
+</BaseLayout>

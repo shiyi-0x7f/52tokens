@@ -1,0 +1,69 @@
+---
+import DealRow from "../components/DealRow.astro";
+import EmptyState from "../components/EmptyState.astro";
+import BaseLayout from "../layouts/BaseLayout.astro";
+import { internalGet } from "../lib/api";
+import { formatContext } from "../lib/format";
+import { loadOr } from "../lib/load";
+import type { Deal, ModelSummary } from "../lib/types";
+
+const [[models, modelsOk], [freeQuota], [signup]] = await Promise.all([
+  loadOr<ModelSummary[]>([], () => internalGet<ModelSummary[]>("/models")),
+  loadOr<Deal[]>([], () => internalGet<Deal[]>("/deals", { deal_type: "free_quota", limit: 50 })),
+  loadOr<Deal[]>([], () =>
+    internalGet<Deal[]>("/deals", { deal_type: "signup_credit", limit: 50 }),
+  ),
+]);
+const freeModels = models.filter((m) => m.has_free);
+const deals = [...freeQuota, ...signup];
+---
+
+<BaseLayout
+  title="免费大模型 API 与免费额度汇总 · 52tokens"
+  description="哪些大模型 API 可以免费用？汇总永久免费模型、长期免费额度和新用户注册赠送，每条标注出处与最近确认时间。"
+>
+  <header class="mb-5">
+    <h1 class="text-2xl font-black">免费额度</h1>
+    <p class="mt-1 text-sm text-mute">
+      永久免费的模型、长期免费额度和注册赠送。免费层通常有限速，部分平台的免费层数据可能被用于训练，使用前请看原站条款。
+    </p>
+  </header>
+
+  <section class="mb-8">
+    <h2 class="mb-3 font-black">免费可用的模型</h2>
+    {!modelsOk ? (
+      <EmptyState title="暂时加载失败" hint="请稍后刷新页面。" />
+    ) : freeModels.length === 0 ? (
+      <EmptyState title="免费模型核实中" hint="核实后会在这里列出。" />
+    ) : (
+      <ul class="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+        {freeModels.map((m) => (
+          <li>
+            <a
+              href={`/models/${m.slug}`}
+              class="block rounded-(--radius-card) bg-card p-4 no-underline hover:bg-hover"
+            >
+              <span class="font-bold">{m.name}</span>
+              <span class="mt-1 block text-xs text-mute">
+                {m.family} · 上下文 {formatContext(m.context_window)} · {m.price_count} 个平台
+              </span>
+            </a>
+          </li>
+        ))}
+      </ul>
+    )}
+  </section>
+
+  <section>
+    <h2 class="mb-3 font-black">免费额度与注册赠送</h2>
+    {deals.length === 0 ? (
+      <EmptyState title="活动核实中" hint="免费额度和注册赠送会在官网核实后上线。" />
+    ) : (
+      <div class="rounded-(--radius-card) bg-card py-1">
+        {deals.map((deal) => (
+          <DealRow deal={deal} />
+        ))}
+      </div>
+    )}
+  </section>
+</BaseLayout>

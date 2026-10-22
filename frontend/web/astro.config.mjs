@@ -5,6 +5,8 @@ import tailwindcss from "@tailwindcss/vite";
 import { defineConfig, envField } from "astro/config";
 
 export default defineConfig({
+  // canonical、sitemap 等绝对地址的前缀；域名确定后在 .env 中设置 SITE_URL
+  site: process.env.SITE_URL ?? "http://127.0.0.1:4321",
   output: "server",
   adapter: node({ mode: "standalone" }),
   // React 组件默认只在服务端渲染成 HTML；只有显式标 client:* 的交互岛才下发 JS 和 props
@@ -41,6 +43,13 @@ export default defineConfig({
         context: "server",
         access: "public",
         default: 120,
+      }),
+      // SCC 微信扫码回调页所在的源（即 SCC 的 WX_OPEN_REDIRECT_URI 的源），
+      // 登录页只接受来自这个源的 postMessage
+      WECHAT_CALLBACK_ORIGIN: envField.string({
+        context: "client",
+        access: "public",
+        default: "https://wxauth.11xy.cn",
       }),
       TURNSTILE_SITE_KEY: envField.string({
         context: "client",

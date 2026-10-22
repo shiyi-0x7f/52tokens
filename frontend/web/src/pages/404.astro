@@ -1,0 +1,23 @@
+---
+import BaseLayout from "../layouts/BaseLayout.astro";
+
+Astro.response.status = 404;
+---
+
+<BaseLayout title="页面不存在 · 52tokens" description="页面不存在或已下线。" noindex>
+  <section class="rounded-(--radius-card) bg-card px-6 py-12 text-center">
+    <h1 class="text-2xl font-black">页面不存在</h1>
+    <p class="mt-2 text-sm text-mute">可能已经下线，或者链接有误。</p>
+    <p class="mt-5 flex justify-center gap-4 text-sm font-bold">
+      <a href="/" class="text-hot">
+        回到热榜
+      </a>
+      <a href="/models" class="text-hot">
+        模型价格
+      </a>
+      <a href="/free" class="text-hot">
+        免费额度
+      </a>
+    </p>
+  </section>
+</BaseLayout>

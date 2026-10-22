@@ -1,0 +1,54 @@
+---
+import EmptyState from "../components/EmptyState.astro";
+import BaseLayout from "../layouts/BaseLayout.astro";
+import { internalGet } from "../lib/api";
+import { CATEGORY_LABELS, CATEGORY_ORDER } from "../lib/labels";
+import { loadOr } from "../lib/load";
+import type { Platform } from "../lib/types";
+
+const [platforms, ok] = await loadOr<Platform[]>([], () => internalGet<Platform[]>("/platforms"));
+const groups = CATEGORY_ORDER.map((category) => ({
+  category,
+  items: platforms.filter((p) => p.category === category),
+})).filter((g) => g.items.length > 0);
+---
+
+<BaseLayout
+  title="收录的 AI 平台：大模型 API、AI 编程工具 · 52tokens"
+  description="52tokens 收录的国内外大模型 API 平台和 AI 编程工具，持续跟踪它们的价格、免费额度与签到活动。"
+>
+  <header class="mb-5">
+    <h1 class="text-2xl font-black">收录平台</h1>
+    <p class="mt-1 text-sm text-mute">
+      持续跟踪这些平台的官方价格、免费额度和活动。共 {platforms.length} 家。
+    </p>
+  </header>
+
+  {!ok ? (
+    <EmptyState title="平台列表暂时加载失败" hint="请稍后刷新页面。" />
+  ) : (
+    groups.map((g) => (
+      <section class="mb-6">
+        <h2 class="mb-3 font-black">
+          {CATEGORY_LABELS[g.category]}
+          <span class="ml-2 font-mono text-sm font-normal text-mute">{g.items.length}</span>
+        </h2>
+        <ul class="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+          {g.items.map((p) => (
+            <li class="rounded-(--radius-card) bg-card p-4">
+              <span class="font-bold">{p.name}</span>
+              <span class="mt-2 flex gap-3 text-xs">
+                <a href={`/deals?platform=${p.slug}`} class="text-hot no-underline">
+                  活动
+                </a>
+                <a href={p.website_url} rel="nofollow noopener" target="_blank" class="text-mute">
+                  官网
+                </a>
+              </span>
+            </li>
+          ))}
+        </ul>
+      </section>
+    ))
+  )}
+</BaseLayout>

@@ -1,0 +1,177 @@
+---
+import { WECHAT_CALLBACK_ORIGIN } from "astro:env/client";
+
+import Turnstile from "../components/Turnstile.astro";
+import BaseLayout from "../layouts/BaseLayout.astro";
+import { REASON_MESSAGES, isReason } from "../lib/auth-reasons";
+import { safeNext } from "../lib/next-path";
+import { PENDING_EMAIL_COOKIE } from "../lib/session";
+
+const next = safeNext(Astro.url.searchParams.get("next"));
+if (Astro.locals.user) return Astro.redirect(next);
+
+const rawError = Astro.url.searchParams.get("error");
+const error = isReason(rawError) ? REASON_MESSAGES[rawError] : null;
+const pendingEmail = Astro.cookies.get(PENDING_EMAIL_COOKIE)?.value;
+const codeStep = Astro.url.searchParams.get("step") === "code" && Boolean(pendingEmail);
+
+function maskEmail(email: string): string {
+  const [local = "", domain = ""] = email.split("@");
+  return `${local.slice(0, 2)}${"*".repeat(Math.max(1, local.length - 2))}@${domain}`;
+}
+const googleHref = `/auth/google${next !== "/" ? `?next=${encodeURIComponent(next)}` : ""}`;
+const emailRestartHref = `/login${next !== "/" ? `?next=${encodeURIComponent(next)}` : ""}`;
+---
+
+<BaseLayout title="登录 · 52tokens" description="登录 52tokens，开启签到提醒与降价提醒。" noindex>
+  <section class="mx-auto max-w-md rounded-(--radius-card) bg-card p-6">
+    <h1 class="text-2xl font-black">登录 52tokens</h1>
+    <p class="mt-1 text-sm text-mute">
+      登录后可以开启签到提醒、降价提醒。三种方式登录的是同一套账号体系。
+    </p>
+
+    {error && (
+      <p
+        role="alert"
+        class="mt-4 rounded-lg border border-hot/30 bg-hot/5 px-3 py-2 text-sm text-hot"
+      >
+        {error}
+      </p>
+    )}
+
+    <div class="mt-5 flex flex-col gap-3">
+      <a
+        href={googleHref}
+        data-pending-text="正在前往 Google…"
+        class="flex min-h-11 items-center justify-center rounded-[10px] border border-line font-bold no-underline hover:bg-hover"
+      >
+        使用 Google 登录
+      </a>
+      <button
+        type="button"
+        data-wechat-login
+        data-pending-text="等待微信扫码…"
+        data-callback-origin={WECHAT_CALLBACK_ORIGIN}
+        class="flex min-h-11 cursor-pointer items-center justify-center rounded-[10px] border border-line font-bold hover:bg-hover"
+      >
+        微信扫码登录
+      </button>
+      <p data-wechat-hint class="hidden text-center text-xs text-mute">
+        已打开微信扫码窗口，扫码确认后会自动登录。没看到窗口？请允许本站弹出窗口。
+      </p>
+    </div>
+
+    <form id="wechat-form" method="post" action="/auth/wechat/callback" class="hidden">
+      <input type="hidden" name="code" />
+      <input type="hidden" name="state" />
+      <input type="hidden" name="next" value={next} />
+    </form>
+
+    <div class="my-6 flex items-center gap-3 text-xs text-mute">
+      <span class="h-px flex-1 bg-line"></span>或使用邮箱验证码
+      <span class="h-px flex-1 bg-line"></span>
+    </div>
+
+    {codeStep && pendingEmail ? (
+      <form method="post" action="/auth/email/login" class="flex flex-col gap-3">
+        <p class="text-sm text-sub">
+          验证码已发送到以下邮箱，请查收（也看看垃圾邮件箱）：
+          <strong class="mt-1 block font-mono text-ink">{maskEmail(pendingEmail)}</strong>
+        </p>
+        <label class="flex flex-col gap-1 text-sm">
+          <span>验证码</span>
+          <input
+            name="code"
+            inputmode="numeric"
+            autocomplete="one-time-code"
+            required
+            minlength="4"
+            maxlength="8"
+            class="min-h-11 rounded-[10px] border border-line px-3 font-mono text-lg tracking-widest"
+          />
+        </label>
+        <input type="hidden" name="next" value={next} />
+        <button
+          type="submit"
+          data-pending-text="正在登录…"
+          class="min-h-11 cursor-pointer rounded-[10px] bg-ink font-bold text-white"
+        >
+          登录
+        </button>
+        <a href={emailRestartHref} class="text-center text-xs text-mute">
+          换一个邮箱 / 重新发送
+        </a>
+      </form>
+    ) : (
+      <form
+        method="post"
+        action="/auth/email/send"
+        data-require-turnstile
+        class="flex flex-col gap-3"
+      >
+        <label class="flex flex-col gap-1 text-sm">
+          <span>邮箱</span>
+          <input
+            type="email"
+            name="email"
+            autocomplete="email"
+            required
+            maxlength="200"
+            class="min-h-11 rounded-[10px] border border-line px-3"
+          />
+        </label>
+        <Turnstile action="email_login" />
+        <p data-turnstile-hint class="hidden text-xs text-hot">
+          请先完成上面的人机验证。
+        </p>
+        <input type="hidden" name="next" value={next} />
+        <button
+          type="submit"
+          data-pending-text="正在发送验证码…"
+          class="min-h-11 cursor-pointer rounded-[10px] bg-ink font-bold text-white"
+        >
+          发送验证码
+        </button>
+      </form>
+    )}
+  </section>
+</BaseLayout>
+
+<script>
+  // 微信扫码：弹窗打开 /auth/wechat → 微信扫码 → SCC 回调页 postMessage 回本页 → 表单提交完成登录
+  import { clearPending, setPending } from "../scripts/pending";
+
+  const button = document.querySelector<HTMLButtonElement>("[data-wechat-login]");
+  const form = document.querySelector<HTMLFormElement>("#wechat-form");
+  const hint = document.querySelector<HTMLElement>("[data-wechat-hint]");
+  const callbackOrigin = button?.dataset["callbackOrigin"];
+  let popupWatch: number | undefined;
+  let completing = false;
+
+  button?.addEventListener("click", () => {
+    const popup = window.open("/auth/wechat", "wechat-login", "width=520,height=640");
+    hint?.classList.remove("hidden");
+    if (!popup) return; // 被浏览器拦截：不进入加载态，提示里已说明要允许弹窗
+    setPending(button);
+    window.clearInterval(popupWatch);
+    // 用户直接关掉扫码窗口时恢复按钮
+    popupWatch = window.setInterval(() => {
+      if (!popup.closed) return;
+      window.clearInterval(popupWatch);
+      if (!completing) clearPending(button);
+    }, 500);
+  });
+
+  window.addEventListener("message", (event: MessageEvent) => {
+    // 只接受 SCC 微信回调页发来的消息
+    if (!form || !button || !callbackOrigin || event.origin !== callbackOrigin) return;
+    const data = event.data as { type?: unknown; code?: unknown; state?: unknown } | null;
+    if (data?.type !== "WECHAT_LOGIN_CALLBACK") return;
+    if (typeof data.code !== "string" || typeof data.state !== "string") return;
+    completing = true;
+    button.textContent = "正在登录…";
+    (form.elements.namedItem("code") as HTMLInputElement).value = data.code;
+    (form.elements.namedItem("state") as HTMLInputElement).value = data.state;
+    form.submit();
+  });
+</script>

@@ -1,34 +1,161 @@
 ---
+import DealRow from "../components/DealRow.astro";
+import EmptyState from "../components/EmptyState.astro";
+import JsonLd from "../components/JsonLd.astro";
 import BaseLayout from "../layouts/BaseLayout.astro";
 import { internalGet } from "../lib/api";
-import { logger } from "../lib/logger";
+import { formatPrice } from "../lib/format";
+import { CATEGORY_LABELS, CATEGORY_ORDER, DEAL_TYPE_LABELS } from "../lib/labels";
+import { loadOr } from "../lib/load";
+import type { Deal, DealType, ModelSummary, Platform } from "../lib/types";
 
-// P0 骨架：验证「公开站服务端 → 内网 + 令牌 → 后端」链路；热榜内容在 P1 接入
-let backend: { env: string } | null = null;
-try {
-  backend = await internalGet<{ env: string }>("/meta");
-} catch (err) {
-  logger.error({ err }, "backend unreachable");
-}
+const [[deals, dealsOk], [models], [platforms]] = await Promise.all([
+  loadOr<Deal[]>([], () => internalGet<Deal[]>("/deals", { limit: 20 })),
+  loadOr<ModelSummary[]>([], () => internalGet<ModelSummary[]>("/models")),
+  loadOr<Platform[]>([], () => internalGet<Platform[]>("/platforms")),
+]);
+
+const cheapest = models
+  .filter((m) => m.min_output_price_cny !== null)
+  .sort((a, b) => Number(a.min_output_price_cny) - Number(b.min_output_price_cny))
+  .slice(0, 5);
+const freeModels = models.filter((m) => m.has_free).slice(0, 5);
+const tabs: DealType[] = ["checkin_points", "signup_credit", "free_quota", "student"];
+const platformCounts = CATEGORY_ORDER.map((c) => ({
+  category: c,
+  count: platforms.filter((p) => p.category === c).length,
+})).filter((x) => x.count > 0);
 ---
 
 <BaseLayout
-  title="52tokens · AI 羊毛热榜与价格雷达"
-  description="AI 模型 API 价格、免费额度、签到积分、订阅地区价，每天核对，标注出处与最近确认时间。"
+  title="52tokens · AI 羊毛热榜：免费额度、签到积分与模型 API 价格"
+  description="每天核对的 AI 羊毛热榜：大模型 API 免费额度、AI 工具签到积分、注册赠送与官方 API 价格，标注出处和最近确认时间。"
 >
-  <section class="rounded-(--radius-card) bg-hot px-6 py-7 text-white">
+  <JsonLd
+    slot="head"
+    data={{
+      "@context": "https://schema.org",
+      "@type": "WebSite",
+      name: "52tokens",
+      url: Astro.site?.href,
+    }}
+  />
+
+  <section class="rounded-(--radius-card) bg-hot px-6 pt-6 text-white">
     <h1 class="text-3xl font-black">AI 羊毛热榜</h1>
-    <p class="mt-1 text-sm opacity-85">按近 24 小时真实点击与收藏排序 · 建设中</p>
+    <p class="mt-1 text-sm opacity-85">
+      免费额度 · 签到积分 · 注册赠送 · 官方 API 价格，每条都标注出处与最近确认时间
+    </p>
+    <nav class="mt-4 flex flex-wrap gap-1" aria-label="分类">
+      <a
+        href="/"
+        class="rounded-t-[10px] bg-bg px-4 py-2.5 text-[15px] font-bold text-hot no-underline"
+      >
+        总榜
+      </a>
+      {tabs.map((t) => (
+        <a
+          href={`/deals?type=${t}`}
+          class="rounded-t-[10px] px-4 py-2.5 text-[15px] font-bold text-white/85 no-underline hover:text-white"
+        >
+          {DEAL_TYPE_LABELS[t]}
+        </a>
+      ))}
+    </nav>
   </section>
 
-  <section class="mt-5 rounded-(--radius-card) bg-card p-5 text-sm">
-    <h2 class="mb-2 font-bold">链路自检</h2>
-    {backend ? (
-      <p>
-        后端可达，环境：<code class="font-mono">{backend.env}</code>
+  <div class="mt-5 grid gap-5 lg:grid-cols-[minmax(0,1fr)_320px]">
+    <section aria-labelledby="hot-title">
+      <h2 id="hot-title" class="sr-only">
+        热榜
+      </h2>
+      {!dealsOk ? (
+        <EmptyState title="热榜暂时加载失败" hint="请稍后刷新页面。" />
+      ) : deals.length === 0 ? (
+        <EmptyState
+          title="活动正在核实中"
+          hint="首批平台已收录，签到、免费额度和注册赠送活动会在官网核实后陆续上榜。"
+        >
+          <a href="/platforms" class="mt-4 inline-block text-sm font-bold text-hot">
+            先看收录的平台 →
+          </a>
+        </EmptyState>
+      ) : (
+        <div class="rounded-(--radius-card) bg-card py-1">
+          {deals.map((deal, i) => (
+            <DealRow deal={deal} rank={deal.is_expired ? undefined : i + 1} />
+          ))}
+        </div>
+      )}
+      <p class="mt-2 text-xs text-mute">
+        当前按最近核实时间排序；积累真实点击数据后切换为热度排序。
       </p>
-    ) : (
-      <p class="text-hot">后端不可达，请检查 API_INTERNAL_URL 和 INTERNAL_API_TOKEN。</p>
-    )}
-  </section>
+    </section>
+
+    <aside class="flex flex-col gap-4">
+      <section class="rounded-(--radius-card) bg-card p-4">
+        <h2 class="mb-3 flex items-center font-black">
+          输出价最低
+          <a href="/models" class="ml-auto text-xs font-normal text-mute no-underline">
+            全部 →
+          </a>
+        </h2>
+        {cheapest.length === 0 ? (
+          <p class="text-sm text-mute">模型价格核实中。</p>
+        ) : (
+          <ul class="text-sm">
+            {cheapest.map((m) => (
+              <li class="border-b border-line py-2 last:border-b-0">
+                <a href={`/models/${m.slug}`} class="flex justify-between no-underline">
+                  <span>{m.name}</span>
+                  <span class="font-mono font-bold">
+                    {formatPrice(m.min_output_price_cny, "CNY")}
+                  </span>
+                </a>
+              </li>
+            ))}
+          </ul>
+        )}
+        <p class="mt-2 text-[11px] text-mute">单位：每百万输出 tokens，官方价</p>
+      </section>
+
+      {freeModels.length > 0 && (
+        <section class="rounded-(--radius-card) bg-card p-4">
+          <h2 class="mb-3 flex items-center font-black">
+            免费可用的模型
+            <a href="/free" class="ml-auto text-xs font-normal text-mute no-underline">
+              全部 →
+            </a>
+          </h2>
+          <ul class="text-sm">
+            {freeModels.map((m) => (
+              <li class="border-b border-line py-2 last:border-b-0">
+                <a href={`/models/${m.slug}`} class="flex justify-between no-underline">
+                  <span>{m.name}</span>
+                  <span class="font-bold text-good">免费</span>
+                </a>
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
+
+      <section class="rounded-(--radius-card) bg-card p-4">
+        <h2 class="mb-3 flex items-center font-black">
+          收录平台
+          <a href="/platforms" class="ml-auto text-xs font-normal text-mute no-underline">
+            全部 →
+          </a>
+        </h2>
+        <ul class="text-sm">
+          {platformCounts.map((x) => (
+            <li class="flex justify-between border-b border-line py-2 last:border-b-0">
+              <span>{CATEGORY_LABELS[x.category]}</span>
+              <span class="font-mono font-bold">{x.count}</span>
+            </li>
+          ))}
+        </ul>
+      </section>
+    </aside>
+  </div>
 </BaseLayout>
