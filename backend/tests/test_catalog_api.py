@@ -54,6 +54,7 @@ async def test_min_price_ignores_other_currencies_and_flags_free(
 
     item = (await db_client.get("/internal/v1/models", headers=AUTH)).json()["data"][0]
     assert item["min_output_price_cny"] is None
+    assert Decimal(item["min_output_price_usd"]) == Decimal("0.1")
     assert item["has_free"] is True
 
 

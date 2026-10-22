@@ -30,7 +30,9 @@ bash start-dev.sh                # 端口被占用会自动 +1 并回写 .env.de
 - 后端 API 文档：`http://127.0.0.1:8100/docs`（仅 dev）
 - 公开站：`http://127.0.0.1:4321/`
 - 后台：`http://127.0.0.1:5174/admin/`
-- 采集 worker：`cd backend && uv run arq app.workers.settings.WorkerSettings`
+- 采集 worker：`cd backend && uv run arq app.workers.settings.WorkerSettings`（定时同步 OpenRouter 价格）
+- 导入种子数据：`cd backend && uv run python -m app.cli.seed`
+- 手动采集一次：`cd backend && uv run python -m app.cli.collect openrouter`
 
 数据库首次使用需要在 `dev-postgres` 里建项目专属库和账号（库名、账号均为 `tokens52`），迁移由 `start-dev.sh` 自动执行。
 

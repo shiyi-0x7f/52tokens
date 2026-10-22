@@ -3,6 +3,8 @@
 只展示已核实（confirmed_at 非空）且已发布的价格；平台未发布时其价格一并隐藏。
 """
 
+from decimal import Decimal
+
 from app.core.errors import AppError
 from app.domains.catalog.models import (
     AIModel,
@@ -49,6 +51,16 @@ def _public_prices(model: AIModel) -> list[ModelPrice]:
     return [p for p in model.prices if _is_public(p)]
 
 
+def _min_output(prices: list[ModelPrice], currency: Currency) -> Decimal | None:
+    """该币种付费价里最低的输出价；免费渠道不计入（免费另有 has_free 标记）。"""
+    values = [
+        p.output_price
+        for p in prices
+        if p.currency == currency and p.output_price is not None and p.output_price > 0
+    ]
+    return min(values, default=None)
+
+
 class CatalogService:
     def __init__(self, repo: CatalogRepository) -> None:
         self.repo = repo
@@ -62,18 +74,14 @@ class CatalogService:
             prices = _public_prices(model)
             if not prices:
                 continue  # 没有已核实价格的模型不出现在列表里
-            cny_outputs = [
-                p.output_price
-                for p in prices
-                if p.currency == Currency.CNY and p.output_price is not None
-            ]
             summaries.append(
                 ModelSummary(
                     slug=model.slug,
                     name=model.name,
                     family=model.family,
                     context_window=model.context_window,
-                    min_output_price_cny=min(cny_outputs, default=None),
+                    min_output_price_cny=_min_output(prices, Currency.CNY),
+                    min_output_price_usd=_min_output(prices, Currency.USD),
                     has_free=any(p.is_free for p in prices),
                     price_count=len(prices),
                 )
