@@ -5,6 +5,12 @@
     "BAD_REQUEST": { "code": 40000, "http": 400, "message": "请求有误" },
     "VALIDATION_ERROR": { "code": 40001, "http": 422, "message": "参数校验失败" },
     "TURNSTILE_FAILED": { "code": 40002, "http": 400, "message": "人机验证未通过，请重试" },
+    "AUTH_STATE_INVALID": {
+      "code": 40003,
+      "http": 400,
+      "message": "登录请求已过期或无效，请重新登录"
+    },
+    "AUTH_CODE_INVALID": { "code": 40004, "http": 400, "message": "验证码错误或已过期" },
     "UNAUTHORIZED": { "code": 40100, "http": 401, "message": "未登录或登录已过期" },
     "FORBIDDEN": { "code": 40300, "http": 403, "message": "无权访问" },
     "NOT_FOUND": { "code": 40400, "http": 404, "message": "资源不存在" },
@@ -12,6 +18,11 @@
     "RATE_LIMITED": { "code": 42900, "http": 429, "message": "请求过于频繁，请稍后再试" },
     "INTERNAL_ERROR": { "code": 50000, "http": 500, "message": "服务器内部错误" },
     "UPSTREAM_ERROR": { "code": 50200, "http": 502, "message": "上游服务调用失败" },
+    "EMAIL_SEND_FAILED": {
+      "code": 50201,
+      "http": 502,
+      "message": "验证码邮件发送失败，请稍后再试或换其他方式登录"
+    },
     "SERVICE_UNAVAILABLE": { "code": 50300, "http": 503, "message": "服务暂不可用" }
   }
 }

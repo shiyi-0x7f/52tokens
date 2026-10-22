@@ -6,17 +6,36 @@ import DevErrorPanel from "../components/DevErrorPanel.astro";
 interface Props {
   title: string;
   description: string;
+  /** 页面不希望被搜索引擎收录时设为 true（如 404） */
+  noindex?: boolean;
 }
-const { title, description } = Astro.props;
+const { title, description, noindex = false } = Astro.props;
 const canonical = new URL(Astro.url.pathname, Astro.site ?? Astro.url).href;
+
+const user = Astro.locals.user;
+
+// 匿名访问允许 CDN 短时缓存；已登录时页面含个人信息，禁止任何共享缓存。
+// CDN（Cloudflare）还需配置：请求带 t52_session Cookie 时绕过缓存。
+if (user) {
+  Astro.response.headers.set("Cache-Control", "private, no-store");
+} else if (!noindex && Astro.response.status === 200) {
+  Astro.response.headers.set(
+    "Cache-Control",
+    "public, max-age=0, s-maxage=300, stale-while-revalidate=600",
+  );
+}
+const here = Astro.url.pathname + Astro.url.search;
+const loginHref = here === "/" ? "/login" : `/login?next=${encodeURIComponent(here)}`;
 
 const nav = [
   { href: "/", label: "热榜" },
   { href: "/models", label: "模型价格" },
   { href: "/free", label: "免费额度" },
-  { href: "/official-prices", label: "订阅地区价" },
-  { href: "/products", label: "卡网比价" },
+  { href: "/deals", label: "签到 & 活动" },
+  { href: "/platforms", label: "平台" },
 ];
+const current = (href: string) =>
+  href === "/" ? Astro.url.pathname === "/" : Astro.url.pathname.startsWith(href);
 ---
 
 <!doctype html>
@@ -26,34 +45,69 @@ const nav = [
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>{title}</title>
     <meta name="description" content={description} />
-    <link rel="canonical" href={canonical} />
+    {noindex ? <meta name="robots" content="noindex" /> : <link rel="canonical" href={canonical} />}
     <meta property="og:title" content={title} />
     <meta property="og:description" content={description} />
     <meta property="og:type" content="website" />
+    <meta property="og:url" content={canonical} />
+    <meta property="og:site_name" content="52tokens" />
     <slot name="head" />
   </head>
   <body class="min-h-screen">
     <header class="border-b border-line bg-card">
-      <nav class="mx-auto flex max-w-6xl flex-wrap items-center gap-5 px-4 py-3">
+      <nav class="mx-auto flex max-w-6xl flex-wrap items-center gap-x-5 gap-y-2 px-4 py-3">
         <a href="/" class="text-xl font-black no-underline">
           52<span class="text-hot">tokens</span>
         </a>
-        <ul class="flex flex-wrap gap-4 text-sm text-sub">
+        <ul class="flex flex-wrap gap-x-4 gap-y-1 text-sm text-sub">
           {nav.map((item) => (
             <li>
               <a
                 href={item.href}
-                class:list={[
-                  "no-underline",
-                  Astro.url.pathname === item.href && "font-bold text-hot",
-                ]}
-                aria-current={Astro.url.pathname === item.href ? "page" : undefined}
+                class:list={["no-underline", current(item.href) && "font-bold text-hot"]}
+                aria-current={current(item.href) ? "page" : undefined}
               >
                 {item.label}
               </a>
             </li>
           ))}
         </ul>
+        <div class="ml-auto flex items-center gap-3 text-sm">
+          {user ? (
+            <>
+              <span class="flex items-center gap-2">
+                {user.avatar_url && (
+                  <img
+                    src={user.avatar_url}
+                    alt=""
+                    width="24"
+                    height="24"
+                    class="rounded-full"
+                    referrerpolicy="no-referrer"
+                  />
+                )}
+                {user.nickname}
+              </span>
+              <form method="post" action="/auth/logout">
+                <button
+                  type="submit"
+                  data-pending-text="正在退出…"
+                  class="min-h-9 cursor-pointer text-mute hover:text-ink"
+                >
+                  退出
+                </button>
+              </form>
+            </>
+          ) : (
+            <a
+              href={loginHref}
+              rel="nofollow"
+              class="inline-flex min-h-9 items-center rounded-lg bg-ink px-3 font-bold text-white no-underline"
+            >
+              登录
+            </a>
+          )}
+        </div>
       </nav>
     </header>
     <main class="mx-auto max-w-6xl px-4 py-6">
@@ -66,5 +120,8 @@ const nav = [
       </p>
     </footer>
     <DevErrorPanel />
+    <script>
+      import "../scripts/pending";
+    </script>
   </body>
 </html>

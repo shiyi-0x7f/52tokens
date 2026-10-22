@@ -151,6 +151,7 @@ LLM 只负责"从文本里抽结构化字段 + 给置信度"，**发布必须过
 | 2026-10-22 | **不做国内备案** | 服务器放海外 / 香港（宝塔照常），国内访问走优化线路或套 CDN；SEO 主攻 Google / Bing，百度收录预期偏低；国内流量更依赖社交分发（Telegram、社区、公众号外链） |
 | 2026-10-22 | **公开页面不下发 JSON**，防止低成本逆向 | 架构改为 BFF：后端只对内网开放；SEO 页面照常输出 HTML；付费数据 API 是唯一的 JSON 出口；见 `dev_docs/architecture/data-protection.md` |
 | 2026-10-22 | 前端改用 **Astro（公开站）+ React/Vite SPA（后台）**，不用 Next.js | Astro 默认只输出 HTML、不带激活数据，天然满足"不下发 JSON"，页面更轻；后台代码不进公开站；代价是页面缓存刷新与分享图自行接入 |
+| 2026-10-22 | **LLM 直连硅基流动，不走 ADC** | 52tokens 自带轻量 OpenAI 兼容客户端（`SILICONFLOW_*` 配置），不依赖 ADC |
 | 2026-10-22 | **用户身份走 SCC**；登录方式：Google + 微信扫码 + 邮箱验证码；表单人机验证用 **Cloudflare Turnstile** | SCC 在国内访问不到 Google，故 52tokens 自己完成 Google OAuth，再经 SCC「联合登录」接口统一建号（需求见 SCC `dev_docs/req_52tokens.md`，对接见 `dev_docs/refs/software_control_center.md`）；Turnstile 由 52tokens 自己接，不经 SCC |
 | 2026-10-22 | **海外中转站可以推广** | 正规聚合平台（如 OpenRouter）和云厂商同等对待；普通中转站视情况逐个评估，至少要挂风险标签，不代收充值、不让用户在站内填 Key；目前没有赞助商，P1 只做推广链接 |
 | 2026-10-22 | **赞助位只挂正规大厂活动** | 腾讯云、阿里云等云服务器 / 开发者工具活动可以进赞助位；卡网商家不进任何付费位，只有推广链接 |

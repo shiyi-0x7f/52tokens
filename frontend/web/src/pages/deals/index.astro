@@ -1,0 +1,100 @@
+---
+import DealRow from "../../components/DealRow.astro";
+import EmptyState from "../../components/EmptyState.astro";
+import BaseLayout from "../../layouts/BaseLayout.astro";
+import { internalGet } from "../../lib/api";
+import { DEAL_TYPE_LABELS } from "../../lib/labels";
+import { loadOr } from "../../lib/load";
+import type { Deal, DealType } from "../../lib/types";
+
+const TYPES = Object.keys(DEAL_TYPE_LABELS) as DealType[];
+const rawType = Astro.url.searchParams.get("type");
+const type = TYPES.find((t) => t === rawType);
+const includeExpired = Astro.url.searchParams.get("expired") === "1";
+// 平台筛选只接受 slug 格式，其余忽略
+const platform = /^[a-z0-9-]{1,64}$/.test(Astro.url.searchParams.get("platform") ?? "")
+  ? (Astro.url.searchParams.get("platform") ?? undefined)
+  : undefined;
+
+const [deals, ok] = await loadOr<Deal[]>([], () =>
+  internalGet<Deal[]>("/deals", {
+    deal_type: type,
+    platform,
+    include_expired: includeExpired,
+    limit: 100,
+  }),
+);
+
+const label = type ? DEAL_TYPE_LABELS[type] : "全部";
+const href = (t: DealType | undefined, expired = includeExpired) => {
+  const params = new URLSearchParams();
+  if (t) params.set("type", t);
+  if (platform) params.set("platform", platform);
+  if (expired) params.set("expired", "1");
+  const qs = params.toString();
+  return qs ? `/deals?${qs}` : "/deals";
+};
+---
+
+<BaseLayout
+  title={type ? `AI ${label}活动汇总 · 52tokens` : "AI 签到积分与优惠活动汇总 · 52tokens"}
+  description="AI 工具每日签到积分、大模型 API 注册赠送、免费额度、学生优惠与限时折扣，每条标注出处与最近确认时间。"
+>
+  <header class="mb-4">
+    <h1 class="text-2xl font-black">{type ? `${label}活动` : "签到 & 活动"}</h1>
+    {platform && (
+      <p class="mt-1 text-sm">
+        只看平台 <code class="font-mono">{platform}</code> ·
+        <a href={type ? `/deals?type=${type}` : "/deals"} class="text-hot">
+          看全部平台
+        </a>
+      </p>
+    )}
+    <p class="mt-1 text-sm text-mute">
+      只收录活动信息、不代签到；签到类活动多数只能在客户端内完成。
+    </p>
+  </header>
+
+  <nav class="mb-4 flex flex-wrap items-center gap-2" aria-label="活动类型">
+    <a
+      href={href(undefined)}
+      class:list={[
+        "rounded-full px-3 py-1.5 text-sm no-underline",
+        !type ? "bg-ink text-white" : "bg-card",
+      ]}
+      aria-current={!type ? "page" : undefined}
+    >
+      全部
+    </a>
+    {TYPES.map((t) => (
+      <a
+        href={href(t)}
+        class:list={[
+          "rounded-full px-3 py-1.5 text-sm no-underline",
+          type === t ? "bg-ink text-white" : "bg-card",
+        ]}
+        aria-current={type === t ? "page" : undefined}
+      >
+        {DEAL_TYPE_LABELS[t]}
+      </a>
+    ))}
+    <a href={href(type, !includeExpired)} class="ml-auto text-sm text-mute">
+      {includeExpired ? "隐藏已结束" : "显示已结束"}
+    </a>
+  </nav>
+
+  {!ok ? (
+    <EmptyState title="活动暂时加载失败" hint="请稍后刷新页面。" />
+  ) : deals.length === 0 ? (
+    <EmptyState
+      title={`暂无${type ? label : ""}活动`}
+      hint="活动在官网核实后才会上线，稍后再来看看。"
+    />
+  ) : (
+    <div class="rounded-(--radius-card) bg-card py-1">
+      {deals.map((deal) => (
+        <DealRow deal={deal} />
+      ))}
+    </div>
+  )}
+</BaseLayout>

@@ -7,12 +7,10 @@ from sqlalchemy import pool
 from sqlalchemy.engine import Connection
 from sqlalchemy.ext.asyncio import create_async_engine
 
+import app.db.models  # noqa: F401  注册全部模型，autogenerate 才能看到
 from alembic import context
 from app.core.config import get_settings
 from app.db.base import Base
-
-# 新增模型模块后在这里导入，autogenerate 才能看到
-# import app.domains.xxx.models
 
 config = context.config
 if config.config_file_name is not None:

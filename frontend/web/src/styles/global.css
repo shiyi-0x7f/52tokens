@@ -8,6 +8,9 @@
   --color-sub: #52525b;
   --color-mute: #71717a;
   --color-line: #ececf0;
+  --color-faint: #a1a1aa;
+  --color-chip: #f1f1f4;
+  --color-hover: #fafafa;
   --color-hot: #e11d2e;
   --color-hot-2: #f0581f;
   --color-hot-3: #e89a0c;
@@ -26,4 +29,31 @@ body {
   background: var(--color-bg);
   color: var(--color-ink);
   font-family: var(--font-sans);
+}
+
+/* 点击后立即反馈：data-pending-text 的按钮 / 链接进入加载态（见 scripts/pending.ts） */
+[aria-busy="true"] {
+  cursor: progress;
+  opacity: 0.8;
+}
+[aria-busy="true"]::before {
+  content: "";
+  display: inline-block;
+  width: 1em;
+  height: 1em;
+  margin-right: 0.5em;
+  border: 2px solid currentColor;
+  border-right-color: transparent;
+  border-radius: 9999px;
+  animation: pending-spin 0.7s linear infinite;
+}
+@keyframes pending-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  [aria-busy="true"]::before {
+    animation: none;
+  }
 }

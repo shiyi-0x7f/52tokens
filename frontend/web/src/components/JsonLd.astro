@@ -1,0 +1,10 @@
+---
+/** 结构化数据（SEO 富结果）。只放当前页的实体，不放全量列表，见 data-protection.md */
+interface Props {
+  data: Record<string, unknown>;
+}
+// 转义 <，防止数据里的字符串提前闭合 script 标签
+const json = JSON.stringify(Astro.props.data).replace(/</g, "\\u003c");
+---
+
+<script type="application/ld+json" set:html={json} />

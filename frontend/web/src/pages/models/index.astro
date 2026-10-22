@@ -1,0 +1,69 @@
+---
+import EmptyState from "../../components/EmptyState.astro";
+import BaseLayout from "../../layouts/BaseLayout.astro";
+import { internalGet } from "../../lib/api";
+import { formatContext, formatPrice } from "../../lib/format";
+import { loadOr } from "../../lib/load";
+import type { ModelSummary } from "../../lib/types";
+
+const [models, ok] = await loadOr<ModelSummary[]>([], () => internalGet<ModelSummary[]>("/models"));
+const families = [...new Set(models.map((m) => m.family))];
+---
+
+<BaseLayout
+  title="大模型 API 价格对比 · 52tokens"
+  description="DeepSeek、Qwen、GLM、Kimi 等大模型的官方 API 价格横向对比：输入输出单价、免费额度和最近核实时间。"
+>
+  <header class="mb-5">
+    <h1 class="text-2xl font-black">大模型 API 价格</h1>
+    <p class="mt-1 text-sm text-mute">
+      官方 API 价格，单位为每百万 tokens；只展示从官网核实过的价格，并标注核实时间。
+    </p>
+  </header>
+
+  {!ok ? (
+    <EmptyState title="价格暂时加载失败" hint="请稍后刷新页面。" />
+  ) : models.length === 0 ? (
+    <EmptyState title="模型价格核实中" hint="首批平台已收录，价格会在官网核实后陆续上线。" />
+  ) : (
+    families.map((family) => (
+      <section class="mb-6">
+        <h2 class="mb-2 text-sm font-bold tracking-wide text-sub uppercase">{family}</h2>
+        <div class="overflow-x-auto rounded-(--radius-card) bg-card">
+          <table class="w-full min-w-[640px] text-sm">
+            <thead>
+              <tr class="border-b border-line text-left text-xs text-mute">
+                <th class="px-4 py-2.5 font-medium">模型</th>
+                <th class="px-4 py-2.5 font-medium">上下文</th>
+                <th class="px-4 py-2.5 text-right font-medium">最低输出价（¥）</th>
+                <th class="px-4 py-2.5 font-medium">免费</th>
+                <th class="px-4 py-2.5 text-right font-medium">平台数</th>
+              </tr>
+            </thead>
+            <tbody>
+              {models
+                .filter((m) => m.family === family)
+                .map((m) => (
+                  <tr class="border-b border-line last:border-b-0 hover:bg-hover">
+                    <td class="px-4 py-3">
+                      <a href={`/models/${m.slug}`} class="font-medium no-underline hover:text-hot">
+                        {m.name}
+                      </a>
+                    </td>
+                    <td class="px-4 py-3 font-mono text-sub">{formatContext(m.context_window)}</td>
+                    <td class="px-4 py-3 text-right font-mono font-bold">
+                      {formatPrice(m.min_output_price_cny, "CNY")}
+                    </td>
+                    <td class="px-4 py-3">
+                      {m.has_free ? <span class="font-bold text-good">有</span> : "—"}
+                    </td>
+                    <td class="px-4 py-3 text-right font-mono">{m.price_count}</td>
+                  </tr>
+                ))}
+            </tbody>
+          </table>
+        </div>
+      </section>
+    ))
+  )}
+</BaseLayout>
