@@ -1,0 +1,70 @@
+---
+import "../styles/global.css";
+
+import DevErrorPanel from "../components/DevErrorPanel.astro";
+
+interface Props {
+  title: string;
+  description: string;
+}
+const { title, description } = Astro.props;
+const canonical = new URL(Astro.url.pathname, Astro.site ?? Astro.url).href;
+
+const nav = [
+  { href: "/", label: "热榜" },
+  { href: "/models", label: "模型价格" },
+  { href: "/free", label: "免费额度" },
+  { href: "/official-prices", label: "订阅地区价" },
+  { href: "/products", label: "卡网比价" },
+];
+---
+
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{title}</title>
+    <meta name="description" content={description} />
+    <link rel="canonical" href={canonical} />
+    <meta property="og:title" content={title} />
+    <meta property="og:description" content={description} />
+    <meta property="og:type" content="website" />
+    <slot name="head" />
+  </head>
+  <body class="min-h-screen">
+    <header class="border-b border-line bg-card">
+      <nav class="mx-auto flex max-w-6xl flex-wrap items-center gap-5 px-4 py-3">
+        <a href="/" class="text-xl font-black no-underline">
+          52<span class="text-hot">tokens</span>
+        </a>
+        <ul class="flex flex-wrap gap-4 text-sm text-sub">
+          {nav.map((item) => (
+            <li>
+              <a
+                href={item.href}
+                class:list={[
+                  "no-underline",
+                  Astro.url.pathname === item.href && "font-bold text-hot",
+                ]}
+                aria-current={Astro.url.pathname === item.href ? "page" : undefined}
+              >
+                {item.label}
+              </a>
+            </li>
+          ))}
+        </ul>
+      </nav>
+    </header>
+    <main class="mx-auto max-w-6xl px-4 py-6">
+      <slot />
+    </main>
+    <footer class="border-t border-line bg-card">
+      <p class="mx-auto max-w-6xl px-4 py-5 text-xs leading-relaxed text-mute">
+        52tokens
+        不卖货、不收款、不担保，只整理公开信息并标注出处，请以原站为准。带「推广」「赞助」标记的内容含商业关系，不参与排名，也不影响最低价计算。
+      </p>
+    </footer>
+    <DevErrorPanel />
+  </body>
+</html>

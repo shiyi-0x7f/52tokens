@@ -1,0 +1,15 @@
+---
+/**
+ * Cloudflare Turnstile 人机验证。放在 <form> 内，提交时浏览器会带上
+ * cf-turnstile-response 字段，由服务端转交后端校验。
+ */
+import { TURNSTILE_SITE_KEY } from "astro:env/client";
+
+interface Props {
+  action?: string;
+}
+const { action } = Astro.props;
+---
+
+<div class="cf-turnstile" data-sitekey={TURNSTILE_SITE_KEY} data-action={action}></div>
+<script is:inline src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer></script>

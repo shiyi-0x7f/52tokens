@@ -1,0 +1,31 @@
+---
+// 仅 dev：浏览器端未捕获错误渲染成可见、可复制的面板，不只是控制台一闪而过
+---
+
+{import.meta.env.DEV && <script>
+  function show(text: string) {
+    console.error(text);
+    let panel = document.getElementById("dev-error-panel");
+    if (!panel) {
+      panel = document.createElement("div");
+      panel.id = "dev-error-panel";
+      panel.style.cssText =
+        "position:fixed;left:12px;right:12px;bottom:12px;z-index:9999;max-height:45vh;overflow:auto;" +
+        "background:#1f1315;color:#ffe4e6;border:1px solid #e11d2e;border-radius:10px;padding:12px;" +
+        "font:12px/1.6 ui-monospace,Consolas,monospace;white-space:pre-wrap";
+      const copy = document.createElement("button");
+      copy.textContent = "复制错误";
+      copy.style.cssText =
+        "float:right;min-height:32px;padding:0 10px;border-radius:6px;border:0;cursor:pointer";
+      copy.onclick = () => navigator.clipboard.writeText(panel?.dataset["text"] ?? "");
+      panel.append(copy);
+      document.body.append(panel);
+    }
+    panel.dataset["text"] = `${panel.dataset["text"] ?? ""}${text}\n\n`;
+    panel.append(document.createTextNode(`${text}\n\n`));
+  }
+  window.addEventListener("error", (e) => show(e.error?.stack ?? String(e.message)));
+  window.addEventListener("unhandledrejection", (e) =>
+    show(e.reason instanceof Error ? (e.reason.stack ?? e.reason.message) : String(e.reason)),
+  );
+</script>}

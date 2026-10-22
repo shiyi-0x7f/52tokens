@@ -1,0 +1,29 @@
+@import "tailwindcss";
+
+/* 设计令牌：热榜风格（见 dev_docs/design/hot-list-integrated.html）。页面里只用令牌，不写魔法值 */
+@theme {
+  --color-bg: #f6f6f8;
+  --color-card: #ffffff;
+  --color-ink: #18181b;
+  --color-sub: #52525b;
+  --color-mute: #71717a;
+  --color-line: #ececf0;
+  --color-hot: #e11d2e;
+  --color-hot-2: #f0581f;
+  --color-hot-3: #e89a0c;
+  --color-good: #15803d;
+  --color-ad-bg: #fffaeb;
+  --color-ad-line: #f5e3b3;
+  --color-ad-ink: #8a5a00;
+
+  --font-sans: "Noto Sans SC", "PingFang SC", "Microsoft YaHei", system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, Consolas, monospace;
+
+  --radius-card: 14px;
+}
+
+body {
+  background: var(--color-bg);
+  color: var(--color-ink);
+  font-family: var(--font-sans);
+}

@@ -1,0 +1,34 @@
+---
+import BaseLayout from "../layouts/BaseLayout.astro";
+import { internalGet } from "../lib/api";
+import { logger } from "../lib/logger";
+
+// P0 骨架：验证「公开站服务端 → 内网 + 令牌 → 后端」链路；热榜内容在 P1 接入
+let backend: { env: string } | null = null;
+try {
+  backend = await internalGet<{ env: string }>("/meta");
+} catch (err) {
+  logger.error({ err }, "backend unreachable");
+}
+---
+
+<BaseLayout
+  title="52tokens · AI 羊毛热榜与价格雷达"
+  description="AI 模型 API 价格、免费额度、签到积分、订阅地区价，每天核对，标注出处与最近确认时间。"
+>
+  <section class="rounded-(--radius-card) bg-hot px-6 py-7 text-white">
+    <h1 class="text-3xl font-black">AI 羊毛热榜</h1>
+    <p class="mt-1 text-sm opacity-85">按近 24 小时真实点击与收藏排序 · 建设中</p>
+  </section>
+
+  <section class="mt-5 rounded-(--radius-card) bg-card p-5 text-sm">
+    <h2 class="mb-2 font-bold">链路自检</h2>
+    {backend ? (
+      <p>
+        后端可达，环境：<code class="font-mono">{backend.env}</code>
+      </p>
+    ) : (
+      <p class="text-hot">后端不可达，请检查 API_INTERNAL_URL 和 INTERNAL_API_TOKEN。</p>
+    )}
+  </section>
+</BaseLayout>
