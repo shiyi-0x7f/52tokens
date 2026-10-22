@@ -1,0 +1,94 @@
+---
+/**
+ * 模型列表表格。每行带「对比」开关：只是改网址里的 cmp 参数的普通链接，
+ * 不需要 JS，也不下发数据。
+ */
+import { familyLabel } from "../lib/families";
+import { formatContext, formatMinOutput } from "../lib/format";
+import { MAX_COMPARE, type ModelsState, modelsUrl, toggleCompare } from "../lib/models-url";
+import type { ModelSummary } from "../lib/types";
+
+interface Props {
+  models: ModelSummary[];
+  state: ModelsState;
+  /** 搜索结果跨厂商，需要显示系列列 */
+  showFamily?: boolean;
+}
+const { models, state, showFamily = false } = Astro.props;
+const cmp = state.cmp ?? [];
+const full = cmp.length >= MAX_COMPARE;
+---
+
+<div class="overflow-x-auto rounded-(--radius-card) bg-card">
+  <table class="w-full min-w-[680px] text-sm">
+    <thead>
+      <tr class="border-b border-line text-left text-xs text-mute">
+        <th class="px-4 py-2.5 font-medium">模型</th>
+        {showFamily && <th class="px-4 py-2.5 font-medium">系列</th>}
+        <th class="px-4 py-2.5 font-medium">上下文</th>
+        <th class="px-4 py-2.5 text-right font-medium">最低输出价 / 百万</th>
+        <th class="px-4 py-2.5 font-medium">免费</th>
+        <th class="px-4 py-2.5 text-right font-medium">平台数</th>
+        <th class="px-4 py-2.5 text-right font-medium">
+          <span class="sr-only">对比</span>
+        </th>
+      </tr>
+    </thead>
+    <tbody>
+      {models.map((m) => {
+        const selected = cmp.includes(m.slug);
+        return (
+          <tr
+            class:list={[
+              "border-b border-line last:border-b-0",
+              "row-fade",
+              selected ? "bg-hot/5" : "hover:bg-hover",
+            ]}
+          >
+            <td class="px-4 py-3">
+              <a href={`/models/${m.slug}`} class="font-medium no-underline hover:text-hot">
+                {m.name}
+              </a>
+            </td>
+            {showFamily && <td class="px-4 py-3 text-sub">{familyLabel(m.family)}</td>}
+            <td class="px-4 py-3 font-mono text-sub">{formatContext(m.context_window)}</td>
+            <td class="px-4 py-3 text-right font-mono font-bold">{formatMinOutput(m)}</td>
+            <td class="px-4 py-3">
+              {m.has_free ? <span class="font-bold text-good">有</span> : "—"}
+            </td>
+            <td class="px-4 py-3 text-right font-mono">{m.price_count}</td>
+            <td class="px-4 py-2 text-right">
+              {selected ? (
+                <a
+                  href={modelsUrl({ ...state, cmp: toggleCompare(cmp, m.slug) })}
+                  rel="nofollow"
+                  data-keep-scroll
+                  data-astro-history="replace"
+                  aria-label={`从对比中移除 ${m.name}`}
+                  class="press inline-flex min-h-9 items-center rounded-lg bg-hot px-3 text-xs font-bold whitespace-nowrap text-white no-underline"
+                >
+                  ✓ 已加入
+                </a>
+              ) : full ? (
+                <span class="text-xs text-mute" title={`最多同时对比 ${MAX_COMPARE} 个模型`}>
+                  已满
+                </span>
+              ) : (
+                <a
+                  href={modelsUrl({ ...state, cmp: toggleCompare(cmp, m.slug) })}
+                  rel="nofollow"
+                  data-keep-scroll
+                  data-astro-history="replace"
+                  aria-label={`把 ${m.name} 加入对比`}
+                  class="press inline-flex min-h-9 items-center rounded-lg border border-line px-3 text-xs whitespace-nowrap no-underline hover:border-ink"
+                >
+                  ＋ 对比
+                </a>
+              )}
+            </td>
+          </tr>
+        );
+      })}
+    </tbody>
+  </table>
+</div>

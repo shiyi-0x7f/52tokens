@@ -11,6 +11,15 @@ export function formatPrice(value: string | null, currency: Currency): string {
   return `${SYMBOL[currency]}${n.toFixed(digits)}`;
 }
 
+/** 模型最低输出价：有人民币价优先显示人民币，否则显示美元（不做汇率换算） */
+export function formatMinOutput(m: {
+  min_output_price_cny: string | null;
+  min_output_price_usd: string | null;
+}): string {
+  if (m.min_output_price_cny !== null) return formatPrice(m.min_output_price_cny, "CNY");
+  return formatPrice(m.min_output_price_usd, "USD");
+}
+
 /** 相对时间：「12 分钟前」「3 天前」，超过 30 天显示日期 */
 export function formatRelative(iso: string, now: Date = new Date()): string {
   const diffSec = Math.max(0, (now.getTime() - new Date(iso).getTime()) / 1000);

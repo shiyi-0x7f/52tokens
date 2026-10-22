@@ -1,23 +1,53 @@
 ---
+import CompareTray from "../../components/CompareTray.astro";
 import EmptyState from "../../components/EmptyState.astro";
+import ModelTable from "../../components/ModelTable.astro";
 import BaseLayout from "../../layouts/BaseLayout.astro";
 import { internalGet } from "../../lib/api";
-import { formatContext, formatPrice } from "../../lib/format";
+import { groupByFamily } from "../../lib/families";
+import { formatPrice } from "../../lib/format";
 import { loadOr } from "../../lib/load";
+import {
+  type ModelsState,
+  modelsUrl,
+  parseCompare,
+  parseFamily,
+  parseQuery,
+} from "../../lib/models-url";
 import type { ModelSummary } from "../../lib/types";
 
 const [models, ok] = await loadOr<ModelSummary[]>([], () => internalGet<ModelSummary[]>("/models"));
-const families = [...new Set(models.map((m) => m.family))];
+const groups = groupByFamily(models);
+
+const params = Astro.url.searchParams;
+const q = parseQuery(params.get("q"));
+const cmp = parseCompare(params.get("cmp"));
+const requested = parseFamily(params.get("family"));
+const active = q ? null : (groups.find((g) => g.family === requested) ?? groups[0] ?? null);
+const state: ModelsState = { family: active?.family ?? null, q, cmp };
+
+// 服务端搜索：跨所有厂商匹配模型名 / slug / 厂商名
+const needle = q?.toLowerCase() ?? "";
+const results = q
+  ? groups.flatMap((g) =>
+      g.label.toLowerCase().includes(needle)
+        ? g.models
+        : g.models.filter((m) => m.name.toLowerCase().includes(needle) || m.slug.includes(needle)),
+    )
+  : [];
+const names = new Map(models.map((m) => [m.slug, m.name]));
+const title = active ? `${active.label} API 价格对比 · 52tokens` : "大模型 API 价格对比 · 52tokens";
 ---
 
 <BaseLayout
-  title="大模型 API 价格对比 · 52tokens"
-  description="DeepSeek、Qwen、GLM、Kimi 等大模型的官方 API 价格横向对比：输入输出单价、免费额度和最近核实时间。"
+  title={title}
+  description="DeepSeek、Qwen、GLM、Kimi、Claude、GPT、Gemini 等大模型 API 价格横向对比：各平台输入输出单价、免费版和最近核实时间，支持多模型参数对比。"
 >
-  <header class="mb-5">
+  <header class="mb-4">
     <h1 class="text-2xl font-black">大模型 API 价格</h1>
     <p class="mt-1 text-sm text-mute">
-      官方 API 价格，单位为每百万 tokens；只展示从官网核实过的价格，并标注核实时间。
+      各平台的 API 价格（模型官方平台及 OpenRouter 等聚合平台），单位为每百万
+      tokens；只展示从平台官方页面或公开接口核实过的价格。勾选「对比」可以并排比较最多 4 个模型。
     </p>
   </header>
 
@@ -26,44 +56,141 @@ const families = [...new Set(models.map((m) => m.family))];
   ) : models.length === 0 ? (
     <EmptyState title="模型价格核实中" hint="首批平台已收录，价格会在官网核实后陆续上线。" />
   ) : (
-    families.map((family) => (
-      <section class="mb-6">
-        <h2 class="mb-2 text-sm font-bold tracking-wide text-sub uppercase">{family}</h2>
-        <div class="overflow-x-auto rounded-(--radius-card) bg-card">
-          <table class="w-full min-w-[640px] text-sm">
-            <thead>
-              <tr class="border-b border-line text-left text-xs text-mute">
-                <th class="px-4 py-2.5 font-medium">模型</th>
-                <th class="px-4 py-2.5 font-medium">上下文</th>
-                <th class="px-4 py-2.5 text-right font-medium">最低输出价（¥）</th>
-                <th class="px-4 py-2.5 font-medium">免费</th>
-                <th class="px-4 py-2.5 text-right font-medium">平台数</th>
-              </tr>
-            </thead>
-            <tbody>
-              {models
-                .filter((m) => m.family === family)
-                .map((m) => (
-                  <tr class="border-b border-line last:border-b-0 hover:bg-hover">
-                    <td class="px-4 py-3">
-                      <a href={`/models/${m.slug}`} class="font-medium no-underline hover:text-hot">
-                        {m.name}
-                      </a>
-                    </td>
-                    <td class="px-4 py-3 font-mono text-sub">{formatContext(m.context_window)}</td>
-                    <td class="px-4 py-3 text-right font-mono font-bold">
-                      {formatPrice(m.min_output_price_cny, "CNY")}
-                    </td>
-                    <td class="px-4 py-3">
-                      {m.has_free ? <span class="font-bold text-good">有</span> : "—"}
-                    </td>
-                    <td class="px-4 py-3 text-right font-mono">{m.price_count}</td>
-                  </tr>
-                ))}
-            </tbody>
-          </table>
-        </div>
-      </section>
-    ))
+    <>
+      <form method="get" action="/models" role="search" data-keep-scroll class="mb-3 flex gap-2">
+        <label class="sr-only" for="model-search">
+          搜索厂商或模型
+        </label>
+        <input
+          id="model-search"
+          type="search"
+          name="q"
+          value={q ?? ""}
+          maxlength="50"
+          placeholder="搜索厂商或模型，如 Claude、flash、glm"
+          autocomplete="off"
+          data-tab-filter
+          class="press min-h-11 min-w-0 flex-1 rounded-[10px] border border-line bg-card px-3 focus:border-ink focus:outline-none"
+        />
+        {cmp.length > 0 && <input type="hidden" name="cmp" value={cmp.join(",")} />}
+        <button
+          type="submit"
+          class="press min-h-11 cursor-pointer rounded-[10px] bg-ink px-4 font-bold text-white"
+        >
+          搜索
+        </button>
+      </form>
+
+      <nav aria-label="模型厂商" class="mb-4">
+        <ul
+          data-tab-list
+          class="scrollbar-thin relative flex snap-x gap-2 overflow-x-auto scroll-smooth pb-2"
+        >
+          {groups.map((g) => {
+            const current = active?.family === g.family;
+            return (
+              <li class="shrink-0 snap-start" data-tab-label={g.label.toLowerCase()}>
+                <a
+                  href={modelsUrl({ family: g.family, cmp })}
+                  aria-current={current ? "page" : undefined}
+                  data-keep-scroll
+                  class:list={[
+                    "press inline-flex min-h-10 items-center gap-1.5 rounded-full px-4 text-sm whitespace-nowrap no-underline",
+                    current ? "bg-ink font-bold text-white" : "bg-card hover:bg-hover",
+                  ]}
+                >
+                  {g.label}
+                  <span class="font-mono text-xs opacity-60">{g.models.length}</span>
+                </a>
+              </li>
+            );
+          })}
+        </ul>
+        <p data-tab-empty class="hidden text-sm text-mute">
+          没有匹配的厂商，按回车在全部模型里搜索。
+        </p>
+      </nav>
+
+      {q ? (
+        <section aria-labelledby="search-title" class="animate-rise-in">
+          <h2 id="search-title" class="mb-3 flex flex-wrap items-baseline gap-3 font-black">
+            「{q}」的搜索结果
+            <span class="text-sm font-normal text-mute">{results.length} 个模型</span>
+            <a href={modelsUrl({ cmp })} data-keep-scroll class="text-sm font-normal text-hot">
+              清除搜索
+            </a>
+          </h2>
+          {results.length === 0 ? (
+            <EmptyState
+              title="没有找到匹配的模型"
+              hint="换个关键词试试，比如厂商名或模型系列名。"
+            />
+          ) : (
+            <ModelTable models={results} state={state} showFamily />
+          )}
+        </section>
+      ) : (
+        active && (
+          <section aria-labelledby="family-title" class="animate-rise-in">
+            <h2 id="family-title" class="mb-3 flex flex-wrap items-baseline gap-x-4 gap-y-1">
+              <span class="text-lg font-black">{active.label}</span>
+              <span class="text-sm text-mute">{active.models.length} 个模型</span>
+              {active.cheapest && (
+                <span class="text-sm text-sub">
+                  最低输出
+                  <b class="font-mono text-ink">
+                    {formatPrice(active.cheapest.price, active.cheapest.currency)}
+                  </b>
+                </span>
+              )}
+              {active.freeCount > 0 && (
+                <span class="text-sm font-bold text-good">{active.freeCount} 个有免费版</span>
+              )}
+            </h2>
+            <ModelTable models={active.models} state={state} />
+          </section>
+        )
+      )}
+
+      <CompareTray state={state} names={names} />
+    </>
   )}
 </BaseLayout>
+
+<script>
+  // 厂商 Tab 栏：输入时实时过滤 Tab（只操作已有文字，不涉及数据）；切换 Tab 时
+  // 先恢复上一页 Tab 栏的横向位置，再把新选中的 Tab 平滑滚到中间，避免每次跳回最左边。
+  // 客户端路由下页面内容会被替换，所以每次 astro:page-load 都要重新初始化。
+  let lastScrollLeft: number | null = null;
+
+  document.addEventListener("astro:before-swap", () => {
+    const list = document.querySelector<HTMLElement>("[data-tab-list]");
+    lastScrollLeft = list ? list.scrollLeft : null;
+  });
+
+  document.addEventListener("astro:page-load", () => {
+    const list = document.querySelector<HTMLElement>("[data-tab-list]");
+    if (!list) return;
+    const input = document.querySelector<HTMLInputElement>("[data-tab-filter]");
+    const empty = document.querySelector<HTMLElement>("[data-tab-empty]");
+
+    if (lastScrollLeft !== null) list.scrollLeft = lastScrollLeft;
+    lastScrollLeft = null;
+    const active = list.querySelector<HTMLElement>("[aria-current=page]");
+    if (active) {
+      const target = active.offsetLeft - (list.clientWidth - active.offsetWidth) / 2;
+      list.scrollTo({ left: Math.max(0, target), behavior: "smooth" });
+    }
+
+    input?.addEventListener("input", () => {
+      const needle = input.value.trim().toLowerCase();
+      let visible = 0;
+      list.querySelectorAll<HTMLElement>("[data-tab-label]").forEach((item) => {
+        const match = !needle || (item.dataset["tabLabel"] ?? "").includes(needle);
+        item.hidden = !match;
+        if (match) visible += 1;
+      });
+      empty?.classList.toggle("hidden", visible > 0);
+    });
+  });
+</script>

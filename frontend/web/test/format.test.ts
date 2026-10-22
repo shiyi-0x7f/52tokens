@@ -1,6 +1,18 @@
 import { describe, expect, it } from "vitest";
 
-import { formatContext, formatPrice, formatRelative } from "../src/lib/format";
+import { formatContext, formatMinOutput, formatPrice, formatRelative } from "../src/lib/format";
+
+describe("formatMinOutput", () => {
+  it("prefers CNY and falls back to USD", () => {
+    expect(formatMinOutput({ min_output_price_cny: "3.0000", min_output_price_usd: "0.5" })).toBe(
+      "¥3.00",
+    );
+    expect(formatMinOutput({ min_output_price_cny: null, min_output_price_usd: "1.1000" })).toBe(
+      "$1.10",
+    );
+    expect(formatMinOutput({ min_output_price_cny: null, min_output_price_usd: null })).toBe("—");
+  });
+});
 
 describe("formatPrice", () => {
   it("keeps two decimals and trims trailing zeros beyond that", () => {
