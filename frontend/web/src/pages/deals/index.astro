@@ -58,9 +58,10 @@ const href = (t: DealType | undefined, expired = includeExpired) => {
   <nav class="mb-4 flex flex-wrap items-center gap-2" aria-label="活动类型">
     <a
       href={href(undefined)}
+      data-keep-scroll
       class:list={[
-        "rounded-full px-3 py-1.5 text-sm no-underline",
-        !type ? "bg-ink text-white" : "bg-card",
+        "press rounded-full px-3 py-1.5 text-sm no-underline",
+        !type ? "bg-ink text-white" : "bg-card hover:bg-hover",
       ]}
       aria-current={!type ? "page" : undefined}
     >
@@ -69,16 +70,22 @@ const href = (t: DealType | undefined, expired = includeExpired) => {
     {TYPES.map((t) => (
       <a
         href={href(t)}
+        data-keep-scroll
         class:list={[
-          "rounded-full px-3 py-1.5 text-sm no-underline",
-          type === t ? "bg-ink text-white" : "bg-card",
+          "press rounded-full px-3 py-1.5 text-sm no-underline",
+          type === t ? "bg-ink text-white" : "bg-card hover:bg-hover",
         ]}
         aria-current={type === t ? "page" : undefined}
       >
         {DEAL_TYPE_LABELS[t]}
       </a>
     ))}
-    <a href={href(type, !includeExpired)} class="ml-auto text-sm text-mute">
+    <a
+      href={href(type, !includeExpired)}
+      data-keep-scroll
+      data-astro-history="replace"
+      class="press ml-auto text-sm text-mute hover:text-ink"
+    >
       {includeExpired ? "隐藏已结束" : "显示已结束"}
     </a>
   </nav>
