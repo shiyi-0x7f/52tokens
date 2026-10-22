@@ -56,11 +56,11 @@
 
 ### `GET /internal/v1/models`
 
-只返回至少有一条已核实价格的模型。`min_output_price_cny` 只在 CNY 价格之间比较，没有 CNY 价格时为 `null`。
+只返回至少有一条已核实价格的模型。`min_output_price_cny` / `min_output_price_usd` 分别是该币种**付费价**里最低的输出价（免费渠道不计入，另见 `has_free`），币种之间不换算；没有该币种价格时为 `null`。
 
 ```json
 { "slug": "qwen3-30b-a3b", "name": "Qwen3-30B-A3B", "family": "qwen", "context_window": 131072,
-  "min_output_price_cny": "2.8000", "has_free": false, "price_count": 2 }
+  "min_output_price_cny": "2.8000", "min_output_price_usd": "0.2900", "has_free": false, "price_count": 2 }
 ```
 
 ### `GET /internal/v1/models/{slug}`
@@ -120,10 +120,20 @@
 会话无效 → `401`；SCC 判定账号禁用 → `403`；邮箱已关联其他 Google 账号 → `409`；
 Google / SCC 不可达 → `502`；Google 或 SCC 凭据未配置 → `503`。
 
-## 数据录入（后台上线前）
+## 数据来源
+
+### 种子数据（人工核实）
 
 首批数据以 YAML 写在 `data/seed/`，`cd backend && uv run python -m app.cli.seed` 幂等导入（按 slug upsert）。
 价格和活动必须带 `confirmed_at` 并设为 `active` 才会对外展示。
+
+### 自动采集
+
+| 来源 | 命令 | 定时 | 说明 |
+| --- | --- | --- | --- |
+| OpenRouter 公开模型列表 | `uv run python -m app.cli.collect openrouter` | worker 每 6 小时（0/6/12/18 点 07 分），启动时先跑一次 | 只收白名单厂商的纯文本模型；跳过 `:batch` 批处理计价、`~` 别名、动态计价；`:free` 版与付费版合并 |
+
+入库规则：模型按 slug、价格按（平台, 模型）upsert，`confirmed_at` 记为本次采集时间。已有模型的发布状态、系列、简介不覆盖（可能被人工调整过）；采集失败或某模型不在列表里时**不删除、不下架**，新鲜度由 `confirmed_at` 体现。
 
 ## 业务码一览
 

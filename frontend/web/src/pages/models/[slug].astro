@@ -3,7 +3,9 @@ import JsonLd from "../../components/JsonLd.astro";
 import BaseLayout from "../../layouts/BaseLayout.astro";
 import { internalGet, isNotFound } from "../../lib/api";
 import { formatContext, formatPrice, formatRelative } from "../../lib/format";
-import type { ModelDetail } from "../../lib/types";
+import { familyLabel } from "../../lib/families";
+import { modelsUrl } from "../../lib/models-url";
+import type { Currency, ModelDetail } from "../../lib/types";
 
 const slug = Astro.params.slug ?? "";
 let model: ModelDetail;
@@ -14,16 +16,29 @@ try {
   throw err;
 }
 
-const cnyOutputs = model.prices
-  .filter((p) => p.currency === "CNY" && p.output_price !== null)
-  .map((p) => Number(p.output_price));
-const lowest = cnyOutputs.length > 0 ? Math.min(...cnyOutputs) : null;
+// 币种之间不换算：有人民币价按人民币取最低，否则按美元
+function lowestOutput(currency: Currency): string | null {
+  const values = model.prices
+    .filter((p) => p.currency === currency && p.output_price !== null && Number(p.output_price) > 0)
+    .map((p) => p.output_price as string);
+  return values.length > 0 ? values.reduce((a, b) => (Number(a) <= Number(b) ? a : b)) : null;
+}
+const lowestCny = lowestOutput("CNY");
+const lowestUsd = lowestOutput("USD");
+const lowestText =
+  lowestCny !== null
+    ? formatPrice(lowestCny, "CNY")
+    : lowestUsd !== null
+      ? formatPrice(lowestUsd, "USD")
+      : null;
 const hasFree = model.prices.some((p) => p.is_free);
-const summary = hasFree
-  ? `${model.name} 有免费可用的渠道`
-  : lowest !== null
-    ? `${model.name} 官方 API 输出价最低 ¥${lowest.toFixed(2)} / 百万 tokens`
-    : `${model.name} 官方 API 价格`;
+const summary =
+  [
+    lowestText && `${model.name} API 输出价最低 ${lowestText} / 百万 tokens`,
+    hasFree && `有免费可用的渠道`,
+  ]
+    .filter(Boolean)
+    .join("，") || `${model.name} API 价格`;
 ---
 
 <BaseLayout
@@ -51,10 +66,23 @@ const summary = hasFree
     <a href="/models" class="no-underline">
       模型价格
     </a>{" "}
+    /
+    <a href={modelsUrl({ family: model.family })} class="no-underline">
+      {familyLabel(model.family)}
+    </a>{" "}
     / {model.name}
   </nav>
   <header class="mb-5">
-    <h1 class="text-2xl font-black">{model.name} API 价格</h1>
+    <div class="flex flex-wrap items-center gap-3">
+      <h1 class="text-2xl font-black">{model.name} API 价格</h1>
+      <a
+        href={modelsUrl({ family: model.family, cmp: [model.slug] })}
+        rel="nofollow"
+        class="inline-flex min-h-9 items-center rounded-lg border border-line px-3 text-sm no-underline hover:border-ink"
+      >
+        ＋ 加入对比
+      </a>
+    </div>
     <p class="mt-1 text-sm text-sub">
       {summary}
       {model.context_window !== null && ` · 上下文 ${formatContext(model.context_window)}`}

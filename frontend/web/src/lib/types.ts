@@ -46,6 +46,7 @@ export interface ModelSummary {
   family: string;
   context_window: number | null;
   min_output_price_cny: string | null;
+  min_output_price_usd: string | null;
   has_free: boolean;
   price_count: number;
 }

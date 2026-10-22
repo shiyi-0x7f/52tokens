@@ -38,8 +38,9 @@ class ModelSummary(BaseModel):
     name: str
     family: str
     context_window: int | None
-    # 已核实价格中最低的输出价（同币种比较由页面处理，这里只给 CNY 最低价）
+    # 已核实价格中各币种最低的输出价（不做汇率换算，币种之间不比较）
     min_output_price_cny: Decimal | None
+    min_output_price_usd: Decimal | None
     has_free: bool
     price_count: int
 

@@ -1,0 +1,174 @@
+---
+/**
+ * 模型参数对比（类似手机参数对比页）。任意组合会产生无数 URL，所以不让搜索引擎收录；
+ * 精选的「A vs B」页面以后单独做。
+ */
+import EmptyState from "../../components/EmptyState.astro";
+import BaseLayout from "../../layouts/BaseLayout.astro";
+import { internalGet, isNotFound } from "../../lib/api";
+import { buildCompareRows, type CompareRow } from "../../lib/compare";
+import { familyLabel } from "../../lib/families";
+import { compareUrl, modelsUrl, parseCompare } from "../../lib/models-url";
+import type { ModelDetail } from "../../lib/types";
+
+const slugs = parseCompare(Astro.url.searchParams.get("m"));
+const onlyDiff = Astro.url.searchParams.get("diff") === "1";
+
+const loaded = await Promise.all(
+  slugs.map(async (slug) => {
+    try {
+      return await internalGet<ModelDetail>(`/models/${encodeURIComponent(slug)}`);
+    } catch (err) {
+      if (isNotFound(err)) return null; // 已下架的模型直接略过
+      throw err;
+    }
+  }),
+);
+const models = loaded.filter((m): m is ModelDetail => m !== null);
+const kept = models.map((m) => m.slug);
+
+const rows = models.length >= 2 ? buildCompareRows(models) : [];
+const shown = onlyDiff ? rows.filter((r) => !r.same) : rows;
+const groups = [...new Set(shown.map((r) => r.group))].map((group) => ({
+  group,
+  rows: shown.filter((r) => r.group === group),
+}));
+
+const removeUrl = (slug: string) => {
+  const rest = kept.filter((s) => s !== slug);
+  return rest.length >= 2 ? compareUrl(rest, onlyDiff) : modelsUrl({ cmp: rest });
+};
+const cellClass = (row: CompareRow, i: number) =>
+  row.cells[i]?.best ? "bg-good/10 font-bold text-good" : "";
+const title = models.map((m) => m.name).join(" vs ");
+---
+
+<BaseLayout
+  title={`${title || "模型对比"} · 52tokens`}
+  description={`${title} 的 API 价格与参数对比。`}
+  noindex
+>
+  <nav class="mb-3 text-xs text-mute" aria-label="面包屑">
+    <a href={modelsUrl({ cmp: kept })} class="no-underline">
+      模型价格
+    </a>{" "}
+    / 对比
+  </nav>
+  <header class="mb-4 flex flex-wrap items-center gap-3">
+    <h1 class="text-2xl font-black">模型对比</h1>
+    {models.length >= 2 && (
+      <span class="ml-auto flex flex-wrap items-center gap-2 text-sm">
+        <a
+          href={compareUrl(kept, !onlyDiff)}
+          rel="nofollow"
+          data-keep-scroll
+          data-astro-history="replace"
+          aria-pressed={onlyDiff ? "true" : "false"}
+          class:list={[
+            "press inline-flex min-h-10 items-center rounded-full px-4 no-underline",
+            onlyDiff ? "bg-ink font-bold text-white" : "border border-line bg-card",
+          ]}
+        >
+          只看不同项
+        </a>
+        {kept.length < 4 && (
+          <a
+            href={modelsUrl({ cmp: kept })}
+            class="press inline-flex min-h-10 items-center rounded-full border border-line bg-card px-4 no-underline hover:border-ink"
+          >
+            ＋ 继续添加
+          </a>
+        )}
+      </span>
+    )}
+  </header>
+
+  {models.length < 2 ? (
+    <EmptyState
+      title="至少选择两个模型才能对比"
+      hint="在模型价格页点「＋ 对比」选择模型，最多 4 个，可以跨厂商。"
+    >
+      <a href={modelsUrl({ cmp: kept })} class="mt-4 inline-block text-sm font-bold text-hot">
+        去选择模型 →
+      </a>
+    </EmptyState>
+  ) : (
+    <div class="scrollbar-thin overflow-x-auto rounded-(--radius-card) bg-card">
+      <table class="w-full min-w-[640px] table-fixed text-sm">
+        <colgroup>
+          <col class="w-36 sm:w-44" />
+          {models.map(() => (
+            <col />
+          ))}
+        </colgroup>
+        <thead>
+          <tr class="border-b border-line align-top">
+            <th class="sticky left-0 z-10 bg-card px-4 py-3 text-left text-xs font-medium text-mute">
+              参数
+            </th>
+            {models.map((m) => (
+              <th class="px-4 py-3 text-left">
+                <a href={`/models/${m.slug}`} class="block font-black no-underline hover:text-hot">
+                  {m.name}
+                </a>
+                <span class="mt-0.5 block text-xs font-normal text-mute">
+                  {familyLabel(m.family)}
+                </span>
+                <a
+                  href={removeUrl(m.slug)}
+                  rel="nofollow"
+                  data-keep-scroll
+                  data-astro-history="replace"
+                  class="press mt-1 inline-block text-xs font-normal text-mute hover:text-ink"
+                  aria-label={`从对比中移除 ${m.name}`}
+                >
+                  移除
+                </a>
+              </th>
+            ))}
+          </tr>
+        </thead>
+        {groups.map(({ group, rows: groupRows }) => (
+          <tbody>
+            <tr>
+              <th
+                colspan={models.length + 1}
+                scope="colgroup"
+                class="bg-chip px-4 py-2 text-left text-xs font-bold text-sub"
+              >
+                {group}
+              </th>
+            </tr>
+            {groupRows.map((row) => (
+              <tr
+                transition:name={`compare-row-${rows.indexOf(row)}`}
+                class="border-b border-line last:border-b-0"
+              >
+                <th
+                  scope="row"
+                  class="sticky left-0 z-10 bg-card px-4 py-3 text-left font-medium text-sub"
+                >
+                  {row.label}
+                </th>
+                {row.cells.map((cell, i) => (
+                  <td class:list={["px-4 py-3 font-mono", cellClass(row, i)]}>
+                    {cell.text}
+                    {cell.best && <span class="sr-only">（最优）</span>}
+                  </td>
+                ))}
+              </tr>
+            ))}
+          </tbody>
+        ))}
+      </table>
+      {onlyDiff && shown.length === 0 && (
+        <p class="px-4 py-6 text-center text-sm text-mute">这几个模型的各项参数都相同。</p>
+      )}
+    </div>
+  )}
+  {models.length >= 2 && (
+    <p class="mt-3 text-xs text-mute">
+      绿色为该项最优值。价格只在同币种之间比较，不做汇率换算；免费渠道通常有请求频率限制。
+    </p>
+  )}
+</BaseLayout>

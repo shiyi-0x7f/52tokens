@@ -7,7 +7,7 @@ import { internalGet } from "../lib/api";
 import { formatPrice } from "../lib/format";
 import { CATEGORY_LABELS, CATEGORY_ORDER, DEAL_TYPE_LABELS } from "../lib/labels";
 import { loadOr } from "../lib/load";
-import type { Deal, DealType, ModelSummary, Platform } from "../lib/types";
+import type { Currency, Deal, DealType, ModelSummary, Platform } from "../lib/types";
 
 const [[deals, dealsOk], [models], [platforms]] = await Promise.all([
   loadOr<Deal[]>([], () => internalGet<Deal[]>("/deals", { limit: 20 })),
@@ -15,9 +15,15 @@ const [[deals, dealsOk], [models], [platforms]] = await Promise.all([
   loadOr<Platform[]>([], () => internalGet<Platform[]>("/platforms")),
 ]);
 
+// 币种之间不换算比较：有人民币价就按人民币排，否则按美元排
+const cheapestCurrency: Currency = models.some((m) => m.min_output_price_cny !== null)
+  ? "CNY"
+  : "USD";
+const priceOf = (m: ModelSummary) =>
+  cheapestCurrency === "CNY" ? m.min_output_price_cny : m.min_output_price_usd;
 const cheapest = models
-  .filter((m) => m.min_output_price_cny !== null)
-  .sort((a, b) => Number(a.min_output_price_cny) - Number(b.min_output_price_cny))
+  .filter((m) => priceOf(m) !== null)
+  .sort((a, b) => Number(priceOf(a)) - Number(priceOf(b)))
   .slice(0, 5);
 const freeModels = models.filter((m) => m.has_free).slice(0, 5);
 const tabs: DealType[] = ["checkin_points", "signup_credit", "free_quota", "student"];
@@ -29,7 +35,7 @@ const platformCounts = CATEGORY_ORDER.map((c) => ({
 
 <BaseLayout
   title="52tokens · AI 羊毛热榜：免费额度、签到积分与模型 API 价格"
-  description="每天核对的 AI 羊毛热榜：大模型 API 免费额度、AI 工具签到积分、注册赠送与官方 API 价格，标注出处和最近确认时间。"
+  description="每天核对的 AI 羊毛热榜：大模型 API 免费额度、AI 工具签到积分、注册赠送与模型 API 价格，标注出处和最近确认时间。"
 >
   <JsonLd
     slot="head"
@@ -44,7 +50,7 @@ const platformCounts = CATEGORY_ORDER.map((c) => ({
   <section class="rounded-(--radius-card) bg-hot px-6 pt-6 text-white">
     <h1 class="text-3xl font-black">AI 羊毛热榜</h1>
     <p class="mt-1 text-sm opacity-85">
-      免费额度 · 签到积分 · 注册赠送 · 官方 API 价格，每条都标注出处与最近确认时间
+      免费额度 · 签到积分 · 注册赠送 · 模型 API 价格，每条都标注出处与最近确认时间
     </p>
     <nav class="mt-4 flex flex-wrap gap-1" aria-label="分类">
       <a
@@ -109,14 +115,16 @@ const platformCounts = CATEGORY_ORDER.map((c) => ({
                 <a href={`/models/${m.slug}`} class="flex justify-between no-underline">
                   <span>{m.name}</span>
                   <span class="font-mono font-bold">
-                    {formatPrice(m.min_output_price_cny, "CNY")}
+                    {formatPrice(priceOf(m), cheapestCurrency)}
                   </span>
                 </a>
               </li>
             ))}
           </ul>
         )}
-        <p class="mt-2 text-[11px] text-mute">单位：每百万输出 tokens，官方价</p>
+        <p class="mt-2 text-[11px] text-mute">
+          单位：{cheapestCurrency === "CNY" ? "人民币" : "美元"} / 百万输出 tokens，付费价
+        </p>
       </section>
 
       {freeModels.length > 0 && (

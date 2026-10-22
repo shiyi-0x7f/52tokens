@@ -42,8 +42,9 @@ const emailRestartHref = `/login${next !== "/" ? `?next=${encodeURIComponent(nex
     <div class="mt-5 flex flex-col gap-3">
       <a
         href={googleHref}
+        data-astro-reload
         data-pending-text="正在前往 Google…"
-        class="flex min-h-11 items-center justify-center rounded-[10px] border border-line font-bold no-underline hover:bg-hover"
+        class="press flex min-h-11 items-center justify-center rounded-[10px] border border-line font-bold no-underline hover:bg-hover"
       >
         使用 Google 登录
       </a>
@@ -52,7 +53,7 @@ const emailRestartHref = `/login${next !== "/" ? `?next=${encodeURIComponent(nex
         data-wechat-login
         data-pending-text="等待微信扫码…"
         data-callback-origin={WECHAT_CALLBACK_ORIGIN}
-        class="flex min-h-11 cursor-pointer items-center justify-center rounded-[10px] border border-line font-bold hover:bg-hover"
+        class="press flex min-h-11 cursor-pointer items-center justify-center rounded-[10px] border border-line font-bold hover:bg-hover"
       >
         微信扫码登录
       </button>
@@ -61,7 +62,13 @@ const emailRestartHref = `/login${next !== "/" ? `?next=${encodeURIComponent(nex
       </p>
     </div>
 
-    <form id="wechat-form" method="post" action="/auth/wechat/callback" class="hidden">
+    <form
+      id="wechat-form"
+      method="post"
+      action="/auth/wechat/callback"
+      data-astro-reload
+      class="hidden"
+    >
       <input type="hidden" name="code" />
       <input type="hidden" name="state" />
       <input type="hidden" name="next" value={next} />
@@ -73,7 +80,7 @@ const emailRestartHref = `/login${next !== "/" ? `?next=${encodeURIComponent(nex
     </div>
 
     {codeStep && pendingEmail ? (
-      <form method="post" action="/auth/email/login" class="flex flex-col gap-3">
+      <form method="post" action="/auth/email/login" data-astro-reload class="flex flex-col gap-3">
         <p class="text-sm text-sub">
           验证码已发送到以下邮箱，请查收（也看看垃圾邮件箱）：
           <strong class="mt-1 block font-mono text-ink">{maskEmail(pendingEmail)}</strong>
@@ -94,11 +101,11 @@ const emailRestartHref = `/login${next !== "/" ? `?next=${encodeURIComponent(nex
         <button
           type="submit"
           data-pending-text="正在登录…"
-          class="min-h-11 cursor-pointer rounded-[10px] bg-ink font-bold text-white"
+          class="press min-h-11 cursor-pointer rounded-[10px] bg-ink font-bold text-white"
         >
           登录
         </button>
-        <a href={emailRestartHref} class="text-center text-xs text-mute">
+        <a href={emailRestartHref} data-astro-reload class="text-center text-xs text-mute">
           换一个邮箱 / 重新发送
         </a>
       </form>
@@ -106,6 +113,7 @@ const emailRestartHref = `/login${next !== "/" ? `?next=${encodeURIComponent(nex
       <form
         method="post"
         action="/auth/email/send"
+        data-astro-reload
         data-require-turnstile
         class="flex flex-col gap-3"
       >
@@ -128,7 +136,7 @@ const emailRestartHref = `/login${next !== "/" ? `?next=${encodeURIComponent(nex
         <button
           type="submit"
           data-pending-text="正在发送验证码…"
-          class="min-h-11 cursor-pointer rounded-[10px] bg-ink font-bold text-white"
+          class="press min-h-11 cursor-pointer rounded-[10px] bg-ink font-bold text-white"
         >
           发送验证码
         </button>
@@ -139,30 +147,35 @@ const emailRestartHref = `/login${next !== "/" ? `?next=${encodeURIComponent(nex
 
 <script>
   // 微信扫码：弹窗打开 /auth/wechat → 微信扫码 → SCC 回调页 postMessage 回本页 → 表单提交完成登录
+  // 客户端路由下页面会被替换：按钮在每次 astro:page-load 时重新绑定，消息监听只注册一次、按需取当前元素
   import { clearPending, setPending } from "../scripts/pending";
 
-  const button = document.querySelector<HTMLButtonElement>("[data-wechat-login]");
-  const form = document.querySelector<HTMLFormElement>("#wechat-form");
-  const hint = document.querySelector<HTMLElement>("[data-wechat-hint]");
-  const callbackOrigin = button?.dataset["callbackOrigin"];
   let popupWatch: number | undefined;
   let completing = false;
 
-  button?.addEventListener("click", () => {
-    const popup = window.open("/auth/wechat", "wechat-login", "width=520,height=640");
-    hint?.classList.remove("hidden");
-    if (!popup) return; // 被浏览器拦截：不进入加载态，提示里已说明要允许弹窗
-    setPending(button);
-    window.clearInterval(popupWatch);
-    // 用户直接关掉扫码窗口时恢复按钮
-    popupWatch = window.setInterval(() => {
-      if (!popup.closed) return;
+  document.addEventListener("astro:page-load", () => {
+    const button = document.querySelector<HTMLButtonElement>("[data-wechat-login]");
+    const hint = document.querySelector<HTMLElement>("[data-wechat-hint]");
+    completing = false;
+    button?.addEventListener("click", () => {
+      const popup = window.open("/auth/wechat", "wechat-login", "width=520,height=640");
+      hint?.classList.remove("hidden");
+      if (!popup) return; // 被浏览器拦截：不进入加载态，提示里已说明要允许弹窗
+      setPending(button);
       window.clearInterval(popupWatch);
-      if (!completing) clearPending(button);
-    }, 500);
+      // 用户直接关掉扫码窗口时恢复按钮
+      popupWatch = window.setInterval(() => {
+        if (!popup.closed) return;
+        window.clearInterval(popupWatch);
+        if (!completing) clearPending(button);
+      }, 500);
+    });
   });
 
   window.addEventListener("message", (event: MessageEvent) => {
+    const button = document.querySelector<HTMLButtonElement>("[data-wechat-login]");
+    const form = document.querySelector<HTMLFormElement>("#wechat-form");
+    const callbackOrigin = button?.dataset["callbackOrigin"];
     // 只接受 SCC 微信回调页发来的消息
     if (!form || !button || !callbackOrigin || event.origin !== callbackOrigin) return;
     const data = event.data as { type?: unknown; code?: unknown; state?: unknown } | null;

@@ -31,6 +31,19 @@ body {
   font-family: var(--font-sans);
 }
 
+/* 横向滚动区域：显示细滚动条，提示可以左右滑动 */
+.scrollbar-thin {
+  scrollbar-width: thin;
+  scrollbar-color: var(--color-faint) transparent;
+}
+.scrollbar-thin::-webkit-scrollbar {
+  height: 6px;
+}
+.scrollbar-thin::-webkit-scrollbar-thumb {
+  background: var(--color-faint);
+  border-radius: 9999px;
+}
+
 /* 点击后立即反馈：data-pending-text 的按钮 / 链接进入加载态（见 scripts/pending.ts） */
 [aria-busy="true"] {
   cursor: progress;
@@ -52,8 +65,54 @@ body {
     transform: rotate(360deg);
   }
 }
+
+/* ---------- 动效：时长和缓动统一用令牌，避免各处魔法值 ---------- */
+:root {
+  --motion-fast: 150ms;
+  --motion-base: 240ms;
+  --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+/* 可点击元素：颜色平滑过渡，按下时轻微缩小，给出「按到了」的手感 */
+.press {
+  transition:
+    color var(--motion-fast) ease,
+    background-color var(--motion-fast) ease,
+    border-color var(--motion-fast) ease,
+    box-shadow var(--motion-fast) ease,
+    transform var(--motion-fast) var(--ease-out);
+}
+.press:active {
+  transform: scale(0.97);
+}
+
+/* 表格行：悬停和「已加入对比」的背景渐变 */
+.row-fade {
+  transition: background-color var(--motion-base) ease;
+}
+
+/* 内容淡入并轻微上移（切换 Tab、搜索结果） */
+@keyframes rise-in {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+.animate-rise-in {
+  animation: rise-in var(--motion-base) var(--ease-out) both;
+}
+
+/* 系统开启「减少动态效果」时关闭所有动画和过渡 */
 @media (prefers-reduced-motion: reduce) {
-  [aria-busy="true"]::before {
-    animation: none;
+  *,
+  ::before,
+  ::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
   }
 }
