@@ -1,0 +1,159 @@
+# 首批平台（来源：dev_docs/research/first-batch-platforms.md）
+# 只放名称、分类、官网这类事实信息；额度 / 价格 / 活动数字必须从官网核实后另行录入。
+# 导入：cd backend && uv run python -m app.cli.seed
+
+# ---- 国内大模型 API ----
+- slug: bailian
+  name: 阿里云百炼
+  category: llm_api_cn
+  website_url: https://www.aliyun.com/product/bailian
+  status: active
+- slug: volcengine-ark
+  name: 火山方舟
+  category: llm_api_cn
+  website_url: https://www.volcengine.com/product/ark
+  status: active
+- slug: zhipu
+  name: 智谱 BigModel
+  category: llm_api_cn
+  website_url: https://bigmodel.cn
+  status: active
+- slug: moonshot
+  name: Kimi 开放平台
+  category: llm_api_cn
+  website_url: https://platform.moonshot.cn
+  status: active
+- slug: deepseek
+  name: DeepSeek 开放平台
+  category: llm_api_cn
+  website_url: https://platform.deepseek.com
+  status: active
+- slug: siliconflow
+  name: 硅基流动
+  category: llm_api_cn
+  website_url: https://siliconflow.cn
+  status: active
+- slug: tencent-hunyuan
+  name: 腾讯混元
+  category: llm_api_cn
+  website_url: https://cloud.tencent.com/product/hunyuan
+  status: active
+- slug: baidu-qianfan
+  name: 百度千帆
+  category: llm_api_cn
+  website_url: https://cloud.baidu.com/product/wenxinworkshop
+  status: active
+- slug: minimax
+  name: MiniMax 开放平台
+  category: llm_api_cn
+  website_url: https://platform.minimaxi.com
+  status: active
+- slug: modelscope
+  name: 魔搭社区
+  category: llm_api_cn
+  website_url: https://modelscope.cn
+  status: active
+- slug: xfyun-spark
+  name: 讯飞星火
+  category: llm_api_cn
+  website_url: https://xinghuo.xfyun.cn
+  status: active
+- slug: stepfun
+  name: 阶跃星辰开放平台
+  category: llm_api_cn
+  website_url: https://platform.stepfun.com
+  status: active
+
+# ---- 海外大模型 API ----
+- slug: google-ai-studio
+  name: Google AI Studio
+  category: llm_api_global
+  website_url: https://aistudio.google.com
+  status: active
+- slug: openrouter
+  name: OpenRouter
+  category: llm_api_global
+  website_url: https://openrouter.ai
+  status: active
+- slug: groq
+  name: Groq
+  category: llm_api_global
+  website_url: https://groq.com
+  status: active
+- slug: mistral
+  name: Mistral AI
+  category: llm_api_global
+  website_url: https://mistral.ai
+  status: active
+- slug: cerebras
+  name: Cerebras
+  category: llm_api_global
+  website_url: https://www.cerebras.ai
+  status: active
+- slug: nvidia-nim
+  name: NVIDIA NIM
+  category: llm_api_global
+  website_url: https://build.nvidia.com
+  status: active
+- slug: cloudflare-workers-ai
+  name: Cloudflare Workers AI
+  category: llm_api_global
+  website_url: https://developers.cloudflare.com/workers-ai/
+  status: active
+- slug: github-models
+  name: GitHub Models
+  category: llm_api_global
+  website_url: https://github.com/marketplace/models
+  status: active
+- slug: cohere
+  name: Cohere
+  category: llm_api_global
+  website_url: https://cohere.com
+  status: active
+- slug: huggingface
+  name: Hugging Face
+  category: llm_api_global
+  website_url: https://huggingface.co
+  status: active
+
+# ---- AI 编程工具 ----
+- slug: trae
+  name: Trae
+  category: coding_tool
+  website_url: https://www.trae.ai
+  status: active
+- slug: qoder
+  name: Qoder
+  category: coding_tool
+  website_url: https://qoder.com
+  status: active
+- slug: codebuddy
+  name: CodeBuddy
+  category: coding_tool
+  website_url: https://www.codebuddy.ai
+  status: active
+- slug: cursor
+  name: Cursor
+  category: coding_tool
+  website_url: https://cursor.com
+  status: active
+- slug: github-copilot
+  name: GitHub Copilot
+  category: coding_tool
+  website_url: https://github.com/features/copilot
+  status: active
+- slug: kiro
+  name: Kiro
+  category: coding_tool
+  website_url: https://kiro.dev
+  status: active
+- slug: windsurf
+  name: Windsurf
+  category: coding_tool
+  website_url: https://windsurf.com
+  status: active
+- slug: tongyi-lingma
+  name: 通义灵码
+  category: coding_tool
+  website_url: https://lingma.aliyun.com
+  status: active

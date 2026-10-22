@@ -1,6 +1,7 @@
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
 
+import httpx
 from fastapi import FastAPI
 
 from app.api.router import api_router
@@ -11,8 +12,10 @@ from app.db.session import get_engine
 
 
 @asynccontextmanager
-async def lifespan(_: FastAPI) -> AsyncIterator[None]:
-    yield
+async def lifespan(app: FastAPI) -> AsyncIterator[None]:
+    async with httpx.AsyncClient(timeout=httpx.Timeout(10.0)) as http:
+        app.state.http = http
+        yield
     await get_engine().dispose()
 
 

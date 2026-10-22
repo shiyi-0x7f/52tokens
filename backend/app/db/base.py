@@ -1,8 +1,9 @@
 """ORM 基类：统一约束命名（迁移可读、可回滚）与时间戳字段。"""
 
 from datetime import datetime
+from enum import StrEnum
 
-from sqlalchemy import DateTime, MetaData, func
+from sqlalchemy import DateTime, Enum, MetaData, func
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
 
 NAMING_CONVENTION = {
@@ -16,6 +17,17 @@ NAMING_CONVENTION = {
 
 class Base(DeclarativeBase):
     metadata = MetaData(naming_convention=NAMING_CONVENTION)
+
+
+def str_enum[E: StrEnum](enum: type[E]) -> Enum:
+    """枚举存为 VARCHAR + CHECK 约束，不建数据库原生枚举类型（增减枚举值不用改类型）。"""
+    return Enum(
+        enum,
+        native_enum=False,
+        create_constraint=True,
+        length=32,
+        values_callable=lambda e: [m.value for m in e],
+    )
 
 
 class TimestampMixin:
