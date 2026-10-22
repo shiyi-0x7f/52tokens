@@ -1,0 +1,38 @@
+# 环境文件：只提交 example
+.env
+.env.dev
+.env.prod
+.env.*.local
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+
+# JS / TS
+node_modules/
+dist/
+build/
+.astro/
+*.tsbuildinfo
+.eslintcache
+
+# 日志与运行时
+logs/
+*.log
+.run/
+
+# 编辑器 / 系统
+.idea/
+.vscode/*
+!.vscode/extensions.json
+.DS_Store
+Thumbs.db
+
+# 营销文案等非代码资产
+marketing/

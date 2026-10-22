@@ -1,0 +1,9 @@
+packages:
+  - frontend/*
+
+# @astrojs/language-server 依赖的 @napi-rs/wasm-runtime 运行时需要 @emnapi/*，但未声明为依赖
+packageExtensions:
+  "@napi-rs/wasm-runtime@1":
+    dependencies:
+      "@emnapi/core": "^1"
+      "@emnapi/runtime": "^1"
