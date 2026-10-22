@@ -1,0 +1,530 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>52tokens 风格方案 v2</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700&family=Noto+Sans+SC:wght@400;500;700;900&family=Noto+Serif+SC:wght@600;900&family=Space+Grotesk:wght@500;700&display=swap" rel="stylesheet">
+<style>
+  * { box-sizing: border-box; }
+  body { margin: 0; background: #d9d9dd; font-family: "Noto Sans SC", "PingFang SC", "Microsoft YaHei", sans-serif; color: #111; }
+  .switcher { position: sticky; top: 0; z-index: 20; display: flex; flex-wrap: wrap; gap: 8px; align-items: center; padding: 12px 16px; background: #18191d; color: #fff; }
+  .switcher strong { margin-right: 8px; font-size: 14px; }
+  .switcher button { min-height: 36px; padding: 0 14px; border: 1px solid #4a4d57; border-radius: 6px; background: transparent; color: #fff; font: inherit; font-size: 14px; cursor: pointer; }
+  .switcher button[aria-pressed="true"] { background: #fff; color: #18191d; border-color: #fff; }
+  .switcher .note { margin-left: auto; font-size: 12px; color: #b5b8c2; }
+  .desc { max-width: 1200px; margin: 16px auto 0; padding: 0 16px; font-size: 14px; line-height: 1.75; color: #2a2a2a; }
+  .frame { max-width: 1200px; margin: 12px auto 48px; padding: 0 16px; }
+  .opt { display: none; border-radius: 12px; overflow: hidden; box-shadow: 0 10px 34px rgba(0,0,0,.16); }
+  .opt.on { display: block; }
+  .mono { font-family: "JetBrains Mono", Consolas, monospace; }
+  .vh { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+  a { color: inherit; }
+
+  /* =========================================================
+     D · 优惠券票据
+     ========================================================= */
+  .d { background: #f3efe6; color: #1c1a17; }
+  .d-nav { display: flex; flex-wrap: wrap; align-items: center; gap: 22px; padding: 16px 32px; border-bottom: 1px dashed #1c1a17; }
+  .d-logo { font-family: "JetBrains Mono", Consolas, monospace; font-weight: 700; font-size: 19px; letter-spacing: -.02em; }
+  .d-logo span { color: #c8402a; }
+  .d-nav ul { display: flex; flex-wrap: wrap; gap: 20px; margin: 0; padding: 0; list-style: none; font-size: 14px; }
+  .d-nav a { text-decoration: none; }
+  .d-nav a:hover { color: #c8402a; }
+  .d-nav .d-sub { margin-left: auto; min-height: 38px; display: inline-flex; align-items: center; padding: 0 14px; border: 1.5px solid #1c1a17; border-radius: 6px; font-size: 13px; text-decoration: none; }
+  .d-hero { display: grid; grid-template-columns: 1.15fr .85fr; gap: 48px; align-items: center; padding: 56px 32px 64px; }
+  .d-kicker { font-family: "JetBrains Mono", Consolas, monospace; font-size: 12px; letter-spacing: .12em; color: #6b6355; margin: 0 0 14px; }
+  .d-hero h1 { margin: 0 0 16px; font-size: 44px; line-height: 1.18; font-weight: 900; letter-spacing: -.01em; }
+  .d-hero h1 em { font-style: normal; color: #c8402a; }
+  .d-hero p { margin: 0 0 26px; font-size: 16px; line-height: 1.75; color: #4a443a; max-width: 30em; }
+  .d-search { display: flex; max-width: 560px; border: 1.5px solid #1c1a17; border-radius: 8px; overflow: hidden; background: #fffdf8; }
+  .d-search input { flex: 1; min-width: 0; min-height: 50px; padding: 0 16px; border: 0; background: transparent; font: inherit; font-size: 15px; color: #1c1a17; }
+  .d-search button { min-height: 50px; padding: 0 24px; border: 0; background: #1c1a17; color: #f3efe6; font: inherit; font-size: 15px; font-weight: 700; cursor: pointer; }
+  .d-receipt { position: relative; background: #fffdf8; padding: 26px 24px 30px; font-family: "JetBrains Mono", Consolas, monospace; font-size: 13px; box-shadow: 0 18px 40px rgba(70,50,20,.14); transform: rotate(1.2deg); }
+  .d-receipt::after { content: ""; position: absolute; left: 0; right: 0; bottom: -10px; height: 10px; background: radial-gradient(circle at 8px 10px, transparent 6px, #fffdf8 6.5px) 0 0 / 16px 10px repeat-x; }
+  .d-receipt h2 { margin: 0; font-size: 15px; text-align: center; letter-spacing: .2em; }
+  .d-receipt .no { text-align: center; color: #6b6355; font-size: 11px; margin: 4px 0 14px; }
+  .d-dash { border: 0; border-top: 1px dashed #b9b0a0; margin: 12px 0; }
+  .d-line { display: flex; gap: 6px; padding: 5px 0; }
+  .d-line .k { white-space: nowrap; }
+  .d-line .dots { flex: 1; border-bottom: 1px dotted #b9b0a0; transform: translateY(-4px); }
+  .d-line .v { white-space: nowrap; font-weight: 700; }
+  .d-total { display: flex; justify-content: space-between; font-size: 15px; font-weight: 700; padding-top: 4px; }
+  .d-total .v { color: #c8402a; }
+  .d-barcode { height: 34px; margin: 16px auto 4px; width: 70%; background: repeating-linear-gradient(90deg, #1c1a17 0 2px, transparent 2px 4px, #1c1a17 4px 5px, transparent 5px 8px, #1c1a17 8px 11px, transparent 11px 13px); }
+  .d-receipt .thanks { text-align: center; font-size: 11px; color: #6b6355; }
+  .d-main { padding: 8px 32px 44px; }
+  .d-sec { margin-top: 36px; }
+  .d-head { display: flex; flex-wrap: wrap; align-items: baseline; gap: 12px; margin-bottom: 16px; padding-bottom: 10px; border-bottom: 1.5px solid #1c1a17; }
+  .d-head h2 { margin: 0; font-size: 22px; font-weight: 900; }
+  .d-head .count { font-family: "JetBrains Mono", Consolas, monospace; font-size: 13px; color: #6b6355; }
+  .d-head a { margin-left: auto; font-size: 13px; }
+  .d-tag-sample { font-family: "JetBrains Mono", Consolas, monospace; font-size: 10px; border: 1px solid #b9b0a0; color: #6b6355; padding: 1px 5px; border-radius: 3px; }
+  .d-coupons { display: grid; grid-template-columns: repeat(auto-fill, minmax(340px, 1fr)); gap: 18px; }
+  .d-coupon { position: relative; display: grid; grid-template-columns: 118px 1fr; background: #fffdf8; border-radius: 10px; box-shadow: 0 1px 0 #e3dccd, 0 8px 20px rgba(70,50,20,.06); }
+  .d-coupon::before, .d-coupon::after { content: ""; position: absolute; left: 109px; width: 18px; height: 18px; border-radius: 50%; background: #f3efe6; }
+  .d-coupon::before { top: -9px; }
+  .d-coupon::after { bottom: -9px; }
+  .d-stub { display: flex; flex-direction: column; justify-content: center; align-items: center; gap: 4px; padding: 18px 8px; border-right: 2px dashed #ddd3c1; text-align: center; }
+  .d-stub .amt { font-family: "JetBrains Mono", Consolas, monospace; font-size: 26px; font-weight: 700; color: #c8402a; line-height: 1; }
+  .d-stub .unit { font-size: 12px; color: #6b6355; }
+  .d-stub .cycle { margin-top: 6px; font-size: 11px; padding: 2px 8px; border-radius: 999px; background: #f3efe6; }
+  .d-body { position: relative; display: flex; flex-direction: column; gap: 8px; padding: 16px 18px; }
+  .d-body .name { font-weight: 700; font-size: 16px; }
+  .d-body .kind { font-size: 12px; color: #6b6355; }
+  .d-body .tags { display: flex; flex-wrap: wrap; gap: 6px; }
+  .d-body .tags span { font-size: 11px; padding: 2px 8px; border: 1px solid #ddd3c1; border-radius: 4px; color: #4a443a; }
+  .d-body .acts { display: flex; gap: 8px; margin-top: 4px; }
+  .d-body .acts a, .d-body .acts button { min-height: 38px; padding: 0 14px; display: inline-flex; align-items: center; border-radius: 6px; font: inherit; font-size: 13px; text-decoration: none; cursor: pointer; }
+  .d-body .acts a { background: #1c1a17; color: #f3efe6; font-weight: 700; }
+  .d-body .acts button { background: transparent; border: 1.5px solid #1c1a17; color: #1c1a17; }
+  .d-stamp { position: absolute; top: 14px; right: 14px; font-family: "JetBrains Mono", Consolas, monospace; font-size: 11px; font-weight: 700; color: #1f6f47; border: 2px solid #1f6f47; border-radius: 4px; padding: 2px 6px; transform: rotate(-8deg); opacity: .9; }
+  .d-stamp.warn { color: #9a5b12; border-color: #9a5b12; }
+  .d-ledger { width: 100%; border-collapse: collapse; font-size: 14px; min-width: 760px; }
+  .d-ledger th { text-align: left; font-family: "JetBrains Mono", Consolas, monospace; font-size: 11px; font-weight: 600; letter-spacing: .08em; color: #6b6355; padding: 8px 12px; border-bottom: 1px solid #1c1a17; }
+  .d-ledger td { padding: 13px 12px; border-bottom: 1px dotted #b9b0a0; white-space: nowrap; }
+  .d-ledger .num { text-align: right; font-family: "JetBrains Mono", Consolas, monospace; }
+  .d-ledger .free { color: #c8402a; font-weight: 700; }
+  .d-ledger .ok { color: #1f6f47; font-family: "JetBrains Mono", Consolas, monospace; font-size: 12px; }
+  .d-scroll { overflow-x: auto; }
+  .d-foot { display: flex; flex-wrap: wrap; gap: 24px; align-items: center; padding: 22px 32px; border-top: 1px dashed #1c1a17; font-size: 12px; line-height: 1.7; color: #4a443a; }
+  .d-foot .d-barcode { width: 160px; margin: 0; height: 28px; }
+
+  /* =========================================================
+     E · 新粗野主义
+     ========================================================= */
+  .e { background: #fffcf2; color: #111; font-family: "Space Grotesk", "Noto Sans SC", "PingFang SC", sans-serif; }
+  .e-nav { display: flex; flex-wrap: wrap; align-items: center; gap: 22px; padding: 16px 32px; border-bottom: 3px solid #111; background: #fff; }
+  .e-logo { font-weight: 700; font-size: 20px; padding: 4px 10px; background: #ffd23f; border: 2.5px solid #111; border-radius: 8px; box-shadow: 3px 3px 0 #111; }
+  .e-nav ul { display: flex; flex-wrap: wrap; gap: 20px; margin: 0; padding: 0; list-style: none; font-size: 15px; font-weight: 700; }
+  .e-nav a { text-decoration: none; }
+  .e-nav a:hover { text-decoration: underline; text-decoration-thickness: 3px; text-underline-offset: 4px; }
+  .e-btn { min-height: 44px; display: inline-flex; align-items: center; justify-content: center; padding: 0 18px; border: 2.5px solid #111; border-radius: 10px; background: #fff; color: #111; font: inherit; font-size: 15px; font-weight: 700; text-decoration: none; cursor: pointer; box-shadow: 4px 4px 0 #111; transition: transform .08s, box-shadow .08s; }
+  .e-btn:hover { transform: translate(-1px,-1px); box-shadow: 5px 5px 0 #111; }
+  .e-btn:active { transform: translate(3px,3px); box-shadow: 1px 1px 0 #111; }
+  .e-btn.blue { background: #3150f5; color: #fff; }
+  .e-btn.yellow { background: #ffd23f; }
+  .e-nav .e-btn { margin-left: auto; min-height: 40px; font-size: 14px; }
+  .e-hero { padding: 60px 32px 40px; }
+  .e-hero h1 { margin: 0 0 18px; font-size: 58px; line-height: 1.1; font-weight: 900; letter-spacing: -.02em; max-width: 14em; }
+  .e-hero h1 mark { background: #ffd23f; color: #111; padding: 0 .12em; border: 2.5px solid #111; border-radius: 8px; box-decoration-break: clone; -webkit-box-decoration-break: clone; }
+  .e-hero p { margin: 0 0 26px; font-size: 18px; font-weight: 500; line-height: 1.6; max-width: 34em; }
+  .e-search { display: flex; gap: 12px; max-width: 660px; }
+  .e-search input { flex: 1; min-width: 0; min-height: 54px; padding: 0 18px; border: 2.5px solid #111; border-radius: 12px; font: inherit; font-size: 16px; background: #fff; box-shadow: 4px 4px 0 #111; }
+  .e-search .e-btn { min-height: 54px; padding: 0 26px; font-size: 16px; }
+  .e-bento { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 16px; padding: 12px 32px 8px; }
+  .e-tile { border: 2.5px solid #111; border-radius: 16px; padding: 18px; box-shadow: 5px 5px 0 #111; background: #fff; display: flex; flex-direction: column; gap: 6px; min-height: 150px; }
+  .e-tile .lab { font-size: 13px; font-weight: 700; }
+  .e-tile .big { font-size: 52px; font-weight: 700; line-height: 1; letter-spacing: -.03em; }
+  .e-tile .sub { font-size: 13px; margin-top: auto; }
+  .e-tile.y { background: #ffd23f; }
+  .e-tile.b { background: #3150f5; color: #fff; }
+  .e-tile.wide { grid-column: span 2; }
+  .e-main { padding: 12px 32px 48px; }
+  .e-sec { margin-top: 40px; }
+  .e-head { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; margin-bottom: 18px; }
+  .e-head h2 { margin: 0; font-size: 30px; font-weight: 900; letter-spacing: -.01em; }
+  .e-head .pill { font-size: 12px; font-weight: 700; padding: 3px 10px; border: 2px solid #111; border-radius: 999px; background: #fff; }
+  .e-head a { margin-left: auto; font-weight: 700; }
+  .e-cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(255px, 1fr)); gap: 20px; }
+  .e-card { border: 2.5px solid #111; border-radius: 16px; background: #fff; box-shadow: 5px 5px 0 #111; overflow: hidden; display: flex; flex-direction: column; transition: transform .12s; }
+  .e-card:hover { transform: rotate(-1deg) translateY(-2px); }
+  .e-card .band { display: flex; justify-content: space-between; align-items: center; padding: 8px 14px; border-bottom: 2.5px solid #111; background: #ffd23f; font-size: 12px; font-weight: 700; }
+  .e-card .band.b { background: #3150f5; color: #fff; }
+  .e-card .in { padding: 14px 16px 16px; display: flex; flex-direction: column; gap: 10px; flex: 1; }
+  .e-card .name { font-size: 18px; font-weight: 700; }
+  .e-card .rw { font-size: 34px; font-weight: 700; letter-spacing: -.02em; line-height: 1; }
+  .e-card .rw small { font-size: 14px; font-weight: 700; }
+  .e-card .tags { display: flex; flex-wrap: wrap; gap: 6px; }
+  .e-card .tags span { font-size: 12px; font-weight: 700; padding: 2px 8px; border: 2px solid #111; border-radius: 999px; }
+  .e-card .meta { font-size: 12px; font-weight: 500; }
+  .e-card .acts { display: flex; gap: 10px; margin-top: auto; }
+  .e-card .acts .e-btn { flex: 1; min-height: 42px; font-size: 14px; box-shadow: 3px 3px 0 #111; }
+  .e-tablebox { border: 2.5px solid #111; border-radius: 16px; box-shadow: 5px 5px 0 #111; overflow-x: auto; background: #fff; }
+  .e-table { width: 100%; border-collapse: collapse; min-width: 760px; font-size: 15px; }
+  .e-table th { text-align: left; background: #ffd23f; border-bottom: 2.5px solid #111; padding: 12px 14px; font-size: 13px; }
+  .e-table td { padding: 13px 14px; border-bottom: 2px solid #f1ecdc; white-space: nowrap; font-weight: 500; }
+  .e-table .num { text-align: right; font-variant-numeric: tabular-nums; font-weight: 700; }
+  .e-table .free { background: #ffd23f; padding: 2px 8px; border: 2px solid #111; border-radius: 6px; font-weight: 700; }
+  .e-foot { padding: 24px 32px; border-top: 3px solid #111; background: #111; color: #f5f0dc; font-size: 13px; line-height: 1.7; font-family: "Noto Sans SC", sans-serif; }
+
+  /* =========================================================
+     F · 价格日报
+     ========================================================= */
+  .f { background: #faf8f3; color: #141414; }
+  .f-serif { font-family: "Noto Serif SC", "Songti SC", "SimSun", serif; }
+  .f-top { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 12px; padding: 10px 32px; font-size: 12px; color: #555; border-bottom: 1px solid #d9d4c7; }
+  .f-top a { text-decoration: none; margin-left: 16px; }
+  .f-mast { text-align: center; padding: 26px 32px 14px; }
+  .f-mast h1 { margin: 0; font-family: "Noto Serif SC", "Songti SC", "SimSun", serif; font-weight: 900; font-size: 64px; letter-spacing: .04em; line-height: 1.05; }
+  .f-mast .slogan { margin: 10px 0 0; font-size: 14px; color: #555; letter-spacing: .1em; }
+  .f-dateline { display: flex; flex-wrap: wrap; justify-content: center; gap: 6px 22px; margin: 0 32px; padding: 9px 0; border-top: 3px solid #141414; border-bottom: 1px solid #141414; font-size: 13px; }
+  .f-dateline b { font-variant-numeric: tabular-nums; }
+  .f-nav { display: flex; flex-wrap: wrap; justify-content: center; gap: 8px 28px; padding: 12px 32px; font-size: 15px; font-weight: 500; border-bottom: 1px solid #d9d4c7; margin: 0 32px; }
+  .f-nav a { text-decoration: none; }
+  .f-nav a:hover { color: #a3212a; }
+  .f-ticker { margin: 0 32px; overflow: hidden; border-bottom: 1px solid #141414; background: #141414; color: #f4f1e8; }
+  .f-ticker-inner { display: flex; gap: 36px; width: max-content; padding: 9px 0; font-family: "JetBrains Mono", Consolas, monospace; font-size: 13px; animation: f-scroll 38s linear infinite; }
+  .f-ticker .up { color: #ff8a8a; }
+  .f-ticker .down { color: #7fe0a6; }
+  @keyframes f-scroll { from { transform: translateX(0); } to { transform: translateX(-50%); } }
+  @media (prefers-reduced-motion: reduce) { .f-ticker-inner { animation: none; } }
+  .f-grid { display: grid; grid-template-columns: 2fr 1fr 1fr; margin: 0 32px; border-bottom: 1px solid #141414; }
+  .f-col { padding: 24px 22px 28px; }
+  .f-col + .f-col { border-left: 1px solid #d9d4c7; }
+  .f-col:first-child { padding-left: 0; }
+  .f-col:last-child { padding-right: 0; }
+  .f-kicker { font-size: 12px; font-weight: 700; color: #a3212a; letter-spacing: .14em; margin: 0 0 8px; }
+  .f-lead h2 { margin: 0 0 12px; font-family: "Noto Serif SC", "Songti SC", "SimSun", serif; font-weight: 900; font-size: 36px; line-height: 1.25; }
+  .f-lead .dek { margin: 0 0 14px; font-size: 16px; line-height: 1.8; color: #333; }
+  .f-lead .by { font-size: 12px; color: #666; padding-top: 10px; border-top: 1px solid #d9d4c7; }
+  .f-lead .f-search { display: flex; margin-top: 20px; border: 1px solid #141414; }
+  .f-lead .f-search input { flex: 1; min-width: 0; min-height: 46px; padding: 0 14px; border: 0; background: #fff; font: inherit; font-size: 15px; }
+  .f-lead .f-search button { min-height: 46px; padding: 0 20px; border: 0; background: #141414; color: #faf8f3; font: inherit; font-weight: 700; cursor: pointer; }
+  .f-col h3 { margin: 0 0 12px; font-family: "Noto Serif SC", "Songti SC", "SimSun", serif; font-size: 20px; font-weight: 900; padding-bottom: 8px; border-bottom: 2px solid #141414; }
+  .f-checkin { list-style: none; margin: 0; padding: 0; counter-reset: c; }
+  .f-checkin li { counter-increment: c; display: grid; grid-template-columns: 30px 1fr; gap: 4px 10px; padding: 10px 0; border-bottom: 1px solid #e3ded2; }
+  .f-checkin li::before { content: counter(c); grid-row: span 2; font-family: "Noto Serif SC", serif; font-weight: 900; font-size: 24px; color: #a3212a; line-height: 1.1; }
+  .f-checkin .n { font-weight: 700; font-size: 15px; }
+  .f-checkin .r { font-size: 13px; color: #444; }
+  .f-checkin a { font-size: 13px; color: #a3212a; }
+  .f-moves { width: 100%; border-collapse: collapse; font-size: 13px; }
+  .f-moves td { padding: 9px 0; border-bottom: 1px solid #e3ded2; }
+  .f-moves .num { text-align: right; font-family: "JetBrains Mono", Consolas, monospace; white-space: nowrap; }
+  .f-up { color: #a3212a; }
+  .f-down { color: #1d6b43; }
+  .f-note { font-size: 11px; color: #777; margin-top: 8px; }
+  .f-main { padding: 6px 32px 44px; }
+  .f-sec { margin-top: 30px; }
+  .f-sec h2 { margin: 0 0 4px; font-family: "Noto Serif SC", "Songti SC", "SimSun", serif; font-weight: 900; font-size: 26px; }
+  .f-sec .sub { margin: 0 0 12px; font-size: 13px; color: #666; }
+  .f-scroll { overflow-x: auto; }
+  .f-table { width: 100%; min-width: 760px; border-collapse: collapse; font-size: 14px; border-top: 2px solid #141414; border-bottom: 2px solid #141414; }
+  .f-table th { text-align: left; font-size: 12px; font-weight: 700; padding: 9px 12px; border-bottom: 1px solid #141414; }
+  .f-table td { padding: 11px 12px; border-bottom: 1px solid #e3ded2; white-space: nowrap; }
+  .f-table tr:nth-child(even) td { background: #f3f0e7; }
+  .f-table .num { text-align: right; font-family: "JetBrains Mono", Consolas, monospace; }
+  .f-table .free { color: #a3212a; font-weight: 700; }
+  .f-foot { margin: 0 32px; padding: 18px 0 26px; border-top: 3px double #141414; font-size: 12px; line-height: 1.8; color: #555; }
+  .f-sample { font-size: 11px; color: #777; border: 1px solid #c9c3b4; padding: 0 5px; margin-left: 8px; vertical-align: middle; font-family: "Noto Sans SC", sans-serif; font-weight: 400; }
+
+  /* ---------- 窄屏 ---------- */
+  @media (max-width: 860px) {
+    .d-hero { grid-template-columns: 1fr; gap: 36px; padding: 40px 16px 52px; }
+    .d-hero h1 { font-size: 32px; }
+    .d-nav, .d-main, .d-foot { padding-left: 16px; padding-right: 16px; }
+    .d-nav .d-sub { margin-left: 0; }
+    .d-coupons { grid-template-columns: 1fr; }
+    .e-nav, .e-hero, .e-bento, .e-main, .e-foot { padding-left: 16px; padding-right: 16px; }
+    .e-nav .e-btn { margin-left: 0; }
+    .e-hero h1 { font-size: 36px; }
+    .e-search { flex-direction: column; }
+    .e-bento { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .f-mast h1 { font-size: 40px; }
+    .f-top, .f-mast, .f-main { padding-left: 16px; padding-right: 16px; }
+    .f-dateline, .f-nav, .f-ticker, .f-grid, .f-foot { margin-left: 16px; margin-right: 16px; }
+    .f-grid { grid-template-columns: 1fr; }
+    .f-col { padding: 20px 0; }
+    .f-col + .f-col { border-left: 0; border-top: 1px solid #d9d4c7; }
+    .switcher .note { margin-left: 0; width: 100%; }
+  }
+</style>
+</head>
+<body>
+
+<div class="switcher" role="group" aria-label="风格切换">
+  <strong>52tokens 风格方案 v2</strong>
+  <button type="button" data-opt="d" aria-pressed="true">D 优惠券票据</button>
+  <button type="button" data-opt="e" aria-pressed="false">E 新粗野主义</button>
+  <button type="button" data-opt="f" aria-pressed="false">F 价格日报</button>
+  <span class="note">页面数据均为示例，未核实</span>
+</div>
+
+<p class="desc" id="desc"></p>
+
+<div class="frame">
+
+<!-- ======================= D 优惠券票据 ======================= -->
+<div class="opt d on" id="opt-d">
+  <nav class="d-nav">
+    <span class="d-logo">52<span>/</span>tokens</span>
+    <ul>
+      <li><a href="#">模型价格</a></li>
+      <li><a href="#">免费额度</a></li>
+      <li><a href="#">签到 &amp; 活动</a></li>
+      <li><a href="#">订阅地区价</a></li>
+      <li><a href="#">卡网比价</a></li>
+    </ul>
+    <a class="d-sub" href="#">签到提醒</a>
+  </nav>
+
+  <div class="d-hero">
+    <div>
+      <p class="d-kicker">AI 羊毛 · 价格雷达 · 每日核对</p>
+      <h1>今天的 AI 羊毛，<br>都在这张<em>小票</em>上。</h1>
+      <p>官方 API 价格、免费额度、签到积分、订阅地区价。每一条都标明出处和最近确认时间，过期的自动划掉。</p>
+      <form class="d-search" onsubmit="return false">
+        <label class="vh" for="d-q">搜索</label>
+        <input id="d-q" type="search" placeholder="DeepSeek 免费额度、Trae 签到…">
+        <button type="submit">查一下</button>
+      </form>
+    </div>
+    <div class="d-receipt" aria-label="今日可领清单示例">
+      <h2>今日可领</h2>
+      <div class="no">NO.20261022 · 示例数据</div>
+      <hr class="d-dash">
+      <div class="d-line"><span class="k">Trae 签到</span><span class="dots"></span><span class="v">+200 积分</span></div>
+      <div class="d-line"><span class="k">Qoder 签到</span><span class="dots"></span><span class="v">+100 Credits</span></div>
+      <div class="d-line"><span class="k">CodeBuddy 签到</span><span class="dots"></span><span class="v">+150 积分</span></div>
+      <div class="d-line"><span class="k">百炼 新人礼包</span><span class="dots"></span><span class="v">100万 tokens</span></div>
+      <div class="d-line"><span class="k">GLM-4-Flash</span><span class="dots"></span><span class="v">免费</span></div>
+      <hr class="d-dash">
+      <div class="d-total"><span>合计估值</span><span class="v">≈ ¥[N]</span></div>
+      <div class="d-barcode" aria-hidden="true"></div>
+      <div class="thanks">每日 00:00 刷新 · 欢迎明天再来</div>
+    </div>
+  </div>
+
+  <main class="d-main">
+    <section class="d-sec">
+      <div class="d-head"><h2>今日可签到</h2><span class="count">12 张券</span><span class="d-tag-sample">示例</span><a href="#">全部 →</a></div>
+      <div class="d-coupons">
+        <article class="d-coupon">
+          <div class="d-stub"><span class="amt">+200</span><span class="unit">积分 / 天</span><span class="cycle">每日</span></div>
+          <div class="d-body">
+            <span class="d-stamp">已核实 10/22</span>
+            <span class="name">Trae</span><span class="kind">AI 编程 · 客户端内签到</span>
+            <div class="tags"><span>国内版</span><span>需登录</span></div>
+            <div class="acts"><a href="#">去签到</a><button type="button">提醒我</button></div>
+          </div>
+        </article>
+        <article class="d-coupon">
+          <div class="d-stub"><span class="amt">+100</span><span class="unit">Credits / 天</span><span class="cycle">每日</span></div>
+          <div class="d-body">
+            <span class="d-stamp">已核实 10/22</span>
+            <span class="name">Qoder</span><span class="kind">AI 编程 · 桌面端</span>
+            <div class="tags"><span>需保持登录</span></div>
+            <div class="acts"><a href="#">去签到</a><button type="button">提醒我</button></div>
+          </div>
+        </article>
+        <article class="d-coupon">
+          <div class="d-stub"><span class="amt">+150</span><span class="unit">积分 / 天</span><span class="cycle">每日</span></div>
+          <div class="d-body">
+            <span class="d-stamp warn">待复核</span>
+            <span class="name">CodeBuddy</span><span class="kind">AI 编程 · 连续签到翻倍</span>
+            <div class="tags"><span>腾讯</span><span>规则有变动</span></div>
+            <div class="acts"><a href="#">去签到</a><button type="button">提醒我</button></div>
+          </div>
+        </article>
+        <article class="d-coupon">
+          <div class="d-stub"><span class="amt">100万</span><span class="unit">tokens / 模型</span><span class="cycle">新人</span></div>
+          <div class="d-body">
+            <span class="d-stamp">已核实 10/21</span>
+            <span class="name">阿里云百炼</span><span class="kind">大模型 API · 注册赠送</span>
+            <div class="tags"><span>需实名</span><span>有效期限制</span></div>
+            <div class="acts"><a href="#">去领取</a><button type="button">到期提醒</button></div>
+          </div>
+        </article>
+      </div>
+    </section>
+
+    <section class="d-sec">
+      <div class="d-head"><h2>模型价格账本</h2><span class="count">¥ / 百万 tokens</span><span class="d-tag-sample">示例</span><a href="#">全部模型 →</a></div>
+      <div class="d-scroll">
+        <table class="d-ledger">
+          <thead><tr><th>模型</th><th>平台</th><th class="num">输入</th><th class="num">输出</th><th>免费额度</th><th>最近确认</th></tr></thead>
+          <tbody>
+            <tr><td>DeepSeek-V3.2</td><td>DeepSeek 官方</td><td class="num">2.00</td><td class="num">3.00</td><td>—</td><td class="ok">✓ 今天 10:42</td></tr>
+            <tr><td>Qwen3-30B-A3B</td><td>硅基流动</td><td class="num">0.70</td><td class="num">2.80</td><td>注册赠额</td><td class="ok">✓ 今天 09:15</td></tr>
+            <tr><td>GLM-4-Flash</td><td>智谱 BigModel</td><td class="num free">0.00</td><td class="num free">0.00</td><td>永久免费</td><td class="ok">✓ 昨天</td></tr>
+            <tr><td>Qwen 系列</td><td>阿里云百炼</td><td class="num">[价格]</td><td class="num">[价格]</td><td>新人每模型 100 万</td><td class="ok">✓ 今天 08:30</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+  </main>
+
+  <footer class="d-foot">
+    <div class="d-barcode" aria-hidden="true"></div>
+    <div>52tokens 不卖货、不收款，只整理公开信息并标注出处，请以原站为准。<br>带「推广」标记的链接含推广关系，不影响排序与最低价计算。</div>
+  </footer>
+</div>
+
+<!-- ======================= E 新粗野主义 ======================= -->
+<div class="opt e" id="opt-e">
+  <nav class="e-nav">
+    <span class="e-logo">52tokens</span>
+    <ul>
+      <li><a href="#">模型价格</a></li>
+      <li><a href="#">免费额度</a></li>
+      <li><a href="#">签到活动</a></li>
+      <li><a href="#">订阅地区价</a></li>
+      <li><a href="#">卡网</a></li>
+    </ul>
+    <a class="e-btn yellow" href="#">开启签到提醒</a>
+  </nav>
+
+  <div class="e-hero">
+    <h1>AI 别花冤枉钱，<mark>能白嫖</mark>的先白嫖。</h1>
+    <p>官方价格、免费额度、每日签到积分，一个页面看全。每条都有出处和确认时间。</p>
+    <form class="e-search" onsubmit="return false">
+      <label class="vh" for="e-q">搜索</label>
+      <input id="e-q" type="search" placeholder="搜模型、平台、活动">
+      <button class="e-btn blue" type="submit">搜索</button>
+    </form>
+  </div>
+
+  <div class="e-bento" aria-label="今日概览（示例）">
+    <div class="e-tile y"><span class="lab">今日可签到</span><span class="big">12</span><span class="sub">个平台 · 示例</span></div>
+    <div class="e-tile b wide"><span class="lab">今天最划算</span><span class="big" style="font-size:40px">GLM-4-Flash 免费</span><span class="sub">输入、输出都不要钱，限 30 并发</span></div>
+    <div class="e-tile"><span class="lab">即将截止</span><span class="big">3</span><span class="sub">个活动 72 小时内结束</span></div>
+  </div>
+
+  <main class="e-main">
+    <section class="e-sec">
+      <div class="e-head"><h2>今日可签到</h2><span class="pill">示例</span><a href="#">全部 →</a></div>
+      <div class="e-cards">
+        <article class="e-card">
+          <div class="band"><span>每日签到</span><span>✓ 10/22 核实</span></div>
+          <div class="in"><span class="name">Trae</span><span class="rw">+200 <small>积分/天</small></span>
+            <div class="tags"><span>AI 编程</span><span>国内版</span></div>
+            <span class="meta">客户端内签到 · 2 小时前确认</span>
+            <div class="acts"><a class="e-btn blue" href="#">去签到</a><button class="e-btn" type="button">提醒</button></div></div>
+        </article>
+        <article class="e-card">
+          <div class="band"><span>每日签到</span><span>✓ 10/22 核实</span></div>
+          <div class="in"><span class="name">Qoder</span><span class="rw">+100 <small>Credits/天</small></span>
+            <div class="tags"><span>AI 编程</span><span>桌面端</span></div>
+            <span class="meta">需保持登录 · 5 小时前确认</span>
+            <div class="acts"><a class="e-btn blue" href="#">去签到</a><button class="e-btn" type="button">提醒</button></div></div>
+        </article>
+        <article class="e-card">
+          <div class="band b"><span>注册赠送</span><span>✓ 10/21 核实</span></div>
+          <div class="in"><span class="name">阿里云百炼</span><span class="rw">100万 <small>tokens/模型</small></span>
+            <div class="tags"><span>大模型 API</span><span>需实名</span></div>
+            <span class="meta">新人礼包 · 有效期限制</span>
+            <div class="acts"><a class="e-btn blue" href="#">去领取</a><button class="e-btn" type="button">提醒</button></div></div>
+        </article>
+        <article class="e-card">
+          <div class="band"><span>每日登录</span><span>✓ 10/22 核实</span></div>
+          <div class="in"><span class="name">即梦</span><span class="rw">每日 <small>积分</small></span>
+            <div class="tags"><span>图像视频</span><span>当日清零</span></div>
+            <span class="meta">App / 网页 · 3 小时前确认</span>
+            <div class="acts"><a class="e-btn blue" href="#">去领取</a><button class="e-btn" type="button">提醒</button></div></div>
+        </article>
+      </div>
+    </section>
+
+    <section class="e-sec">
+      <div class="e-head"><h2>模型价格</h2><span class="pill">¥ / 百万 tokens · 示例</span><a href="#">全部 →</a></div>
+      <div class="e-tablebox">
+        <table class="e-table">
+          <thead><tr><th>模型</th><th>平台</th><th class="num">输入</th><th class="num">输出</th><th>免费额度</th><th>最近确认</th></tr></thead>
+          <tbody>
+            <tr><td>DeepSeek-V3.2</td><td>DeepSeek 官方</td><td class="num">2.00</td><td class="num">3.00</td><td>—</td><td>今天</td></tr>
+            <tr><td>Qwen3-30B-A3B</td><td>硅基流动</td><td class="num">0.70</td><td class="num">2.80</td><td>注册赠额</td><td>今天</td></tr>
+            <tr><td>GLM-4-Flash</td><td>智谱 BigModel</td><td class="num"><span class="free">免费</span></td><td class="num"><span class="free">免费</span></td><td>永久免费</td><td>昨天</td></tr>
+            <tr><td>Qwen 系列</td><td>阿里云百炼</td><td class="num">[价格]</td><td class="num">[价格]</td><td>新人每模型 100 万</td><td>今天</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+  </main>
+
+  <footer class="e-foot">52tokens 不卖货、不收款，只整理公开信息并标注出处，请以原站为准。带「推广」标记的链接含推广关系，不影响排序与最低价计算。</footer>
+</div>
+
+<!-- ======================= F 价格日报 ======================= -->
+<div class="opt f" id="opt-f">
+  <div class="f-top"><span>每日 08:00 出刊 · 全天滚动更新</span><span><a href="#">RSS</a><a href="#">Telegram</a><a href="#">邮件订阅</a></span></div>
+  <header class="f-mast">
+    <h1>52TOKENS 日报</h1>
+    <p class="slogan">AI 价格 · 免费额度 · 签到羊毛</p>
+  </header>
+  <div class="f-dateline"><span>2026 年 10 月 22 日 星期四</span><span>第 <b>[N]</b> 期</span><span>今日核对 <b>76</b> 条</span><span>新增活动 <b>9</b> 个</span></div>
+  <nav class="f-nav"><a href="#">模型价格</a><a href="#">免费额度</a><a href="#">签到活动</a><a href="#">订阅地区价</a><a href="#">卡网比价</a><a href="#">月度报告</a></nav>
+  <div class="f-ticker" aria-label="价格变动滚动条（示例）">
+    <div class="f-ticker-inner">
+      <span>DeepSeek-V3.2 输出 ¥3.00 <b class="down">▼ 8%</b></span><span>Trae 签到 +200 积分 <b class="up">新</b></span><span>Qwen3-30B 输入 ¥0.70 <b class="down">▼ 12%</b></span><span>Gemini Flash 免费层 RPD <b class="up">▲ 调整</b></span><span>百炼 新人 100 万 tokens <b class="up">续期</b></span>
+      <span>DeepSeek-V3.2 输出 ¥3.00 <b class="down">▼ 8%</b></span><span>Trae 签到 +200 积分 <b class="up">新</b></span><span>Qwen3-30B 输入 ¥0.70 <b class="down">▼ 12%</b></span><span>Gemini Flash 免费层 RPD <b class="up">▲ 调整</b></span><span>百炼 新人 100 万 tokens <b class="up">续期</b></span>
+    </div>
+  </div>
+
+  <div class="f-grid">
+    <article class="f-col f-lead">
+      <p class="f-kicker">今日头条 <span class="f-sample">示例</span></p>
+      <h2>[平台名] 新用户注册送 100 万 tokens，覆盖 10 款主力模型</h2>
+      <p class="dek">活动面向首次注册的个人用户，需完成实名认证，额度有效期一年。和同类平台相比，这是本月门槛最低的一档新人礼包。</p>
+      <p class="by">出处：官方活动页 · 今天 10:42 确认 · 我们未从该活动获得推广收入</p>
+      <form class="f-search" onsubmit="return false">
+        <label class="vh" for="f-q">搜索</label>
+        <input id="f-q" type="search" placeholder="查模型价格、免费额度、签到活动">
+        <button type="submit">检索</button>
+      </form>
+    </article>
+    <aside class="f-col">
+      <h3>今日签到清单</h3>
+      <ol class="f-checkin">
+        <li><span class="n">Trae</span><span class="r">+200 积分 · <a href="#">去签到</a></span></li>
+        <li><span class="n">Qoder</span><span class="r">+100 Credits · <a href="#">去签到</a></span></li>
+        <li><span class="n">CodeBuddy</span><span class="r">+150 积分 · 待复核</span></li>
+        <li><span class="n">即梦</span><span class="r">每日积分 · <a href="#">去领取</a></span></li>
+      </ol>
+    </aside>
+    <aside class="f-col">
+      <h3>价格变动</h3>
+      <table class="f-moves">
+        <tbody>
+          <tr><td>DeepSeek-V3.2 输出</td><td class="num f-down">▼ 8%</td></tr>
+          <tr><td>Qwen3-30B 输入</td><td class="num f-down">▼ 12%</td></tr>
+          <tr><td>[模型] 输出</td><td class="num f-up">▲ 5%</td></tr>
+          <tr><td>[模型] 免费额度</td><td class="num f-up">取消</td></tr>
+        </tbody>
+      </table>
+      <p class="f-note">红涨绿跌，跌价对用户是好消息。示例数据。</p>
+    </aside>
+  </div>
+
+  <main class="f-main">
+    <section class="f-sec">
+      <h2>模型价格行情<span class="f-sample">示例</span></h2>
+      <p class="sub">单位：¥ / 百万 tokens · 以各平台官网为准</p>
+      <div class="f-scroll">
+        <table class="f-table">
+          <thead><tr><th>模型</th><th>平台</th><th class="num">输入</th><th class="num">输出</th><th>免费额度</th><th>较上周</th><th>最近确认</th></tr></thead>
+          <tbody>
+            <tr><td>DeepSeek-V3.2</td><td>DeepSeek 官方</td><td class="num">2.00</td><td class="num">3.00</td><td>—</td><td class="f-down">▼ 8%</td><td>今天</td></tr>
+            <tr><td>Qwen3-30B-A3B</td><td>硅基流动</td><td class="num">0.70</td><td class="num">2.80</td><td>注册赠额</td><td class="f-down">▼ 12%</td><td>今天</td></tr>
+            <tr><td>GLM-4-Flash</td><td>智谱 BigModel</td><td class="num free">免费</td><td class="num free">免费</td><td>永久免费</td><td>—</td><td>昨天</td></tr>
+            <tr><td>Qwen 系列</td><td>阿里云百炼</td><td class="num">[价格]</td><td class="num">[价格]</td><td>新人每模型 100 万</td><td>—</td><td>今天</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+  </main>
+
+  <footer class="f-foot">52tokens 不卖货、不收款，只整理公开信息并标注出处，请以原站为准。带「推广」标记的链接含推广关系，不影响排序与最低价计算。</footer>
+</div>
+
+</div>
+
+<script>
+  var descs = {
+    d: 'D 优惠券票据：米白纸张底、等宽数字、虚线和锯齿边。首页是一张「今日可领」小票，汇总当天能领的东西；活动卡片做成带撕口和核实印章的优惠券，价格表做成账本。和「羊毛 + 比价」主题贴得最紧，辨识度最高，看起来也可信。',
+    e: 'E 新粗野主义：粗黑边框、硬投影、明黄加电光蓝，按钮有按压感，首页用便当格展示今日概览。年轻、有态度，独立开发者圈子很吃这一套，社交截图传播力强；但信息多了容易显得吵，长期耐看度一般。',
+    f: 'F 价格日报：报纸版式，有大号宋体刊头、日期期号、价格滚动条、头条加三栏。每天都是「新一期」，天然培养回访习惯，也最适合 SEO 内容页和月度报告；缺点是首页信息密度高，移动端要做取舍。'
+  };
+  var desc = document.getElementById('desc');
+  var buttons = document.querySelectorAll('.switcher button');
+  function show(id) {
+    document.querySelectorAll('.opt').forEach(function (el) { el.classList.toggle('on', el.id === 'opt-' + id); });
+    buttons.forEach(function (b) { b.setAttribute('aria-pressed', String(b.dataset.opt === id)); });
+    desc.textContent = descs[id];
+  }
+  buttons.forEach(function (b) { b.addEventListener('click', function () { show(b.dataset.opt); }); });
+  show('d');
+</script>
+</body>
+</html>

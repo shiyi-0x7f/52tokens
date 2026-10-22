@@ -1,0 +1,455 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>52tokens 风格方案 v3</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@500;700&family=Noto+Sans+SC:wght@400;500;700;900&family=ZCOOL+QingKe+HuangYou&display=swap" rel="stylesheet">
+<style>
+  * { box-sizing: border-box; }
+  body { margin: 0; background: #d9d9dd; font-family: "Noto Sans SC", "PingFang SC", "Microsoft YaHei", sans-serif; color: #111; }
+  a { color: inherit; }
+  .vh { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+  .mono { font-family: "JetBrains Mono", Consolas, monospace; }
+  .switcher { position: sticky; top: 0; z-index: 20; display: flex; flex-wrap: wrap; gap: 8px; align-items: center; padding: 12px 16px; background: #18191d; color: #fff; }
+  .switcher strong { margin-right: 8px; font-size: 14px; }
+  .switcher button { min-height: 36px; padding: 0 14px; border: 1px solid #4a4d57; border-radius: 6px; background: transparent; color: #fff; font: inherit; font-size: 14px; cursor: pointer; }
+  .switcher button[aria-pressed="true"] { background: #fff; color: #18191d; border-color: #fff; }
+  .switcher .note { margin-left: auto; font-size: 12px; color: #b5b8c2; }
+  .desc { max-width: 1200px; margin: 16px auto 0; padding: 0 16px; font-size: 14px; line-height: 1.75; color: #2a2a2a; }
+  .frame { max-width: 1200px; margin: 12px auto 48px; padding: 0 16px; }
+  .opt { display: none; }
+  .opt.on { display: block; }
+  .site { border-radius: 12px; overflow: hidden; box-shadow: 0 10px 34px rgba(0,0,0,.16); }
+  .share-wrap { margin-top: 28px; display: flex; flex-wrap: wrap; gap: 28px; align-items: flex-start; }
+  .share-cap { flex: 1 1 260px; font-size: 14px; line-height: 1.8; color: #2a2a2a; }
+  .share-cap h3 { margin: 0 0 8px; font-size: 16px; }
+  .share-cap ul { margin: 0; padding-left: 18px; }
+  .sharecard { width: 330px; aspect-ratio: 3 / 4; flex: none; border-radius: 14px; overflow: hidden; box-shadow: 0 12px 34px rgba(0,0,0,.22); position: relative; }
+  .qr { width: 54px; height: 54px; border-radius: 6px; background:
+      repeating-linear-gradient(0deg, rgba(0,0,0,.85) 0 4px, transparent 4px 8px),
+      repeating-linear-gradient(90deg, rgba(0,0,0,.85) 0 4px, transparent 4px 9px), #fff; background-blend-mode: multiply; border: 4px solid #fff; flex: none; }
+
+  /* =========================================================
+     G · 羊毛图鉴（集卡）
+     ========================================================= */
+  .g { background: #11121a; color: #e9ebf3; }
+  .g-nav { display: flex; flex-wrap: wrap; align-items: center; gap: 22px; padding: 16px 32px; border-bottom: 1px solid #23253a; }
+  .g-logo { font-weight: 900; font-size: 20px; }
+  .g-logo span { color: #f5c451; }
+  .g-nav ul { display: flex; flex-wrap: wrap; gap: 20px; margin: 0; padding: 0; list-style: none; font-size: 14px; color: #a9adc2; }
+  .g-nav a { text-decoration: none; }
+  .g-nav a:hover { color: #fff; }
+  .g-nav .g-cta { margin-left: auto; min-height: 38px; display: inline-flex; align-items: center; padding: 0 16px; border-radius: 999px; background: #f5c451; color: #1a1406; font-size: 13px; font-weight: 700; text-decoration: none; }
+  .g-hero { display: flex; flex-wrap: wrap; gap: 32px; align-items: flex-end; justify-content: space-between; padding: 44px 32px 28px; }
+  .g-hero h1 { margin: 0 0 10px; font-size: 40px; font-weight: 900; line-height: 1.2; }
+  .g-hero h1 b { color: #f5c451; }
+  .g-hero p { margin: 0; color: #a9adc2; font-size: 15px; line-height: 1.7; max-width: 32em; }
+  .g-progress { min-width: 280px; padding: 16px 18px; border: 1px solid #2a2d45; border-radius: 14px; background: #171927; }
+  .g-progress .row { display: flex; justify-content: space-between; font-size: 13px; color: #a9adc2; }
+  .g-progress .row b { color: #fff; font-family: "JetBrains Mono", Consolas, monospace; font-size: 18px; }
+  .g-bar { height: 10px; margin: 10px 0 8px; border-radius: 999px; background: #262941; overflow: hidden; }
+  .g-bar i { display: block; height: 100%; width: 42%; border-radius: 999px; background: #f5c451; }
+  .g-legend { display: flex; flex-wrap: wrap; gap: 10px; padding: 0 32px 18px; font-size: 12px; color: #a9adc2; }
+  .g-legend span { display: inline-flex; align-items: center; gap: 6px; }
+  .g-legend i { width: 10px; height: 10px; border-radius: 3px; display: inline-block; }
+  .g-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 18px; padding: 0 32px 40px; }
+  .g-card { --rc: #6c7089; position: relative; aspect-ratio: 3 / 4; border-radius: 16px; padding: 14px; display: flex; flex-direction: column; gap: 8px; border: 2px solid transparent; background: linear-gradient(#1a1c2b, #1a1c2b) padding-box, linear-gradient(150deg, var(--rc), #2a2d45 55%, var(--rc)) border-box; overflow: hidden; }
+  .g-card.ssr { --rc: #f5c451; background: linear-gradient(#1f1c16, #1a1c2b) padding-box, linear-gradient(150deg, #f5c451, #fff1bd 30%, #b9862a 55%, #fff1bd 80%, #f5c451) border-box; }
+  .g-card.sr { --rc: #b48cff; }
+  .g-card.r { --rc: #6aa8ff; }
+  .g-card.ssr::after { content: ""; position: absolute; inset: 0; background: linear-gradient(115deg, transparent 30%, rgba(255,240,190,.18) 45%, rgba(180,140,255,.14) 52%, transparent 65%); transform: translateX(-60%); transition: transform .8s; pointer-events: none; }
+  .g-card.ssr:hover::after { transform: translateX(60%); }
+  @media (prefers-reduced-motion: reduce) { .g-card.ssr::after { transition: none; } }
+  .g-rar { align-self: flex-start; font-family: "JetBrains Mono", Consolas, monospace; font-weight: 700; font-size: 13px; padding: 2px 8px; border-radius: 6px; background: var(--rc); color: #12131a; }
+  .g-plat { font-size: 13px; color: #a9adc2; }
+  .g-rw { font-size: 30px; font-weight: 900; line-height: 1.1; color: #fff; margin-top: auto; }
+  .g-rw small { display: block; font-size: 13px; font-weight: 500; color: #c9cce0; margin-top: 4px; }
+  .g-stats { display: grid; grid-template-columns: auto 1fr; gap: 2px 10px; font-size: 12px; color: #a9adc2; padding-top: 8px; border-top: 1px dashed #33364f; }
+  .g-stats b { color: #e9ebf3; font-weight: 500; }
+  .g-claim { min-height: 40px; border: 0; border-radius: 10px; background: #f5c451; color: #1a1406; font: inherit; font-size: 13px; font-weight: 700; cursor: pointer; }
+  .g-claim.ghost { background: #262941; color: #e9ebf3; }
+  .g-card.got { opacity: .55; }
+  .g-card.got .g-claim { background: #2e3a2f; color: #9ee6a8; }
+  .g-sec-title { padding: 0 32px 12px; font-size: 18px; font-weight: 900; }
+  /* 分享卡 */
+  .g-share { background: #11121a; color: #fff; padding: 22px 20px 18px; display: flex; flex-direction: column; }
+  .g-share .t1 { font-size: 13px; color: #a9adc2; }
+  .g-share .t2 { font-size: 24px; font-weight: 900; margin: 2px 0 14px; }
+  .g-share .mini { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+  .g-share .mini div { aspect-ratio: 3 / 4; border-radius: 8px; padding: 6px; font-size: 10px; display: flex; flex-direction: column; justify-content: space-between; border: 1.5px solid var(--rc); background: #1a1c2b; }
+  .g-share .mini b { font-size: 12px; }
+  .g-share .mini em { font-style: normal; font-family: "JetBrains Mono", monospace; font-weight: 700; color: var(--rc); }
+  .g-share .total { margin-top: auto; display: flex; justify-content: space-between; align-items: flex-end; gap: 10px; }
+  .g-share .total .v { font-size: 30px; font-weight: 900; color: #f5c451; line-height: 1; }
+  .g-share .total .l { font-size: 12px; color: #a9adc2; }
+
+  /* =========================================================
+     H · 羊毛热榜
+     ========================================================= */
+  .h { background: #f6f6f8; color: #18181b; }
+  .h-nav { display: flex; flex-wrap: wrap; align-items: center; gap: 22px; padding: 14px 32px; background: #fff; border-bottom: 1px solid #ececf0; }
+  .h-logo { font-weight: 900; font-size: 20px; }
+  .h-logo span { color: #e11d2e; }
+  .h-nav ul { display: flex; flex-wrap: wrap; gap: 20px; margin: 0; padding: 0; list-style: none; font-size: 14px; color: #52525b; }
+  .h-nav a { text-decoration: none; }
+  .h-nav input { margin-left: auto; width: 240px; min-height: 38px; padding: 0 16px; border: 0; border-radius: 999px; background: #f1f1f4; font: inherit; font-size: 13px; }
+  .h-banner { background: #e11d2e; color: #fff; padding: 30px 32px 0; }
+  .h-banner h1 { margin: 0; font-size: 36px; font-weight: 900; }
+  .h-banner p { margin: 6px 0 18px; font-size: 14px; color: #ffd9dc; }
+  .h-tabs { display: flex; flex-wrap: wrap; gap: 4px; }
+  .h-tabs button { min-height: 44px; padding: 0 18px; border: 0; border-radius: 10px 10px 0 0; background: transparent; color: #ffe4e6; font: inherit; font-size: 15px; font-weight: 700; cursor: pointer; }
+  .h-tabs button[aria-selected="true"] { background: #f6f6f8; color: #e11d2e; }
+  .h-body { display: grid; grid-template-columns: 1fr 320px; gap: 22px; padding: 22px 32px 40px; }
+  .h-list { background: #fff; border-radius: 14px; padding: 6px 0; }
+  .h-row { display: grid; grid-template-columns: 52px 1fr auto; gap: 12px; align-items: center; padding: 14px 20px; border-bottom: 1px solid #f2f2f5; text-decoration: none; }
+  .h-row:last-child { border-bottom: 0; }
+  .h-row:hover { background: #fafafa; }
+  .h-rank { font-family: "JetBrains Mono", Consolas, monospace; font-weight: 700; font-size: 24px; font-style: italic; color: #a1a1aa; text-align: center; }
+  .h-row:nth-child(1) .h-rank { color: #e11d2e; font-size: 30px; }
+  .h-row:nth-child(2) .h-rank { color: #f0581f; font-size: 28px; }
+  .h-row:nth-child(3) .h-rank { color: #e89a0c; font-size: 26px; }
+  .h-t { font-size: 16px; font-weight: 500; display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+  .h-t small { display: block; width: 100%; font-size: 12px; color: #71717a; font-weight: 400; }
+  .h-tag { font-size: 11px; font-weight: 700; color: #fff; padding: 1px 6px; border-radius: 4px; }
+  .h-tag.bao { background: #e11d2e; }
+  .h-tag.xin { background: #f0581f; }
+  .h-tag.re { background: #e89a0c; }
+  .h-tag.jie { background: #52525b; }
+  .h-heat { text-align: right; font-size: 12px; color: #71717a; white-space: nowrap; }
+  .h-heat b { display: block; font-family: "JetBrains Mono", Consolas, monospace; font-size: 15px; color: #18181b; }
+  .h-heat .up { color: #e11d2e; }
+  .h-side { display: flex; flex-direction: column; gap: 18px; }
+  .h-box { background: #fff; border-radius: 14px; padding: 18px; }
+  .h-box h2 { margin: 0 0 14px; font-size: 16px; font-weight: 900; }
+  .h-podium { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; align-items: end; text-align: center; font-size: 12px; }
+  .h-podium div { border-radius: 10px 10px 0 0; padding: 10px 4px; color: #fff; font-weight: 700; display: flex; flex-direction: column; gap: 4px; justify-content: flex-end; }
+  .h-podium .p1 { background: #e11d2e; height: 132px; }
+  .h-podium .p2 { background: #f0581f; height: 104px; order: -1; }
+  .h-podium .p3 { background: #e89a0c; height: 86px; }
+  .h-podium b { font-size: 22px; font-family: "JetBrains Mono", monospace; }
+  .h-sub { display: flex; flex-direction: column; gap: 10px; font-size: 13px; color: #52525b; }
+  .h-sub a { min-height: 42px; display: flex; align-items: center; justify-content: center; border-radius: 10px; background: #e11d2e; color: #fff; font-weight: 700; text-decoration: none; }
+  /* 分享卡 */
+  .h-share { background: #fff; display: flex; flex-direction: column; }
+  .h-share .hd { background: #e11d2e; color: #fff; padding: 18px 18px 14px; }
+  .h-share .hd .a { font-size: 12px; color: #ffd9dc; }
+  .h-share .hd .b { font-size: 26px; font-weight: 900; line-height: 1.2; }
+  .h-share ol { list-style: none; margin: 0; padding: 6px 16px; flex: 1; }
+  .h-share li { display: grid; grid-template-columns: 26px 1fr auto; gap: 8px; align-items: center; padding: 8px 0; border-bottom: 1px solid #f2f2f5; font-size: 13px; }
+  .h-share li i { font-style: italic; font-weight: 700; font-family: "JetBrains Mono", monospace; color: #a1a1aa; font-size: 16px; text-align: center; }
+  .h-share li:nth-child(1) i { color: #e11d2e; } .h-share li:nth-child(2) i { color: #f0581f; } .h-share li:nth-child(3) i { color: #e89a0c; }
+  .h-share li span:last-child { font-size: 11px; color: #e11d2e; font-weight: 700; }
+  .h-share .ft { display: flex; justify-content: space-between; align-items: center; padding: 10px 16px 14px; font-size: 11px; color: #71717a; }
+
+  /* =========================================================
+     J · 封面海报（小红书风）
+     ========================================================= */
+  .j { background: #f6f1e9; color: #1b1a17; }
+  .j-nav { display: flex; flex-wrap: wrap; align-items: center; gap: 22px; padding: 14px 32px; }
+  .j-logo { font-family: "ZCOOL QingKe HuangYou", "Noto Sans SC", sans-serif; font-size: 26px; }
+  .j-logo span { background: linear-gradient(transparent 58%, #ffd84d 58%); }
+  .j-nav ul { display: flex; flex-wrap: wrap; gap: 8px; margin: 0; padding: 0; list-style: none; }
+  .j-nav li a { display: inline-flex; align-items: center; min-height: 36px; padding: 0 14px; border-radius: 999px; font-size: 14px; text-decoration: none; background: #fff; }
+  .j-nav li a[aria-current="page"] { background: #1b1a17; color: #fff; }
+  .j-nav input { margin-left: auto; width: 240px; min-height: 38px; padding: 0 16px; border: 0; border-radius: 999px; background: #fff; font: inherit; font-size: 13px; }
+  .j-intro { padding: 18px 32px 8px; display: flex; flex-wrap: wrap; align-items: baseline; gap: 14px; }
+  .j-intro h1 { margin: 0; font-family: "ZCOOL QingKe HuangYou", "Noto Sans SC", sans-serif; font-weight: 400; font-size: 40px; }
+  .j-intro p { margin: 0; font-size: 14px; color: #6b6458; }
+  .j-feed { columns: 4 230px; column-gap: 16px; padding: 14px 32px 40px; }
+  .j-item { break-inside: avoid; margin-bottom: 16px; background: #fff; border-radius: 14px; overflow: hidden; display: block; text-decoration: none; }
+  .j-cover { position: relative; aspect-ratio: 3 / 4; padding: 18px 16px; display: flex; flex-direction: column; }
+  .j-cover.tall { aspect-ratio: 3 / 4.4; }
+  .j-cover.short { aspect-ratio: 1 / 1; }
+  .j-cover .kick { font-size: 13px; font-weight: 700; }
+  .j-cover .big { font-family: "ZCOOL QingKe HuangYou", "Noto Sans SC", sans-serif; font-size: 44px; line-height: 1.08; margin-top: 10px; }
+  .j-cover .big mark { background: linear-gradient(transparent 55%, rgba(255,90,60,.55) 55%); color: inherit; padding: 0 2px; }
+  .j-cover .small { margin-top: auto; font-size: 13px; line-height: 1.6; }
+  .j-sticker { position: absolute; right: 12px; top: 14px; transform: rotate(8deg); background: #1b1a17; color: #fff; font-size: 12px; font-weight: 700; padding: 4px 10px; border-radius: 999px; }
+  .j-sticker.red { background: #ff5a3c; }
+  .bg1 { background: #fff1b8; } .bg2 { background: #d6f3e2; } .bg3 { background: #ffdfe5; } .bg4 { background: #dbe9ff; } .bg5 { background: #1b1a17; color: #fff; }
+  .bg5 .big mark { background: linear-gradient(transparent 55%, rgba(255,216,77,.6) 55%); }
+  .j-meta { padding: 10px 12px 12px; }
+  .j-meta .tt { font-size: 14px; font-weight: 500; line-height: 1.5; color: #1b1a17; }
+  .j-meta .row { display: flex; justify-content: space-between; align-items: center; margin-top: 8px; font-size: 12px; color: #7a7366; }
+  .j-meta .who { display: flex; align-items: center; gap: 6px; }
+  .j-meta .av { width: 20px; height: 20px; border-radius: 50%; background: #ece5d8; display: grid; place-items: center; font-size: 10px; font-weight: 700; color: #1b1a17; }
+  /* 分享卡就是封面本身 */
+  .j-share { background: #fff1b8; padding: 24px 22px 18px; display: flex; flex-direction: column; color: #1b1a17; }
+  .j-share .kick { font-size: 14px; font-weight: 700; }
+  .j-share .big { font-family: "ZCOOL QingKe HuangYou", "Noto Sans SC", sans-serif; font-size: 58px; line-height: 1.05; margin-top: 14px; }
+  .j-share .big mark { background: linear-gradient(transparent 55%, rgba(255,90,60,.55) 55%); color: inherit; }
+  .j-share .pts { margin: 16px 0 0; padding: 0; list-style: none; font-size: 14px; line-height: 1.9; }
+  .j-share .pts li::before { content: "→ "; font-weight: 700; }
+  .j-share .ft { margin-top: auto; display: flex; justify-content: space-between; align-items: flex-end; font-size: 12px; }
+  .j-share .ft b { font-family: "ZCOOL QingKe HuangYou", sans-serif; font-weight: 400; font-size: 20px; }
+
+  @media (max-width: 860px) {
+    .g-nav, .g-hero, .g-legend, .g-grid, .g-sec-title { padding-left: 16px; padding-right: 16px; }
+    .g-nav .g-cta { margin-left: 0; }
+    .g-hero h1 { font-size: 30px; }
+    .h-nav, .h-banner, .h-body { padding-left: 16px; padding-right: 16px; }
+    .h-nav input, .j-nav input { margin-left: 0; width: 100%; }
+    .h-body { grid-template-columns: 1fr; }
+    .j-nav, .j-intro, .j-feed { padding-left: 16px; padding-right: 16px; }
+    .j-feed { columns: 2 150px; column-gap: 10px; }
+    .j-cover .big { font-size: 30px; }
+    .sharecard { width: 100%; max-width: 330px; }
+    .switcher .note { margin-left: 0; width: 100%; }
+  }
+</style>
+</head>
+<body>
+
+<div class="switcher" role="group" aria-label="风格切换">
+  <strong>52tokens 风格方案 v3</strong>
+  <button type="button" data-opt="g" aria-pressed="true">G 羊毛图鉴</button>
+  <button type="button" data-opt="h" aria-pressed="false">H 羊毛热榜</button>
+  <button type="button" data-opt="j" aria-pressed="false">J 封面海报</button>
+  <span class="note">每个方案下方附「分享卡」预览 · 数据均为示例</span>
+</div>
+
+<p class="desc" id="desc"></p>
+
+<div class="frame">
+
+<!-- ======================= G 羊毛图鉴 ======================= -->
+<div class="opt on" id="opt-g">
+  <div class="site g">
+    <nav class="g-nav">
+      <span class="g-logo">52<span>tokens</span></span>
+      <ul><li><a href="#">今日图鉴</a></li><li><a href="#">模型价格</a></li><li><a href="#">免费额度</a></li><li><a href="#">订阅地区价</a></li><li><a href="#">卡网</a></li></ul>
+      <a class="g-cta" href="#">生成我的今日图鉴</a>
+    </nav>
+    <div class="g-hero">
+      <div>
+        <h1>今天的 AI 羊毛，<br>你收集了几张 <b>SSR</b>？</h1>
+        <p>每条签到、免费额度、新人礼包都是一张卡，按价值分 SSR / SR / R / N 四档稀有度。领完点「已领取」，集齐当天的图鉴就能生成分享图。</p>
+      </div>
+      <div class="g-progress" aria-label="今日收集进度（示例）">
+        <div class="row"><span>今日收集</span><b>5 / 12</b></div>
+        <div class="g-bar"><i></i></div>
+        <div class="row"><span>已领估值</span><b>¥[N]</b></div>
+      </div>
+    </div>
+    <div class="g-legend" aria-label="稀有度说明">
+      <span><i style="background:#f5c451"></i>SSR 大额 / 长期免费</span>
+      <span><i style="background:#b48cff"></i>SR 每日签到高额</span>
+      <span><i style="background:#6aa8ff"></i>R 普通签到</span>
+      <span><i style="background:#6c7089"></i>N 小额 / 限制多</span>
+    </div>
+    <div class="g-sec-title">今日卡池</div>
+    <div class="g-grid">
+      <article class="g-card ssr">
+        <span class="g-rar">SSR</span><span class="g-plat">阿里云百炼 · 新人礼包</span>
+        <span class="g-rw">100万 tokens<small>每个模型 · 有效期限制</small></span>
+        <div class="g-stats"><span>门槛</span><b>实名认证</b><span>时效</span><b>一次性</b><span>确认</span><b>10/21</b></div>
+        <button class="g-claim" type="button">去领取</button>
+      </article>
+      <article class="g-card ssr">
+        <span class="g-rar">SSR</span><span class="g-plat">智谱 · GLM-4-Flash</span>
+        <span class="g-rw">永久免费<small>限 30 并发</small></span>
+        <div class="g-stats"><span>门槛</span><b>注册即可</b><span>时效</span><b>长期</b><span>确认</span><b>10/21</b></div>
+        <button class="g-claim" type="button">去使用</button>
+      </article>
+      <article class="g-card sr got">
+        <span class="g-rar">SR</span><span class="g-plat">Trae · 每日签到</span>
+        <span class="g-rw">+200 积分<small>客户端内签到</small></span>
+        <div class="g-stats"><span>门槛</span><b>登录</b><span>时效</span><b>每日</b><span>确认</span><b>10/22</b></div>
+        <button class="g-claim" type="button">✓ 已领取</button>
+      </article>
+      <article class="g-card r">
+        <span class="g-rar">R</span><span class="g-plat">Qoder · 每日签到</span>
+        <span class="g-rw">+100 Credits<small>需保持桌面端登录</small></span>
+        <div class="g-stats"><span>门槛</span><b>登录</b><span>时效</span><b>每日</b><span>确认</span><b>10/22</b></div>
+        <button class="g-claim ghost" type="button">去签到</button>
+      </article>
+      <article class="g-card">
+        <span class="g-rar">N</span><span class="g-plat">即梦 · 每日登录</span>
+        <span class="g-rw">每日积分<small>当日清零</small></span>
+        <div class="g-stats"><span>门槛</span><b>登录</b><span>时效</span><b>每日</b><span>确认</span><b>10/22</b></div>
+        <button class="g-claim ghost" type="button">去领取</button>
+      </article>
+    </div>
+  </div>
+
+  <div class="share-wrap">
+    <div class="sharecard g-share" aria-label="分享卡示例：我的今日羊毛图鉴">
+      <span class="t1">10 月 22 日 · 52tokens</span>
+      <span class="t2">我的今日羊毛图鉴</span>
+      <div class="mini">
+        <div style="--rc:#f5c451"><em>SSR</em><b>百炼</b><span>100万 tokens</span></div>
+        <div style="--rc:#f5c451"><em>SSR</em><b>GLM-4-Flash</b><span>免费</span></div>
+        <div style="--rc:#b48cff"><em>SR</em><b>Trae</b><span>+200</span></div>
+        <div style="--rc:#6aa8ff"><em>R</em><b>Qoder</b><span>+100</span></div>
+        <div style="--rc:#6aa8ff"><em>R</em><b>[平台]</b><span>+50</span></div>
+        <div style="--rc:#3a3d55"><em style="color:#6c7089">?</em><b>未收集</b><span>还差 7 张</span></div>
+      </div>
+      <div class="total"><div><div class="l">今日已薅估值</div><div class="v">¥[N]</div><div class="l">击败了 [N]% 的羊毛党</div></div><div class="qr" aria-hidden="true"></div></div>
+    </div>
+    <div class="share-cap">
+      <h3>分享卡：个人今日图鉴（朋友圈 / 群聊）</h3>
+      <ul>
+        <li>每个用户每天一张，内容因人而异，可以晒、可以比，天然有社交货币属性</li>
+        <li>「SSR」「击败 X%」这类游戏化文案，带出「我也要去领」的冲动</li>
+        <li>标记领取状态不需要注册，存在浏览器本地；登录后可以同步、连续打卡</li>
+        <li>风险：「估值」的算法要公开透明，不能夸大</li>
+      </ul>
+    </div>
+  </div>
+</div>
+
+<!-- ======================= H 羊毛热榜 ======================= -->
+<div class="opt" id="opt-h">
+  <div class="site h">
+    <nav class="h-nav">
+      <span class="h-logo">52<span>tokens</span></span>
+      <ul><li><a href="#">热榜</a></li><li><a href="#">模型价格</a></li><li><a href="#">免费额度</a></li><li><a href="#">订阅地区价</a></li><li><a href="#">卡网</a></li></ul>
+      <label class="vh" for="h-q">搜索</label><input id="h-q" type="search" placeholder="搜模型、平台、活动">
+    </nav>
+    <div class="h-banner">
+      <h1>AI 羊毛热榜</h1>
+      <p>按近 24 小时真实点击和收藏排序 · 每 10 分钟更新 · 示例数据</p>
+      <div class="h-tabs" role="tablist">
+        <button type="button" role="tab" aria-selected="true">总榜</button>
+        <button type="button" role="tab" aria-selected="false">签到榜</button>
+        <button type="button" role="tab" aria-selected="false">免费额度榜</button>
+        <button type="button" role="tab" aria-selected="false">降价榜</button>
+        <button type="button" role="tab" aria-selected="false">即将截止</button>
+      </div>
+    </div>
+    <div class="h-body">
+      <div class="h-list">
+        <a class="h-row" href="#"><span class="h-rank">1</span><span class="h-t">百炼新人每模型送 100 万 tokens <span class="h-tag bao">爆</span><small>大模型 API · 注册赠送 · 10/21 确认</small></span><span class="h-heat"><b>9,812</b><span class="up">↑ 3</span></span></a>
+        <a class="h-row" href="#"><span class="h-rank">2</span><span class="h-t">Trae 每日签到 +200 积分 <span class="h-tag re">热</span><small>AI 编程 · 每日签到 · 10/22 确认</small></span><span class="h-heat"><b>7,640</b><span>—</span></span></a>
+        <a class="h-row" href="#"><span class="h-rank">3</span><span class="h-t">GLM-4-Flash 永久免费 <span class="h-tag re">热</span><small>大模型 API · 长期免费 · 10/21 确认</small></span><span class="h-heat"><b>6,205</b><span class="up">↑ 1</span></span></a>
+        <a class="h-row" href="#"><span class="h-rank">4</span><span class="h-t">DeepSeek-V3.2 输出价下调 <span class="h-tag xin">新</span><small>价格变动 · ▼ 8% · 今天确认</small></span><span class="h-heat"><b>4,377</b><span class="up">↑ 9</span></span></a>
+        <a class="h-row" href="#"><span class="h-rank">5</span><span class="h-t">Qoder 每日签到 +100 Credits<small>AI 编程 · 每日签到 · 10/22 确认</small></span><span class="h-heat"><b>3,960</b><span>↓ 2</span></span></a>
+        <a class="h-row" href="#"><span class="h-rank">6</span><span class="h-t">[平台] 年付套餐限时折扣 <span class="h-tag jie">剩 2 天</span><small>限时折扣 · 今天收录</small></span><span class="h-heat"><b>2,114</b><span class="up">↑ 4</span></span></a>
+      </div>
+      <aside class="h-side">
+        <div class="h-box">
+          <h2>本周最值 TOP 3</h2>
+          <div class="h-podium">
+            <div class="p1"><b>1</b>百炼新人</div>
+            <div class="p2"><b>2</b>GLM 免费</div>
+            <div class="p3"><b>3</b>Trae 签到</div>
+          </div>
+        </div>
+        <div class="h-box">
+          <h2>上榜就提醒我</h2>
+          <div class="h-sub"><span>新羊毛冲进前 10 时，通过 Telegram / 邮件通知你。</span><a href="#">订阅热榜</a></div>
+        </div>
+      </aside>
+    </div>
+  </div>
+
+  <div class="share-wrap">
+    <div class="sharecard h-share" aria-label="分享卡示例：本周羊毛热榜">
+      <div class="hd"><div class="a">52tokens · 10 月第 4 周</div><div class="b">AI 羊毛热榜 TOP 5</div></div>
+      <ol>
+        <li><i>1</i><span>百炼新人 100 万 tokens</span><span>爆</span></li>
+        <li><i>2</i><span>Trae 每日签到 +200</span><span>热</span></li>
+        <li><i>3</i><span>GLM-4-Flash 永久免费</span><span>热</span></li>
+        <li><i>4</i><span>DeepSeek-V3.2 降价 8%</span><span>新</span></li>
+        <li><i>5</i><span>Qoder 每日签到 +100</span><span></span></li>
+      </ol>
+      <div class="ft"><span>完整榜单与原站链接，扫码查看<br>数据为示例</span><div class="qr" aria-hidden="true"></div></div>
+    </div>
+    <div class="share-cap">
+      <h3>分享卡：每周热榜（群聊 / 公众号 / Telegram 频道）</h3>
+      <ul>
+        <li>国内用户对「热搜榜」的形式极其熟悉，一眼就懂，适合当周报内容反复转发</li>
+        <li>榜单靠 <code>/go</code> 跳转的真实点击和收藏排序，和推广链接计量是同一套数据</li>
+        <li>「爆 / 新 / 热」标签和排名升降制造话题感；按分类分榜，可以生成很多 SEO 页面</li>
+        <li>风险：热度可能被刷，需要按 IP 去重并做异常过滤；赞助内容不能进自然榜</li>
+      </ul>
+    </div>
+  </div>
+</div>
+
+<!-- ======================= J 封面海报 ======================= -->
+<div class="opt" id="opt-j">
+  <div class="site j">
+    <nav class="j-nav">
+      <span class="j-logo"><span>52tokens</span></span>
+      <ul><li><a href="#" aria-current="page">推荐</a></li><li><a href="#">签到</a></li><li><a href="#">免费额度</a></li><li><a href="#">模型价格</a></li><li><a href="#">学生</a></li></ul>
+      <label class="vh" for="j-q">搜索</label><input id="j-q" type="search" placeholder="搜一搜 AI 羊毛">
+    </nav>
+    <div class="j-intro"><h1>今天能白嫖的 AI</h1><p>每张卡片都能一键存成图 · 数据均为示例</p></div>
+    <div class="j-feed">
+      <a class="j-item" href="#">
+        <div class="j-cover bg1"><span class="j-sticker red">已核实</span><span class="kick">新人福利 / 阿里云百炼</span><span class="big">白嫖<br><mark>100万</mark><br>tokens</span><span class="small">每个模型单独送 · 需实名 · 有有效期</span></div>
+        <div class="j-meta"><div class="tt">百炼新人礼包，每个模型都送</div><div class="row"><span class="who"><span class="av">百</span>阿里云百炼</span><span>收藏 1.2k</span></div></div>
+      </a>
+      <a class="j-item" href="#">
+        <div class="j-cover bg5 short"><span class="kick">每日签到 / Trae</span><span class="big">每天<br><mark>+200</mark></span><span class="small">AI 编程 · 客户端内签到</span></div>
+        <div class="j-meta"><div class="tt">Trae 签到别忘了，每天 200 积分</div><div class="row"><span class="who"><span class="av">Tr</span>Trae</span><span>收藏 860</span></div></div>
+      </a>
+      <a class="j-item" href="#">
+        <div class="j-cover bg2 tall"><span class="j-sticker">长期</span><span class="kick">永久免费 / 智谱</span><span class="big">这个模型<br><mark>不要钱</mark></span><span class="small">GLM-4-Flash · 输入输出都免费 · 限 30 并发</span></div>
+        <div class="j-meta"><div class="tt">GLM-4-Flash 永久免费，个人项目够用</div><div class="row"><span class="who"><span class="av">智</span>智谱 BigModel</span><span>收藏 2.3k</span></div></div>
+      </a>
+      <a class="j-item" href="#">
+        <div class="j-cover bg3"><span class="j-sticker red">降价</span><span class="kick">价格变动 / DeepSeek</span><span class="big">又便宜了<br><mark>8%</mark></span><span class="small">DeepSeek-V3.2 输出价下调 · 示例数据</span></div>
+        <div class="j-meta"><div class="tt">DeepSeek-V3.2 降价，现在多少钱？</div><div class="row"><span class="who"><span class="av">D</span>DeepSeek</span><span>收藏 540</span></div></div>
+      </a>
+      <a class="j-item" href="#">
+        <div class="j-cover bg4 short"><span class="kick">学生专属 / GitHub</span><span class="big">学生<br><mark>免费用</mark></span><span class="small">Copilot 学生认证</span></div>
+        <div class="j-meta"><div class="tt">学生认证后 Copilot 免费</div><div class="row"><span class="who"><span class="av">G</span>GitHub</span><span>收藏 1.8k</span></div></div>
+      </a>
+      <a class="j-item" href="#">
+        <div class="j-cover bg1 tall"><span class="kick">每日签到 / Qoder</span><span class="big">签到<br>送<mark>100</mark><br>Credits</span><span class="small">需保持桌面端登录</span></div>
+        <div class="j-meta"><div class="tt">Qoder 每日签到攻略</div><div class="row"><span class="who"><span class="av">Q</span>Qoder</span><span>收藏 410</span></div></div>
+      </a>
+    </div>
+  </div>
+
+  <div class="share-wrap">
+    <div class="sharecard j-share" aria-label="分享卡示例：活动封面">
+      <span class="kick">新人福利 / 阿里云百炼</span>
+      <span class="big">白嫖<br><mark>100万</mark><br>tokens</span>
+      <ul class="pts"><li>每个模型单独送</li><li>需实名认证</li><li>有效期内用完</li></ul>
+      <div class="ft"><div><b>52tokens</b><br>10/21 已核实 · 示例</div><div class="qr" aria-hidden="true"></div></div>
+    </div>
+    <div class="share-cap">
+      <h3>分享卡：活动封面本身（小红书 / 朋友圈）</h3>
+      <ul>
+        <li>3:4 大字封面，就是小红书爆款笔记的标准格式，站内卡片可以一键存图直接发</li>
+        <li>站长自己运营小红书号时可以批量生成，几乎零成本产出内容</li>
+        <li>小红书限制外链，引流主要靠品牌名搜索和二维码，所以封面上必须有站名</li>
+        <li>风险：整站像内容社区，价格表这类严肃数据放进来会有违和感</li>
+      </ul>
+    </div>
+  </div>
+</div>
+
+</div>
+
+<script>
+  var descs = {
+    g: 'G 羊毛图鉴：把每条羊毛做成卡牌，按价值分 SSR / SR / R / N，领完打勾、集图鉴。深色底加金色 SSR 闪卡，游戏化最强，「晒今日图鉴」是天然的传播点。适合做核心互动玩法，不一定要做整站风格。',
+    h: 'H 羊毛热榜：热搜榜样式，有排名、「爆 / 新 / 热」标签、升降箭头、分类分榜。国内用户最熟悉的信息形态，每周榜单图适合在群和频道里反复转发，分榜也能批量生成 SEO 页面。',
+    j: 'J 封面海报：小红书式瀑布流，每条羊毛是一张 3:4 大字封面，封面本身就是分享图，可以一键存图发小红书。最贴合小红书渠道，但整站会显得像内容社区，价格表放进来不够严肃。'
+  };
+  var desc = document.getElementById('desc');
+  var buttons = document.querySelectorAll('.switcher button');
+  function show(id) {
+    document.querySelectorAll('.opt').forEach(function (el) { el.classList.toggle('on', el.id === 'opt-' + id); });
+    buttons.forEach(function (b) { b.setAttribute('aria-pressed', String(b.dataset.opt === id)); });
+    desc.textContent = descs[id];
+  }
+  buttons.forEach(function (b) { b.addEventListener('click', function () { show(b.dataset.opt); }); });
+  document.querySelectorAll('.g-claim').forEach(function (btn) {
+    btn.addEventListener('click', function () {
+      var card = btn.closest('.g-card');
+      var got = card.classList.toggle('got');
+      btn.textContent = got ? '✓ 已领取' : '去领取';
+    });
+  });
+  show('g');
+</script>
+</body>
+</html>

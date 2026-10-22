@@ -1,0 +1,493 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>52tokens 热榜整合稿</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@500;700&family=Noto+Sans+SC:wght@400;500;700;900&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #f6f6f8; --card: #fff; --ink: #18181b; --sub: #52525b; --mute: #71717a; --line: #ececf0; --line2: #f2f2f5;
+    --red: #e11d2e; --orange: #f0581f; --amber: #e89a0c; --green: #15803d; --green-bg: #ecfdf3;
+    --ad-bg: #fffaeb; --ad-line: #f5e3b3; --ad-ink: #8a5a00;
+    --note: #2563eb;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: #d9d9dd; font-family: "Noto Sans SC", "PingFang SC", "Microsoft YaHei", sans-serif; color: var(--ink); }
+  a { color: inherit; }
+  .vh { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+  .mono { font-family: "JetBrains Mono", Consolas, monospace; }
+
+  .switcher { position: sticky; top: 0; z-index: 30; display: flex; flex-wrap: wrap; gap: 8px; align-items: center; padding: 12px 16px; background: #18191d; color: #fff; }
+  .switcher strong { margin-right: 8px; font-size: 14px; }
+  .switcher button { min-height: 36px; padding: 0 14px; border: 1px solid #4a4d57; border-radius: 6px; background: transparent; color: #fff; font: inherit; font-size: 14px; cursor: pointer; }
+  .switcher button[aria-pressed="true"] { background: #fff; color: #18191d; border-color: #fff; }
+  .switcher label { margin-left: auto; display: inline-flex; align-items: center; gap: 6px; font-size: 13px; color: #d4d6dd; cursor: pointer; }
+  .frame { max-width: 1240px; margin: 16px auto 48px; padding: 0 16px; }
+  .page { display: none; }
+  .page.on { display: block; }
+  .site { background: var(--bg); border-radius: 12px; overflow: hidden; box-shadow: 0 10px 34px rgba(0,0,0,.16); }
+
+  /* 标注 */
+  .n { display: inline-grid; place-items: center; width: 22px; height: 22px; border-radius: 50%; background: var(--note); color: #fff; font-size: 12px; font-weight: 700; font-family: "JetBrains Mono", monospace; flex: none; vertical-align: middle; box-shadow: 0 0 0 3px rgba(37,99,235,.18); }
+  body.hide-notes .n { display: none; }
+  .notes { margin-top: 18px; background: #fff; border-radius: 12px; padding: 20px 22px; box-shadow: 0 6px 20px rgba(0,0,0,.08); }
+  .notes h2 { margin: 0 0 12px; font-size: 17px; }
+  .notes ol { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 12px 24px; }
+  .notes li { display: flex; gap: 10px; font-size: 13px; line-height: 1.7; color: #333; }
+  .notes li b { color: var(--ink); }
+  body.hide-notes .notes { display: none; }
+
+  /* 通用站点外壳 */
+  .nav { display: flex; flex-wrap: wrap; align-items: center; gap: 20px; padding: 14px 28px; background: var(--card); border-bottom: 1px solid var(--line); }
+  .logo { font-weight: 900; font-size: 20px; text-decoration: none; }
+  .logo span { color: var(--red); }
+  .nav ul { display: flex; flex-wrap: wrap; gap: 18px; margin: 0; padding: 0; list-style: none; font-size: 14px; color: var(--sub); }
+  .nav ul a { text-decoration: none; }
+  .nav ul a[aria-current="page"] { color: var(--red); font-weight: 700; }
+  .nav input { margin-left: auto; width: 240px; min-height: 38px; padding: 0 16px; border: 0; border-radius: 999px; background: #f1f1f4; font: inherit; font-size: 13px; }
+  .foot { padding: 20px 28px 26px; font-size: 12px; line-height: 1.8; color: var(--mute); border-top: 1px solid var(--line); background: var(--card); }
+  .box { background: var(--card); border-radius: 14px; padding: 18px; }
+  .box h2 { margin: 0 0 14px; font-size: 16px; font-weight: 900; display: flex; align-items: center; gap: 8px; }
+  .box h2 a { margin-left: auto; font-size: 12px; font-weight: 500; color: var(--mute); text-decoration: none; }
+  .tag { display: inline-flex; align-items: center; font-size: 11px; font-weight: 700; color: #fff; padding: 1px 6px; border-radius: 4px; line-height: 1.6; }
+  .tag.bao { background: var(--red); } .tag.xin { background: var(--orange); } .tag.re { background: var(--amber); } .tag.jie { background: var(--sub); }
+  .ad-label { display: inline-flex; align-items: center; font-size: 11px; color: var(--ad-ink); border: 1px solid var(--ad-line); background: var(--ad-bg); padding: 0 6px; border-radius: 4px; line-height: 1.7; font-weight: 500; }
+  .aff { font-size: 10px; color: var(--mute); border: 1px solid var(--line); border-radius: 3px; padding: 0 4px; margin-left: 6px; vertical-align: middle; }
+  .btn { min-height: 38px; display: inline-flex; align-items: center; justify-content: center; padding: 0 14px; border-radius: 10px; border: 0; background: var(--red); color: #fff; font: inherit; font-size: 13px; font-weight: 700; text-decoration: none; cursor: pointer; white-space: nowrap; }
+  .btn.ghost { background: #f1f1f4; color: var(--ink); }
+
+  /* ---------------- 首页 ---------------- */
+  .banner { background: var(--red); color: #fff; padding: 26px 28px 0; }
+  .banner-top { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 12px 24px; }
+  .banner h1 { margin: 0; font-size: 34px; font-weight: 900; }
+  .banner p { margin: 6px 0 0; font-size: 13px; color: #ffd9dc; }
+  .banner .quick { margin-left: auto; display: flex; flex-wrap: wrap; gap: 8px; }
+  .banner .quick a { min-height: 34px; display: inline-flex; align-items: center; padding: 0 12px; border-radius: 999px; background: rgba(255,255,255,.16); font-size: 13px; text-decoration: none; }
+  .tabs { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 18px; }
+  .tabs button { min-height: 44px; padding: 0 16px; border: 0; border-radius: 10px 10px 0 0; background: transparent; color: #ffe4e6; font: inherit; font-size: 15px; font-weight: 700; cursor: pointer; }
+  .tabs button[aria-selected="true"] { background: var(--bg); color: var(--red); }
+  .home-body { display: grid; grid-template-columns: minmax(0, 1fr) 330px; gap: 20px; padding: 20px 28px 8px; }
+  .hot { background: var(--card); border-radius: 14px; padding: 6px 0; }
+  .row { display: grid; grid-template-columns: 50px minmax(0, 1fr) auto; gap: 12px; align-items: center; padding: 13px 18px; border-bottom: 1px solid var(--line2); text-decoration: none; }
+  .row:last-child { border-bottom: 0; }
+  .row:hover { background: #fafafa; }
+  .rank { font-family: "JetBrains Mono", Consolas, monospace; font-weight: 700; font-size: 22px; font-style: italic; color: #a1a1aa; text-align: center; }
+  .r1 .rank { color: var(--red); font-size: 28px; } .r2 .rank { color: var(--orange); font-size: 26px; } .r3 .rank { color: var(--amber); font-size: 24px; }
+  .t { font-size: 15px; font-weight: 500; display: flex; flex-wrap: wrap; align-items: center; gap: 6px 8px; min-width: 0; }
+  .t small { display: block; width: 100%; font-size: 12px; color: var(--mute); font-weight: 400; }
+  .cat { font-size: 11px; color: var(--sub); background: #f1f1f4; padding: 1px 6px; border-radius: 4px; }
+  .cat.shop { color: #7c2d12; background: #fff1e6; }
+  .heat { text-align: right; font-size: 12px; color: var(--mute); white-space: nowrap; }
+  .heat b { display: block; font-family: "JetBrains Mono", Consolas, monospace; font-size: 15px; color: var(--ink); }
+  .heat .up { color: var(--red); } .heat .dn { color: var(--green); }
+  .row.sponsored { background: var(--ad-bg); border-top: 1px solid var(--ad-line); border-bottom: 1px solid var(--ad-line); }
+  .row.sponsored .rank { font-size: 12px; font-style: normal; color: var(--ad-ink); }
+  .side { display: flex; flex-direction: column; gap: 16px; }
+  .podium { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; align-items: end; text-align: center; font-size: 12px; }
+  .podium div { border-radius: 10px 10px 0 0; padding: 10px 4px; color: #fff; font-weight: 700; display: flex; flex-direction: column; gap: 4px; justify-content: flex-end; }
+  .podium .p1 { background: var(--red); height: 118px; } .podium .p2 { background: var(--orange); height: 94px; order: -1; } .podium .p3 { background: var(--amber); height: 78px; }
+  .podium b { font-size: 20px; font-family: "JetBrains Mono", monospace; }
+  .quickcmp { display: flex; flex-direction: column; gap: 0; }
+  .quickcmp .qh { font-size: 14px; font-weight: 700; margin-bottom: 6px; }
+  .quickcmp .ql { display: grid; grid-template-columns: 1fr auto; gap: 6px; padding: 8px 0; border-bottom: 1px dashed var(--line); font-size: 13px; text-decoration: none; }
+  .quickcmp .ql:last-child { border-bottom: 0; }
+  .quickcmp .ql span:last-child { font-family: "JetBrains Mono", monospace; font-weight: 700; }
+  .quickcmp .low { color: var(--green); }
+  .sponsor-card { background: var(--ad-bg); border: 1px solid var(--ad-line); border-radius: 14px; padding: 16px; display: flex; flex-direction: column; gap: 10px; }
+  .sponsor-card .top { display: flex; justify-content: space-between; align-items: center; }
+  .sponsor-card .sp-name { font-size: 16px; font-weight: 900; }
+  .sponsor-card p { margin: 0; font-size: 13px; color: var(--sub); line-height: 1.6; }
+  .sub-box { display: flex; flex-direction: column; gap: 10px; font-size: 13px; color: var(--sub); }
+  .modules { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; padding: 12px 28px 28px; }
+  .mod .mrow { display: grid; grid-template-columns: 1fr auto; gap: 8px; padding: 9px 0; border-bottom: 1px solid var(--line2); font-size: 13px; }
+  .mod .mrow:last-of-type { border-bottom: 0; }
+  .mod .mrow b { font-family: "JetBrains Mono", monospace; }
+  .mod .mrow .g { color: var(--green); }
+  .mod .more { display: inline-block; margin-top: 10px; font-size: 13px; color: var(--red); text-decoration: none; font-weight: 700; }
+  .warnline { font-size: 11px; color: var(--mute); margin-top: 8px; line-height: 1.6; }
+
+  /* ---------------- 卡网比价页 ---------------- */
+  .crumb { padding: 14px 28px 0; font-size: 12px; color: var(--mute); }
+  .crumb a { text-decoration: none; }
+  .p-head { padding: 10px 28px 18px; display: flex; flex-wrap: wrap; align-items: flex-end; gap: 10px 20px; }
+  .p-head h1 { margin: 0; font-size: 30px; font-weight: 900; }
+  .p-head .sub { font-size: 13px; color: var(--mute); }
+  .p-head .rank-badge { display: inline-flex; align-items: center; gap: 6px; font-size: 13px; font-weight: 700; color: var(--red); background: #fff0f1; padding: 4px 10px; border-radius: 999px; }
+  .bench { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; padding: 0 28px; }
+  .bench .b { background: var(--card); border-radius: 14px; padding: 14px 16px; display: flex; flex-direction: column; gap: 4px; }
+  .bench .l { font-size: 12px; color: var(--mute); display: flex; align-items: center; gap: 6px; }
+  .bench .v { font-family: "JetBrains Mono", monospace; font-size: 26px; font-weight: 700; }
+  .bench .s { font-size: 12px; color: var(--sub); }
+  .bench .b.best { outline: 2px solid var(--red); }
+  .bench .b.best .v { color: var(--red); }
+  .risk { margin: 14px 28px 0; padding: 12px 16px; border-radius: 12px; background: #fff7ed; border: 1px solid #fed7aa; font-size: 13px; line-height: 1.7; color: #7c2d12; display: flex; gap: 10px; align-items: flex-start; }
+  .p-body { display: grid; grid-template-columns: minmax(0, 1fr) 300px; gap: 20px; padding: 16px 28px 28px; }
+  .filters { display: flex; flex-wrap: wrap; gap: 14px 22px; align-items: center; padding: 14px 16px; background: var(--card); border-radius: 14px; margin-bottom: 12px; font-size: 13px; }
+  .seg { display: inline-flex; background: #f1f1f4; border-radius: 10px; padding: 3px; }
+  .seg label { position: relative; }
+  .seg input { position: absolute; opacity: 0; }
+  .seg span { display: inline-flex; align-items: center; min-height: 32px; padding: 0 12px; border-radius: 8px; cursor: pointer; }
+  .seg input:checked + span { background: #fff; font-weight: 700; box-shadow: 0 1px 3px rgba(0,0,0,.08); }
+  .seg input:focus-visible + span { outline: 2px solid var(--note); }
+  .chk { display: inline-flex; align-items: center; gap: 6px; cursor: pointer; }
+  .chk input { width: 16px; height: 16px; accent-color: var(--red); }
+  .sp-strip { background: var(--ad-bg); border: 1px solid var(--ad-line); border-radius: 14px; padding: 12px 16px; margin-bottom: 12px; }
+  .sp-strip .hd { display: flex; align-items: center; gap: 8px; font-size: 12px; color: var(--ad-ink); margin-bottom: 8px; }
+  .sp-strip .it { display: grid; grid-template-columns: minmax(0, 1fr) auto auto; gap: 12px; align-items: center; padding: 6px 0; font-size: 14px; }
+  .sp-strip .it + .it { border-top: 1px dashed var(--ad-line); }
+  .sp-strip .price { font-family: "JetBrains Mono", monospace; font-weight: 700; }
+  .offers { background: var(--card); border-radius: 14px; overflow-x: auto; }
+  .offers table { width: 100%; min-width: 860px; border-collapse: collapse; font-size: 14px; }
+  .offers th { text-align: left; font-size: 12px; color: var(--mute); font-weight: 500; padding: 11px 12px; border-bottom: 1px solid var(--line); white-space: nowrap; }
+  .offers td { padding: 13px 12px; border-bottom: 1px solid var(--line2); vertical-align: middle; }
+  .offers tr:last-child td { border-bottom: 0; }
+  .offers .num { text-align: right; font-family: "JetBrains Mono", monospace; white-space: nowrap; }
+  .offers .price { font-size: 17px; font-weight: 700; }
+  .offers tr.lowest td { background: #fff5f5; }
+  .offers tr.lowest .price { color: var(--red); }
+  .offers .seller { display: flex; flex-direction: column; gap: 3px; }
+  .offers .seller b { font-size: 14px; display: inline-flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+  .offers .seller small { font-size: 12px; color: var(--mute); max-width: 260px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .dlv { font-size: 12px; padding: 2px 8px; border-radius: 999px; background: #f1f1f4; color: var(--sub); white-space: nowrap; }
+  .dlv.hi { background: #fff1e6; color: #9a3412; }
+  .delta { font-size: 12px; color: var(--green); white-space: nowrap; }
+  .stock { font-size: 12px; white-space: nowrap; }
+  .stock.ok { color: var(--green); } .stock.no { color: var(--mute); }
+  .fresh { font-size: 12px; color: var(--mute); white-space: nowrap; }
+  .riskt { font-size: 11px; color: #9a3412; background: #fff7ed; border: 1px solid #fed7aa; border-radius: 4px; padding: 0 5px; white-space: nowrap; }
+  tr.out td { color: #a1a1aa; }
+  tr.out .price { text-decoration: line-through; }
+  .rule { font-size: 12px; color: var(--mute); margin-top: 10px; line-height: 1.7; }
+  .spark { width: 100%; height: 120px; display: block; }
+  .kv { display: grid; grid-template-columns: 1fr auto; gap: 8px; font-size: 13px; padding: 7px 0; border-bottom: 1px solid var(--line2); }
+  .kv:last-child { border-bottom: 0; }
+
+  /* ---------------- 商业化一览 ---------------- */
+  .biz { background: var(--card); border-radius: 12px; padding: 24px 26px; box-shadow: 0 10px 34px rgba(0,0,0,.12); }
+  .biz h1 { margin: 0 0 6px; font-size: 24px; font-weight: 900; }
+  .biz .lead { margin: 0 0 18px; font-size: 14px; color: var(--sub); line-height: 1.8; }
+  .biz-table { overflow-x: auto; }
+  .biz table { width: 100%; min-width: 900px; border-collapse: collapse; font-size: 13px; }
+  .biz th { text-align: left; padding: 10px 12px; font-size: 12px; color: var(--mute); font-weight: 500; border-bottom: 2px solid var(--ink); white-space: nowrap; }
+  .biz td { padding: 12px; border-bottom: 1px solid var(--line); vertical-align: top; line-height: 1.7; }
+  .biz td:first-child { white-space: nowrap; }
+  .phase { display: inline-block; font-size: 11px; font-weight: 700; padding: 1px 7px; border-radius: 999px; background: #f1f1f4; white-space: nowrap; }
+  .phase.p1 { background: #fff0f1; color: var(--red); }
+  .rules { margin-top: 22px; display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 14px; }
+  .rules div { background: var(--bg); border-radius: 12px; padding: 14px 16px; font-size: 13px; line-height: 1.7; }
+  .rules b { display: block; font-size: 14px; margin-bottom: 4px; }
+
+  @media (max-width: 900px) {
+    .nav, .banner, .home-body, .modules, .crumb, .p-head, .bench, .p-body, .foot { padding-left: 16px; padding-right: 16px; }
+    .risk { margin-left: 16px; margin-right: 16px; }
+    .nav input { margin-left: 0; width: 100%; }
+    .banner .quick { margin-left: 0; }
+    .home-body, .p-body { grid-template-columns: 1fr; }
+    .modules { grid-template-columns: 1fr; }
+    .bench { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .switcher label { margin-left: 0; width: 100%; }
+  }
+</style>
+</head>
+<body>
+
+<div class="switcher" role="group" aria-label="页面切换">
+  <strong>52tokens · 热榜整合稿</strong>
+  <button type="button" data-page="home" aria-pressed="true">首页</button>
+  <button type="button" data-page="shop" aria-pressed="false">卡网比价页</button>
+  <button type="button" data-page="biz" aria-pressed="false">商业化位一览</button>
+  <label><input type="checkbox" id="toggle-notes" checked> 显示蓝色标注</label>
+</div>
+
+<div class="frame">
+
+<!-- =============================== 首页 =============================== -->
+<div class="page on" id="page-home">
+  <div class="site">
+    <nav class="nav">
+      <a class="logo" href="#">52<span>tokens</span></a>
+      <ul>
+        <li><a href="#" aria-current="page">热榜</a></li><li><a href="#">模型价格</a></li><li><a href="#">免费额度</a></li>
+        <li><a href="#">订阅地区价</a></li><li><a href="#">卡网比价</a></li><li><a href="#">月报</a></li>
+      </ul>
+      <label class="vh" for="q1">搜索</label><input id="q1" type="search" placeholder="搜模型、平台、商品、活动">
+    </nav>
+
+    <div class="banner">
+      <div class="banner-top">
+        <div><h1>AI 羊毛热榜</h1><p>按近 24 小时真实点击与收藏排序 · 每 10 分钟更新 · 示例数据</p></div>
+        <div class="quick"><a href="#">ChatGPT Plus 多少钱</a><a href="#">免费 Claude API</a><a href="#">今日签到</a></div>
+      </div>
+      <div class="tabs" role="tablist">
+        <button type="button" role="tab" aria-selected="true">总榜</button>
+        <button type="button" role="tab" aria-selected="false">签到</button>
+        <button type="button" role="tab" aria-selected="false">免费额度</button>
+        <button type="button" role="tab" aria-selected="false">降价</button>
+        <button type="button" role="tab" aria-selected="false">订阅低价 <span class="n" style="margin-left:4px">1</span></button>
+        <button type="button" role="tab" aria-selected="false">即将截止</button>
+      </div>
+    </div>
+
+    <div class="home-body">
+      <div class="hot">
+        <a class="row r1" href="#"><span class="rank">1</span><span class="t"><span class="cat">API</span>百炼新人每模型送 100 万 tokens <span class="tag bao">爆</span><small>注册赠送 · 10/21 确认</small></span><span class="heat"><b>9,812</b><span class="up">↑ 3</span></span></a>
+        <a class="row r2" href="#"><span class="rank">2</span><span class="t"><span class="cat shop">订阅</span>ChatGPT Plus 月卡：卡网有货最低 ¥[N]，比官方便宜 [N]% <span class="tag re">热</span><small>卡网比价 · 12 家有货 · 今天确认</small></span><span class="heat"><b>8,430</b><span class="up">↑ 5</span></span></a>
+        <a class="row r3" href="#"><span class="rank">3</span><span class="t"><span class="cat">签到</span>Trae 每日签到 +200 积分 <span class="tag re">热</span><small>AI 编程 · 10/22 确认</small></span><span class="heat"><b>7,640</b><span>—</span></span></a>
+        <a class="row sponsored" href="#"><span class="rank">推广</span><span class="t"><span class="ad-label">推广</span>[赞助商] 新用户首充送 20% 额度 <span class="n">2</span><small>赞助内容 · 不参与排名 · 由 [赞助商] 提供</small></span><span class="heat"><span class="btn ghost" style="min-height:32px">了解</span></span></a>
+        <a class="row" href="#"><span class="rank">4</span><span class="t"><span class="cat">API</span>GLM-4-Flash 永久免费<small>长期免费 · 10/21 确认</small></span><span class="heat"><b>6,205</b><span class="up">↑ 1</span></span></a>
+        <a class="row" href="#"><span class="rank">5</span><span class="t"><span class="cat">降价</span>DeepSeek-V3.2 输出价下调 8% <span class="tag xin">新</span><small>价格变动 · 今天确认</small></span><span class="heat"><b>4,377</b><span class="up">↑ 9</span></span></a>
+        <a class="row" href="#"><span class="rank">6</span><span class="t"><span class="cat shop">订阅</span>Claude Pro：土耳其区官方价约 ¥[N] <span class="tag xin">新</span><small>订阅地区价 · 汇率换算 · 今天确认</small></span><span class="heat"><b>3,980</b><span class="up">↑ 6</span></span></a>
+        <a class="row" href="#"><span class="rank">7</span><span class="t"><span class="cat">签到</span>Qoder 每日签到 +100 Credits<small>AI 编程 · 10/22 确认</small></span><span class="heat"><b>3,960</b><span class="dn">↓ 2</span></span></a>
+        <a class="row" href="#"><span class="rank">8</span><span class="t"><span class="cat">限时</span>[平台] 年付套餐限时折扣 <span class="tag jie">剩 2 天</span><small>限时折扣 · 今天收录</small></span><span class="heat"><b>2,114</b><span class="up">↑ 4</span></span></a>
+      </div>
+
+      <aside class="side">
+        <div class="box">
+          <h2>本周最值 TOP 3</h2>
+          <div class="podium"><div class="p1"><b>1</b>百炼新人</div><div class="p2"><b>2</b>Plus 低价</div><div class="p3"><b>3</b>Trae 签到</div></div>
+        </div>
+        <div class="box quickcmp">
+          <h2>比价速查 <span class="n">3</span><a href="#">全部商品 →</a></h2>
+          <span class="qh">ChatGPT Plus · 1 个月</span>
+          <a class="ql" href="#"><span>官方价（美区）</span><span>$20</span></a>
+          <a class="ql" href="#"><span>官方最低地区价</span><span>¥[N]</span></a>
+          <a class="ql" href="#"><span>卡网有货最低</span><span class="low">¥[N]</span></a>
+          <p class="warnline">卡网为第三方渠道，非官方，购买前请看风险说明。</p>
+        </div>
+        <div class="sponsor-card">
+          <div class="top"><span class="ad-label">赞助</span><span class="n">4</span></div>
+          <span class="sp-name">[赞助商名称]</span>
+          <p>[一句话介绍，例如：开发者用的海外虚拟卡 / 云服务 / API 平台]</p>
+          <a class="btn" href="#">了解详情</a>
+        </div>
+        <div class="box">
+          <h2>上榜就提醒我</h2>
+          <div class="sub-box"><span>新羊毛冲进前 10、关注的商品降价时，通过 Telegram / 邮件通知你。</span><a class="btn" href="#">订阅提醒</a></div>
+        </div>
+      </aside>
+    </div>
+
+    <div class="modules">
+      <div class="box mod">
+        <h2>模型价格</h2>
+        <div class="mrow"><span>DeepSeek-V3.2 输出</span><b>¥3.00</b></div>
+        <div class="mrow"><span>Qwen3-30B 输入</span><b>¥0.70</b></div>
+        <div class="mrow"><span>GLM-4-Flash</span><b class="g">免费</b></div>
+        <a class="more" href="#">全部模型 →</a>
+      </div>
+      <div class="box mod">
+        <h2>订阅地区价</h2>
+        <div class="mrow"><span>ChatGPT Plus 最低区</span><b>¥[N]</b></div>
+        <div class="mrow"><span>Claude Pro 最低区</span><b>¥[N]</b></div>
+        <div class="mrow"><span>Gemini Advanced 最低区</span><b>¥[N]</b></div>
+        <a class="more" href="#">全部地区价 →</a>
+      </div>
+      <div class="box mod">
+        <h2>卡网低价榜 <span class="n">5</span></h2>
+        <div class="mrow"><span>ChatGPT Plus 月卡</span><b class="g">¥[N] 起</b></div>
+        <div class="mrow"><span>Claude Pro 月卡</span><b class="g">¥[N] 起</b></div>
+        <div class="mrow"><span>Gemini Pro 年卡</span><b class="g">¥[N] 起</b></div>
+        <a class="more" href="#">卡网比价 →</a>
+        <p class="warnline">只统计有货、24 小时内确认的报价。</p>
+      </div>
+    </div>
+
+    <footer class="foot">52tokens 不卖货、不收款、不担保，只整理公开信息并标注出处，请以原站为准。<br>带「推广」「赞助」标记的内容含商业关系，不参与排名，也不影响最低价计算。<span class="n">6</span></footer>
+  </div>
+
+  <section class="notes" aria-label="首页标注说明">
+    <h2>首页标注说明</h2>
+    <ol>
+      <li><span class="n">1</span><span><b>卡网和地区价进热榜</b>：「订阅低价」单独一个榜，同时可以进总榜。热榜是统一入口，四个模块都通过它导流。</span></li>
+      <li><span class="n">2</span><span><b>热榜赞助行</b>：固定在第 3 名之后，<b>不占排名序号</b>，淡黄底并标「推广」，每页最多 1 条。按天计费。</span></li>
+      <li><span class="n">3</span><span><b>比价速查</b>：官方价、地区价、卡网最低价三档放在一起比，这是卡网模块最主要的流量入口。卡网链接会带推广参数（按成交返佣）。</span></li>
+      <li><span class="n">4</span><span><b>侧栏赞助卡</b>：每周轮换一家，标「赞助」，和自然内容在视觉上明显分开。适合虚拟卡、云服务、API 平台等周边服务。</span></li>
+      <li><span class="n">5</span><span><b>卡网低价榜</b>：自然排序，只统计有货且 24 小时内确认的报价。点击走 <code>/go</code> 跳转，记录点击并带推广参数。</span></li>
+      <li><span class="n">6</span><span><b>全站披露</b>：页脚固定声明商业关系，这是信任和 SEO 的底线。</span></li>
+    </ol>
+  </section>
+</div>
+
+<!-- =============================== 卡网比价页 =============================== -->
+<div class="page" id="page-shop">
+  <div class="site">
+    <nav class="nav">
+      <a class="logo" href="#">52<span>tokens</span></a>
+      <ul>
+        <li><a href="#">热榜</a></li><li><a href="#">模型价格</a></li><li><a href="#">免费额度</a></li>
+        <li><a href="#">订阅地区价</a></li><li><a href="#" aria-current="page">卡网比价</a></li><li><a href="#">月报</a></li>
+      </ul>
+      <label class="vh" for="q2">搜索</label><input id="q2" type="search" placeholder="搜模型、平台、商品、活动">
+    </nav>
+    <div class="crumb"><a href="#">首页</a> / <a href="#">卡网比价</a> / <a href="#">ChatGPT</a> / Plus 月卡</div>
+    <div class="p-head">
+      <h1>ChatGPT Plus · 1 个月</h1>
+      <span class="rank-badge">热榜 #2 · 订阅低价榜 #1</span>
+      <span class="sub">12 家有货 · 31 条报价 · 最近更新 12 分钟前 · 示例数据</span>
+    </div>
+
+    <div class="bench" aria-label="价格基准">
+      <div class="b"><span class="l">官方价（美区）</span><span class="v">$20</span><span class="s">≈ ¥[N] · 价格基准</span></div>
+      <div class="b"><span class="l">官方最低地区价</span><span class="v">¥[N]</span><span class="s">[地区] · App Store <a href="#">查看地区价</a></span></div>
+      <div class="b best"><span class="l">卡网有货最低 <span class="n">1</span></span><span class="v">¥[N]</span><span class="s">比官方便宜 [N]% · 12 家有货</span></div>
+      <div class="b"><span class="l">近 30 天卡网最低</span><span class="v">¥[N]</span><span class="s">10/12 出现</span></div>
+    </div>
+
+    <div class="risk" role="note">
+      <span aria-hidden="true">⚠</span>
+      <span>卡网是<b>第三方渠道，不是 OpenAI 官方</b>。代充、成品号、共享号的风险各不相同，可能遇到封号、掉订阅、售后跑路。52tokens 不卖货、不担保，请先看<a href="#">交付方式风险说明</a>，再回原站确认商品描述和售后规则。</span>
+    </div>
+
+    <div class="p-body">
+      <div>
+        <div class="filters" role="group" aria-label="筛选">
+          <span>交付方式</span>
+          <span class="seg">
+            <label><input type="radio" name="dlv" checked><span>全部</span></label>
+            <label><input type="radio" name="dlv"><span>代充</span></label>
+            <label><input type="radio" name="dlv"><span>成品号</span></label>
+            <label><input type="radio" name="dlv"><span>卡密 / CDK</span></label>
+            <label><input type="radio" name="dlv"><span>共享</span></label>
+          </span>
+          <label class="chk"><input type="checkbox" checked> 只看有货</label>
+          <label class="chk"><input type="checkbox"> 有质保</label>
+        </div>
+
+        <div class="sp-strip" aria-label="赞助活动">
+          <div class="hd"><span class="ad-label">赞助</span><span>云服务与开发者工具活动，与下方卡网报价无关</span><span class="n">2</span></div>
+          <div class="it"><span><b>腾讯云</b> · 新用户轻量服务器限时活动（示例）</span><span class="price">¥[N]/年</span><a class="btn" href="#">查看活动</a></div>
+        </div>
+
+        <div class="offers">
+          <table>
+            <thead><tr><th>#</th><th>商家 / 原始标题</th><th>交付方式</th><th class="num">价格</th><th>较官方</th><th>库存</th><th>风险</th><th>最近确认</th><th></th></tr></thead>
+            <tbody>
+              <tr class="lowest">
+                <td class="mono">1</td>
+                <td><div class="seller"><b>[商家 1]</b><small>ChatGPT Plus 代充 1 个月 官方直充 秒到</small></div></td>
+                <td><span class="dlv">代充</span></td>
+                <td class="num price">¥[N]</td><td class="delta">−[N]%</td>
+                <td class="stock ok">有货</td><td><span class="riskt">需提供账号</span></td>
+                <td class="fresh">12 分钟前</td>
+                <td><a class="btn" href="#">去看看</a><span class="aff">推广</span> <span class="n">3</span></td>
+              </tr>
+              <tr>
+                <td class="mono">2</td>
+                <td><div class="seller"><b>[商家 2]</b><small>Plus 成品号 独享 送邮箱</small></div></td>
+                <td><span class="dlv hi">成品号</span></td>
+                <td class="num price">¥[N]</td><td class="delta">−[N]%</td>
+                <td class="stock ok">有货 · 余 23</td><td><span class="riskt">账号非本人</span></td>
+                <td class="fresh">35 分钟前</td>
+                <td><a class="btn ghost" href="#">去看看</a></td>
+              </tr>
+              <tr>
+                <td class="mono">3</td>
+                <td><div class="seller"><b>[商家 3]</b><small>ChatGPT Plus 卡密 自助兑换</small></div></td>
+                <td><span class="dlv">卡密</span></td>
+                <td class="num price">¥[N]</td><td class="delta">−[N]%</td>
+                <td class="stock ok">有货</td><td>—</td>
+                <td class="fresh">1 小时前</td>
+                <td><a class="btn ghost" href="#">去看看</a><span class="aff">推广</span></td>
+              </tr>
+              <tr class="out">
+                <td class="mono">—</td>
+                <td><div class="seller"><b>[商家 4]</b><small>Plus 月卡 特价</small></div></td>
+                <td><span class="dlv">代充</span></td>
+                <td class="num price">¥[N]</td><td>—</td>
+                <td class="stock no">缺货</td><td>—</td>
+                <td class="fresh">3 小时前</td>
+                <td><a class="btn ghost" href="#">去看看</a></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        <p class="rule">排序规则：按价格从低到高；缺货、超过 24 小时未确认、未审核的报价沉底，不参与最低价。推广链接<b>不影响排序</b>；列表只罗列公开报价，<b>不代表推荐或担保任何商家</b>。<span class="n">4</span></p>
+      </div>
+
+      <aside class="side">
+        <div class="box">
+          <h2>卡网最低价走势 · 30 天</h2>
+          <svg class="spark" viewBox="0 0 280 120" role="img" aria-label="30 天最低价走势示意，整体下降">
+            <line x1="0" y1="100" x2="280" y2="100" stroke="#ececf0"/>
+            <line x1="0" y1="60" x2="280" y2="60" stroke="#ececf0"/>
+            <line x1="0" y1="20" x2="280" y2="20" stroke="#ececf0"/>
+            <polyline fill="none" stroke="#e11d2e" stroke-width="2.5" stroke-linejoin="round" points="0,34 20,38 40,30 60,44 80,46 100,42 120,58 140,62 160,60 180,72 200,70 220,80 240,78 260,88 280,86"/>
+            <circle cx="280" cy="86" r="4" fill="#e11d2e"/>
+          </svg>
+          <p class="warnline">服务端渲染为 SVG，不下发数据数组。示例走势。</p>
+        </div>
+        <div class="box">
+          <h2>这家靠谱吗</h2>
+          <div class="kv"><span>近 30 天用户反馈</span><b>7 条</b></div>
+          <div class="kv"><span>已核实问题</span><b>1 条</b></div>
+          <div class="kv"><span>商家已回应</span><b>1 条</b></div>
+          <a class="btn ghost" href="#" style="margin-top:10px;width:100%">反馈问题</a>
+        </div>
+        <div class="box">
+          <h2>降价提醒</h2>
+          <div class="sub-box"><span>Plus 月卡卡网价低于你设定的价格时通知你。</span><a class="btn" href="#">设置提醒</a></div>
+        </div>
+      </aside>
+    </div>
+    <footer class="foot">52tokens 不卖货、不收款、不担保，只整理公开信息并标注出处，请以原站为准。<br>带「推广」「赞助」标记的内容含商业关系，不参与排名，也不影响最低价计算。</footer>
+  </div>
+
+  <section class="notes" aria-label="卡网页标注说明">
+    <h2>卡网比价页标注说明</h2>
+    <ol>
+      <li><span class="n">1</span><span><b>三档价格基准</b>：官方价 → 官方最低地区价 → 卡网有货最低价。把三个模块串在同一页，用户一眼看清「便宜多少、代价是什么」。</span></li>
+      <li><span class="n">2</span><span><b>赞助活动区</b>：只挂云厂商、服务器、开发者工具等正规大厂的活动（如腾讯云、阿里云），<b>不挂任何卡网商家</b>。和卡网报价分开展示，按周计费或按推广返佣。</span></li>
+      <li><span class="n">3</span><span><b>推广链接</b>：商家有推广计划就走 <code>/go</code> 带推广参数，按钮旁标「推广」，链接加 <code>rel="sponsored"</code>。按成交返佣，是卡网模块的主要收入。</span></li>
+      <li><span class="n">4</span><span><b>排序规则公开写在页面上</b>：商业关系不影响自然排序；只罗列公开报价，不认证、不推荐、不担保任何商家。外层「卡网有货最低」只显示价格和有货家数，不出现商家名。</span></li>
+    </ol>
+  </section>
+</div>
+
+<!-- =============================== 商业化位一览 =============================== -->
+<div class="page" id="page-biz">
+  <div class="biz">
+    <h1>商业化位一览</h1>
+    <p class="lead">原则：<b>商业内容可以买「位置」，买不到「排名」</b>。所有付费位都在视觉上和自然内容分开、明确标注，不占排名序号，不参与最低价计算。下表按上线阶段排序。</p>
+    <div class="biz-table">
+      <table>
+        <thead><tr><th>商业位</th><th>位置</th><th>形式与标注</th><th>规则</th><th>计费</th><th>阶段</th></tr></thead>
+        <tbody>
+          <tr><td><b>推广链接</b></td><td>所有「去看看 / 去领取」按钮</td><td>走 <code>/go/{id}</code> 跳转，按钮旁标「推广」，<code>rel="sponsored nofollow"</code></td><td>不影响排序；没有推广计划的商家照常展示</td><td>按成交返佣 / 按注册计费</td><td><span class="phase p1">P1</span></td></tr>
+          <tr><td><b>热榜赞助行</b></td><td>热榜第 3 名之后</td><td>淡黄底，标「推广」，不占排名序号</td><td>每页最多 1 条；不进分享图的自然榜单</td><td>按天</td><td><span class="phase">P2</span></td></tr>
+          <tr><td><b>侧栏赞助卡</b></td><td>首页、模型页侧栏</td><td>独立卡片，标「赞助」</td><td>每周轮换 1 家；周边服务优先（虚拟卡、云、API 平台）</td><td>按周</td><td><span class="phase">P2</span></td></tr>
+          <tr><td><b>赞助活动区</b></td><td>卡网商品页、模型页列表上方</td><td>独立区块，标「赞助」</td><td><b>只挂云厂商 / 服务器 / 开发者工具等正规大厂活动</b>（腾讯云、阿里云等），不挂卡网商家；每页最多 2 条</td><td>按周 / 按推广返佣</td><td><span class="phase">P2</span></td></tr>
+          <tr><td><b>周报 / 热榜图赞助</b></td><td>邮件周报、每周热榜分享图底部</td><td>「本期赞助：[名称]」一行</td><td>订阅数超过 5k 后开放</td><td>按期</td><td><span class="phase">P3</span></td></tr>
+          <tr><td><b>数据 API</b></td><td>开发者页</td><td>付费 Key</td><td>唯一的 JSON 数据出口，按额度限流</td><td>按量 / 月付</td><td><span class="phase">P3</span></td></tr>
+          <tr><td><b>会员 Pro</b></td><td>个人中心</td><td>—</td><td>无限提醒、价格历史导出、高级筛选；免费功能不缩水</td><td>月付 / 年付</td><td><span class="phase">P4</span></td></tr>
+          <tr><td><b>展示广告联盟</b></td><td>仅指南、文章页</td><td>标准广告位</td><td><b>卡网页不放</b>：联盟审核对「成品号 / 代充」敏感，可能导致整站被拒</td><td>按展示</td><td><span class="phase">视情况</span></td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="rules">
+      <div><b>不能卖的东西</b>自然排名、热榜名次、「最低价」标识、风险标签的删除或修改；<b>不做任何商家认证或背书</b>。</div>
+      <div><b>卡网特殊处理</b>卡网页面正常给搜索引擎收录，但不作为站点主推落地页；不接广告联盟；推广收入以按成交返佣为主。</div>
+      <div><b>可审计</b>后台记录每个商业位的投放时间和标注截图；页脚和关于页公开说明商业规则。</div>
+      <div><b>先有流量再卖位置</b>P1 只做推广链接，把 <code>/go</code> 点击数据积累起来；有了真实点击数据，赞助位才好定价。</div>
+    </div>
+  </div>
+</div>
+
+</div>
+
+<script>
+  var buttons = document.querySelectorAll('.switcher button');
+  function show(id) {
+    document.querySelectorAll('.page').forEach(function (el) { el.classList.toggle('on', el.id === 'page-' + id); });
+    buttons.forEach(function (b) { b.setAttribute('aria-pressed', String(b.dataset.page === id)); });
+    window.scrollTo(0, 0);
+  }
+  buttons.forEach(function (b) { b.addEventListener('click', function () { show(b.dataset.page); }); });
+  document.getElementById('toggle-notes').addEventListener('change', function (e) {
+    document.body.classList.toggle('hide-notes', !e.target.checked);
+  });
+</script>
+</body>
+</html>

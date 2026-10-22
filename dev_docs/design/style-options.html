@@ -1,0 +1,315 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>52tokens 风格方案</title>
+<style>
+  * { box-sizing: border-box; }
+  body { margin: 0; font-family: "PingFang SC", "Microsoft YaHei", system-ui, sans-serif; background: #e9eaee; color: #111; }
+  .switcher { position: sticky; top: 0; z-index: 10; display: flex; flex-wrap: wrap; gap: 8px; align-items: center; padding: 12px 16px; background: #1f2229; color: #fff; }
+  .switcher strong { margin-right: 8px; font-size: 14px; }
+  .switcher button { min-height: 36px; padding: 0 14px; border: 1px solid #4a4f5c; border-radius: 6px; background: transparent; color: #fff; font: inherit; font-size: 14px; cursor: pointer; }
+  .switcher button[aria-pressed="true"] { background: #fff; color: #1f2229; border-color: #fff; }
+  .switcher .note { margin-left: auto; font-size: 12px; color: #b8bcc6; }
+  .desc { max-width: 1200px; margin: 16px auto 0; padding: 0 16px; font-size: 14px; line-height: 1.7; color: #333; }
+  .frame { max-width: 1200px; margin: 12px auto 40px; padding: 0 16px; }
+  .site { border-radius: 12px; overflow: hidden; box-shadow: 0 8px 30px rgba(0,0,0,.12); }
+
+  /* ---------- 共用结构 ---------- */
+  .site nav { display: flex; flex-wrap: wrap; align-items: center; gap: 20px; padding: 14px 28px; }
+  .site nav .logo { font-weight: 800; font-size: 20px; letter-spacing: -.02em; }
+  .site nav ul { display: flex; flex-wrap: wrap; gap: 18px; margin: 0; padding: 0; list-style: none; font-size: 14px; }
+  .site nav a { text-decoration: none; color: inherit; }
+  .site nav .nav-search { margin-left: auto; }
+  .site nav input { width: 220px; min-height: 36px; padding: 0 12px; font: inherit; font-size: 13px; }
+  .hero { padding: 48px 28px 36px; }
+  .hero h1 { margin: 0 0 12px; }
+  .hero p { margin: 0 0 22px; }
+  .hero form { display: flex; gap: 8px; max-width: 640px; }
+  .hero form input { flex: 1; min-height: 46px; padding: 0 16px; font: inherit; font-size: 15px; }
+  .hero form button { min-height: 46px; padding: 0 22px; font: inherit; font-size: 15px; cursor: pointer; }
+  .chips { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 16px; }
+  .chip { display: inline-flex; align-items: center; min-height: 30px; padding: 0 12px; font-size: 13px; text-decoration: none; color: inherit; }
+  .stats { display: flex; flex-wrap: wrap; gap: 28px; padding: 14px 28px; font-size: 13px; }
+  .stats b { font-variant-numeric: tabular-nums; }
+  main { padding: 8px 28px 36px; }
+  section { margin-top: 28px; }
+  .sec-head { display: flex; align-items: baseline; gap: 12px; margin-bottom: 14px; }
+  .sec-head h2 { margin: 0; }
+  .sec-head a { margin-left: auto; font-size: 13px; }
+  .cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 14px; }
+  .card { display: flex; flex-direction: column; gap: 10px; padding: 16px; }
+  .card .top { display: flex; align-items: center; gap: 10px; }
+  .card .logo-box { width: 34px; height: 34px; display: grid; place-items: center; font-weight: 700; font-size: 14px; flex: none; }
+  .card .name { font-weight: 600; font-size: 15px; }
+  .card .kind { font-size: 12px; }
+  .card .reward { font-variant-numeric: tabular-nums; }
+  .card .tags { display: flex; flex-wrap: wrap; gap: 6px; }
+  .card .tag { font-size: 11px; padding: 2px 8px; }
+  .card .meta { font-size: 12px; display: flex; justify-content: space-between; gap: 8px; }
+  .card .actions { display: flex; gap: 8px; margin-top: auto; }
+  .card .actions a, .card .actions button { flex: 1; min-height: 38px; display: inline-flex; align-items: center; justify-content: center; font: inherit; font-size: 13px; text-decoration: none; cursor: pointer; }
+  .table-box { overflow-x: auto; }
+  table { width: 100%; border-collapse: collapse; font-size: 14px; min-width: 760px; }
+  th, td { text-align: left; padding: 11px 14px; white-space: nowrap; }
+  td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; }
+  .list { display: flex; flex-direction: column; }
+  .list-item { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; padding: 13px 0; }
+  .list-item .t { flex: 1 1 320px; font-size: 14px; }
+  .list-item .when { font-size: 12px; }
+  footer { padding: 22px 28px; font-size: 12px; line-height: 1.7; }
+  .sample { font-size: 11px; padding: 1px 6px; margin-left: 6px; vertical-align: middle; }
+
+  /* ---------- A：数据终端 ---------- */
+  .theme-a { background: #0b0f14; color: #d3dae3; font-size: 14px; }
+  .theme-a nav { border-bottom: 1px solid #1d2630; }
+  .theme-a nav .logo { font-family: "JetBrains Mono", Consolas, monospace; color: #3ddc97; }
+  .theme-a nav a { color: #9aa6b4; }
+  .theme-a nav input, .theme-a .hero form input { background: #111821; border: 1px solid #263240; color: #d3dae3; border-radius: 4px; }
+  .theme-a .hero { padding-top: 36px; }
+  .theme-a .hero h1 { font-size: 28px; color: #f1f5f9; font-weight: 700; }
+  .theme-a .hero p { color: #8794a3; }
+  .theme-a .hero form button { background: #3ddc97; color: #04130c; border: 0; border-radius: 4px; font-weight: 600; }
+  .theme-a .chip { border: 1px solid #263240; color: #9aa6b4; border-radius: 4px; font-family: "JetBrains Mono", Consolas, monospace; font-size: 12px; }
+  .theme-a .stats { border-top: 1px solid #1d2630; border-bottom: 1px solid #1d2630; color: #8794a3; font-family: "JetBrains Mono", Consolas, monospace; }
+  .theme-a .stats b { color: #3ddc97; }
+  .theme-a .sec-head h2 { font-size: 13px; letter-spacing: .08em; text-transform: uppercase; color: #8794a3; font-family: "JetBrains Mono", Consolas, monospace; }
+  .theme-a .sec-head a { color: #3ddc97; }
+  .theme-a .card { background: #0f151c; border: 1px solid #1d2630; border-radius: 6px; }
+  .theme-a .card .logo-box { background: #16202b; color: #3ddc97; border-radius: 4px; font-family: "JetBrains Mono", Consolas, monospace; }
+  .theme-a .card .kind, .theme-a .card .meta { color: #7d8a99; }
+  .theme-a .card .reward { font-family: "JetBrains Mono", Consolas, monospace; font-size: 20px; color: #3ddc97; }
+  .theme-a .card .tag { border: 1px solid #263240; color: #9aa6b4; border-radius: 3px; }
+  .theme-a .card .actions a { background: #3ddc97; color: #04130c; border-radius: 4px; font-weight: 600; }
+  .theme-a .card .actions button { background: transparent; border: 1px solid #263240; color: #c7d0da; border-radius: 4px; }
+  .theme-a table { font-family: "JetBrains Mono", Consolas, monospace; font-size: 13px; }
+  .theme-a th { color: #7d8a99; font-weight: 500; border-bottom: 1px solid #263240; font-size: 12px; }
+  .theme-a td { border-bottom: 1px solid #161e27; }
+  .theme-a td.free { color: #3ddc97; }
+  .theme-a .list-item { border-bottom: 1px solid #161e27; }
+  .theme-a .list-item .when { color: #7d8a99; font-family: "JetBrains Mono", Consolas, monospace; }
+  .theme-a .badge { font-size: 11px; padding: 2px 8px; border-radius: 3px; background: #16202b; color: #f5b74e; font-family: "JetBrains Mono", Consolas, monospace; }
+  .theme-a footer { border-top: 1px solid #1d2630; color: #7d8a99; }
+  .theme-a .sample { border: 1px solid #3a4655; color: #8794a3; border-radius: 3px; }
+  .theme-a .fresh { color: #3ddc97; }
+
+  /* ---------- B：清爽工具站 ---------- */
+  .theme-b { background: #f7f8fa; color: #1f2937; font-size: 15px; }
+  .theme-b nav { background: #fff; border-bottom: 1px solid #e5e7eb; }
+  .theme-b nav .logo { color: #0f766e; }
+  .theme-b nav a { color: #4b5563; }
+  .theme-b nav input, .theme-b .hero form input { background: #fff; border: 1px solid #d1d5db; border-radius: 8px; color: #111827; }
+  .theme-b .hero { background: #fff; border-bottom: 1px solid #e5e7eb; }
+  .theme-b .hero h1 { font-size: 34px; font-weight: 750; color: #111827; letter-spacing: -.01em; }
+  .theme-b .hero p { color: #4b5563; font-size: 16px; }
+  .theme-b .hero form button { background: #0f766e; color: #fff; border: 0; border-radius: 8px; font-weight: 600; }
+  .theme-b .chip { background: #f0fdfa; color: #115e59; border-radius: 999px; }
+  .theme-b .stats { color: #4b5563; }
+  .theme-b .stats b { color: #111827; }
+  .theme-b .sec-head h2 { font-size: 20px; font-weight: 700; color: #111827; }
+  .theme-b .sec-head a { color: #0f766e; }
+  .theme-b .card { background: #fff; border: 1px solid #e5e7eb; border-radius: 12px; }
+  .theme-b .card .logo-box { background: #f3f4f6; color: #374151; border-radius: 8px; }
+  .theme-b .card .kind, .theme-b .card .meta { color: #6b7280; }
+  .theme-b .card .reward { font-size: 22px; font-weight: 700; color: #0f766e; }
+  .theme-b .card .tag { background: #f3f4f6; color: #4b5563; border-radius: 999px; }
+  .theme-b .card .actions a { background: #0f766e; color: #fff; border-radius: 8px; font-weight: 600; }
+  .theme-b .card .actions button { background: #fff; border: 1px solid #d1d5db; color: #374151; border-radius: 8px; }
+  .theme-b .table-box { background: #fff; border: 1px solid #e5e7eb; border-radius: 12px; }
+  .theme-b th { color: #6b7280; font-weight: 500; font-size: 13px; background: #f9fafb; border-bottom: 1px solid #e5e7eb; }
+  .theme-b td { border-bottom: 1px solid #f1f2f4; }
+  .theme-b td.free { color: #0f766e; font-weight: 600; }
+  .theme-b .list { background: #fff; border: 1px solid #e5e7eb; border-radius: 12px; padding: 0 18px; }
+  .theme-b .list-item { border-bottom: 1px solid #f1f2f4; }
+  .theme-b .list-item:last-child { border-bottom: 0; }
+  .theme-b .list-item .when { color: #6b7280; }
+  .theme-b .badge { font-size: 12px; padding: 2px 10px; border-radius: 999px; background: #fef3c7; color: #92400e; }
+  .theme-b footer { background: #fff; border-top: 1px solid #e5e7eb; color: #6b7280; }
+  .theme-b .sample { background: #f3f4f6; color: #6b7280; border-radius: 4px; }
+  .theme-b .fresh { color: #0f766e; }
+
+  /* ---------- C：羊毛活力 ---------- */
+  .theme-c { background: #fff7ef; color: #2b1d12; font-size: 15px; }
+  .theme-c nav { background: #fff; border-bottom: 2px solid #ffe2c7; }
+  .theme-c nav .logo { color: #ea580c; font-size: 22px; }
+  .theme-c nav a { color: #5c4331; font-weight: 500; }
+  .theme-c nav input, .theme-c .hero form input { background: #fff; border: 2px solid #fed7aa; border-radius: 14px; color: #2b1d12; }
+  .theme-c .hero { background: #ffedd5; }
+  .theme-c .hero h1 { font-size: 38px; font-weight: 900; color: #2b1d12; }
+  .theme-c .hero p { color: #6b4a33; font-size: 16px; }
+  .theme-c .hero form button { background: #ea580c; color: #fff; border: 0; border-radius: 14px; font-weight: 700; }
+  .theme-c .chip { background: #fff; border: 2px solid #fed7aa; color: #9a3412; border-radius: 999px; font-weight: 600; }
+  .theme-c .stats { background: #2b1d12; color: #fcd9bd; }
+  .theme-c .stats b { color: #fff; font-size: 15px; }
+  .theme-c .sec-head h2 { font-size: 24px; font-weight: 900; color: #2b1d12; }
+  .theme-c .sec-head a { color: #c2410c; font-weight: 600; }
+  .theme-c .card { background: #fff; border: 2px solid #ffe2c7; border-radius: 18px; }
+  .theme-c .card .logo-box { background: #ffedd5; color: #c2410c; border-radius: 12px; }
+  .theme-c .card .kind, .theme-c .card .meta { color: #7c5a42; }
+  .theme-c .card .reward { font-size: 28px; font-weight: 900; color: #ea580c; }
+  .theme-c .card .tag { background: #fff7ed; border: 1px solid #fed7aa; color: #9a3412; border-radius: 999px; }
+  .theme-c .card .actions a { background: #ea580c; color: #fff; border-radius: 12px; font-weight: 700; }
+  .theme-c .card .actions button { background: #fff; border: 2px solid #fed7aa; color: #9a3412; border-radius: 12px; font-weight: 600; }
+  .theme-c .table-box { background: #fff; border: 2px solid #ffe2c7; border-radius: 18px; }
+  .theme-c th { color: #7c5a42; font-weight: 600; font-size: 13px; border-bottom: 2px solid #ffe2c7; }
+  .theme-c td { border-bottom: 1px solid #fff1e3; }
+  .theme-c td.free { color: #c2410c; font-weight: 800; }
+  .theme-c .list { background: #fff; border: 2px solid #ffe2c7; border-radius: 18px; padding: 0 18px; }
+  .theme-c .list-item { border-bottom: 1px solid #fff1e3; }
+  .theme-c .list-item:last-child { border-bottom: 0; }
+  .theme-c .list-item .when { color: #7c5a42; }
+  .theme-c .badge { font-size: 12px; padding: 3px 10px; border-radius: 999px; background: #ea580c; color: #fff; font-weight: 700; }
+  .theme-c footer { background: #2b1d12; color: #e6c9b2; }
+  .theme-c .sample { background: #fff; border: 1px solid #fed7aa; color: #9a3412; border-radius: 6px; }
+  .theme-c .fresh { color: #15803d; font-weight: 600; }
+
+  @media (max-width: 640px) {
+    .site nav { padding: 12px 16px; }
+    .site nav .nav-search { margin-left: 0; width: 100%; }
+    .site nav input { width: 100%; }
+    .hero, main, .stats, footer { padding-left: 16px; padding-right: 16px; }
+    .hero h1 { font-size: 26px !important; }
+    .hero form { flex-direction: column; }
+    .switcher .note { margin-left: 0; width: 100%; }
+  }
+</style>
+</head>
+<body>
+
+<div class="switcher" role="group" aria-label="风格切换">
+  <strong>52tokens 风格方案</strong>
+  <button type="button" data-theme="a" aria-pressed="false">A 数据终端</button>
+  <button type="button" data-theme="b" aria-pressed="true">B 清爽工具站</button>
+  <button type="button" data-theme="c" aria-pressed="false">C 羊毛活力</button>
+  <span class="note">同一份内容，三种风格；页面数据均为示例</span>
+</div>
+
+<p class="desc" id="desc"></p>
+
+<div class="frame">
+<div class="site theme-b" id="site">
+  <nav>
+    <span class="logo">52tokens</span>
+    <ul>
+      <li><a href="#">模型价格</a></li>
+      <li><a href="#">免费额度</a></li>
+      <li><a href="#">羊毛活动</a></li>
+      <li><a href="#">订阅地区价</a></li>
+      <li><a href="#">卡网比价</a></li>
+    </ul>
+    <label class="nav-search"><span hidden>搜索</span><input type="search" placeholder="搜模型、平台、活动"></label>
+  </nav>
+
+  <div class="hero">
+    <h1>用 AI 最便宜的方式，和现在能白嫖的活动</h1>
+    <p>官方 API 价格、免费额度、签到积分、订阅地区价，每天核对，标明出处和最近确认时间。</p>
+    <form onsubmit="return false">
+      <label style="flex:1;display:flex"><span hidden>搜索</span><input type="search" placeholder="例如：DeepSeek 免费额度、Trae 签到"></label>
+      <button type="submit">搜索</button>
+    </form>
+    <div class="chips">
+      <a class="chip" href="#">今日可签到</a>
+      <a class="chip" href="#">注册送额度</a>
+      <a class="chip" href="#">永久免费模型</a>
+      <a class="chip" href="#">学生优惠</a>
+      <a class="chip" href="#">即将截止</a>
+    </div>
+  </div>
+
+  <div class="stats">
+    <span>收录平台 <b>32</b></span>
+    <span>进行中活动 <b>118</b></span>
+    <span>今日核对 <b>76</b></span>
+    <span>最近更新 <b class="fresh">12 分钟前</b></span>
+  </div>
+
+  <main>
+    <section>
+      <div class="sec-head"><h2>今日可签到</h2><span class="sample">示例</span><a href="#">全部签到活动 →</a></div>
+      <div class="cards">
+        <article class="card">
+          <div class="top"><span class="logo-box" aria-hidden="true">Tr</span><div><div class="name">Trae</div><div class="kind">AI 编程 · 每日签到</div></div></div>
+          <div class="reward">+200 积分/天</div>
+          <div class="tags"><span class="tag">客户端内签到</span><span class="tag">国内版</span></div>
+          <div class="meta"><span>周期：每日</span><span class="fresh">2 小时前确认</span></div>
+          <div class="actions"><a href="#">去签到</a><button type="button">提醒我</button></div>
+        </article>
+        <article class="card">
+          <div class="top"><span class="logo-box" aria-hidden="true">Qo</span><div><div class="name">Qoder</div><div class="kind">AI 编程 · 每日签到</div></div></div>
+          <div class="reward">+100 Credits/天</div>
+          <div class="tags"><span class="tag">需保持登录</span><span class="tag">桌面端</span></div>
+          <div class="meta"><span>周期：每日</span><span class="fresh">5 小时前确认</span></div>
+          <div class="actions"><a href="#">去签到</a><button type="button">提醒我</button></div>
+        </article>
+        <article class="card">
+          <div class="top"><span class="logo-box" aria-hidden="true">CB</span><div><div class="name">CodeBuddy</div><div class="kind">AI 编程 · 每日签到</div></div></div>
+          <div class="reward">+150 积分/天</div>
+          <div class="tags"><span class="tag">连续签到翻倍</span><span class="tag">待复核</span></div>
+          <div class="meta"><span>周期：每日</span><span>1 天前确认</span></div>
+          <div class="actions"><a href="#">去签到</a><button type="button">提醒我</button></div>
+        </article>
+        <article class="card">
+          <div class="top"><span class="logo-box" aria-hidden="true">即</span><div><div class="name">即梦</div><div class="kind">图像视频 · 每日登录</div></div></div>
+          <div class="reward">每日积分</div>
+          <div class="tags"><span class="tag">当日清零</span><span class="tag">App / 网页</span></div>
+          <div class="meta"><span>周期：每日</span><span class="fresh">3 小时前确认</span></div>
+          <div class="actions"><a href="#">去领取</a><button type="button">提醒我</button></div>
+        </article>
+      </div>
+    </section>
+
+    <section>
+      <div class="sec-head"><h2>模型价格与免费额度</h2><span class="sample">示例</span><a href="#">全部模型 →</a></div>
+      <div class="table-box">
+        <table>
+          <thead>
+            <tr><th>模型</th><th>平台</th><th class="num">输入 ¥/百万 tokens</th><th class="num">输出 ¥/百万 tokens</th><th>免费额度</th><th>进行中活动</th><th>最近确认</th></tr>
+          </thead>
+          <tbody>
+            <tr><td>DeepSeek-V3.2</td><td>DeepSeek 官方</td><td class="num">2.00</td><td class="num">3.00</td><td>—</td><td><span class="badge">错峰折扣</span></td><td class="fresh">今天</td></tr>
+            <tr><td>Qwen3-30B-A3B</td><td>硅基流动</td><td class="num">0.70</td><td class="num">2.80</td><td>注册赠额</td><td>—</td><td class="fresh">今天</td></tr>
+            <tr><td>GLM-4-Flash</td><td>智谱 BigModel</td><td class="num free">免费</td><td class="num free">免费</td><td class="free">永久免费</td><td>—</td><td>昨天</td></tr>
+            <tr><td>Qwen 系列</td><td>阿里云百炼</td><td class="num">[价格]</td><td class="num">[价格]</td><td>新人每模型 100 万</td><td><span class="badge">新人礼包</span></td><td class="fresh">今天</td></tr>
+            <tr><td>Doubao 系列</td><td>火山方舟</td><td class="num">[价格]</td><td class="num">[价格]</td><td>每日协作奖励</td><td>—</td><td>2 天前</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <section>
+      <div class="sec-head"><h2>最新活动</h2><span class="sample">示例</span><a href="#">订阅 RSS →</a></div>
+      <div class="list">
+        <div class="list-item"><span class="badge">注册送</span><span class="t">腾讯混元：新用户 10 款主力模型共享 100 万 tokens</span><span class="when">有效期 1 年 · 今天收录</span></div>
+        <div class="list-item"><span class="badge">学生</span><span class="t">GitHub Copilot：学生认证免费使用</span><span class="when">长期 · 昨天确认</span></div>
+        <div class="list-item"><span class="badge">限时</span><span class="t">[平台名] 年付套餐限时折扣</span><span class="when">剩余 3 天 · 今天收录</span></div>
+        <div class="list-item"><span class="badge">免费层</span><span class="t">OpenRouter：免费模型每日请求额度</span><span class="when">长期 · 今天确认</span></div>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    52tokens 不卖货、不收款，只整理公开信息并标注出处，请以原站为准。带「推广」标记的链接含推广关系，不影响排序与最低价计算。
+  </footer>
+</div>
+</div>
+
+<script>
+  var descs = {
+    a: 'A 数据终端：深色底、等宽数字、高信息密度，像行情终端。开发者会觉得专业、可信；但对普通羊毛用户偏冷，长时间阅读也更累。',
+    b: 'B 清爽工具站：白底、中性灰加一个青绿色主色、留白充足。可读性最好、最显中立可信，SEO 落地页和长表格都合适；缺点是辨识度一般。',
+    c: 'C 羊毛活力：暖橙色调、大号奖励数字、圆角卡片，像优惠社区。最抓眼球、社交传播强；但用在价格表上不够严肃，容易显得像营销站。'
+  };
+  var site = document.getElementById('site');
+  var desc = document.getElementById('desc');
+  var buttons = document.querySelectorAll('.switcher button');
+  function apply(theme) {
+    site.className = 'site theme-' + theme;
+    desc.textContent = descs[theme];
+    buttons.forEach(function (b) { b.setAttribute('aria-pressed', String(b.dataset.theme === theme)); });
+  }
+  buttons.forEach(function (b) { b.addEventListener('click', function () { apply(b.dataset.theme); }); });
+  apply('b');
+</script>
+</body>
+</html>
