@@ -1,0 +1,21 @@
+---
+/** 类型标签：按类型配固定色调（见 lib/tones.ts），不同类型一眼可辨 */
+import { TONE_CLASS, type Tone } from "../lib/tones";
+
+interface Props {
+  label: string;
+  tone: Tone;
+  class?: string;
+}
+const { label, tone, class: className } = Astro.props;
+---
+
+<span
+  class:list={[
+    "inline-flex shrink-0 items-center rounded-md px-1.5 text-[11px] leading-5 font-bold",
+    TONE_CLASS[tone],
+    className,
+  ]}
+>
+  {label}
+</span>

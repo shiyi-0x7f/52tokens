@@ -19,6 +19,33 @@
   --color-ad-line: #f5e3b3;
   --color-ad-ink: #8a5a00;
 
+  /* 类型色调：活动类型、卡网商品类型的标签用，文字色 + 浅底色成对使用（见 lib/tones.ts） */
+  --color-tone-amber: #a16207;
+  --color-tone-amber-bg: #fef6dc;
+  --color-tone-green: #15803d;
+  --color-tone-green-bg: #e3f6e8;
+  --color-tone-teal: #0f766e;
+  --color-tone-teal-bg: #dcf4f1;
+  --color-tone-violet: #7c3aed;
+  --color-tone-violet-bg: #f0e9fe;
+  --color-tone-rose: #be123c;
+  --color-tone-rose-bg: #fde7ec;
+  --color-tone-blue: #1d4ed8;
+  --color-tone-blue-bg: #e3ebfd;
+  --color-tone-indigo: #4338ca;
+  --color-tone-indigo-bg: #e8e8fc;
+  --color-tone-orange: #c2410c;
+  --color-tone-orange-bg: #fdeadf;
+  --color-tone-sky: #0369a1;
+  --color-tone-sky-bg: #e0f2fb;
+  --color-tone-slate: #475569;
+  --color-tone-slate-bg: #eef1f5;
+
+  /* 热榜前三名的行底色 */
+  --color-rank-1: #fff6e0;
+  --color-rank-2: #f3f4f6;
+  --color-rank-3: #fdf0e7;
+
   --font-sans: "Noto Sans SC", "PingFang SC", "Microsoft YaHei", system-ui, sans-serif;
   --font-mono: "JetBrains Mono", ui-monospace, Consolas, monospace;
 

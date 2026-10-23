@@ -1,0 +1,38 @@
+---
+/** 品牌标识：品牌色方块 + 短字母（见 lib/brand.ts）。纯装饰，名称由旁边的文字给出 */
+import { brandOf } from "../lib/brand";
+
+interface Props {
+  /** 显示名：查不到品牌时用它取色和首字 */
+  name: string;
+  /** 依次尝试的查找键：平台 slug、模型系列、应用 slug 等 */
+  keys?: (string | null | undefined)[];
+  size?: "sm" | "md" | "lg";
+  class?: string;
+}
+const { name, keys = [], size = "md", class: className } = Astro.props;
+const brand = brandOf(name, ...keys);
+const box = { sm: "size-6 rounded-md", md: "size-9 rounded-[10px]", lg: "size-12 rounded-xl" }[
+  size
+];
+// 字母越多字号越小，保证放得下
+const len = [...brand.mark].length;
+const font = {
+  sm: len > 2 ? "text-[8px]" : "text-[11px]",
+  md: len > 2 ? "text-[11px]" : "text-sm",
+  lg: len > 2 ? "text-sm" : "text-lg",
+}[size];
+---
+
+<span
+  aria-hidden="true"
+  class:list={[
+    "inline-grid shrink-0 place-items-center font-black tracking-tight select-none",
+    box,
+    font,
+    className,
+  ]}
+  style={`background:${brand.color};color:${brand.dark ? "#18181b" : "#ffffff"}`}
+>
+  {brand.mark}
+</span>
