@@ -40,7 +40,7 @@ const deals = [...freeQuota, ...signup];
         {freeModels.map((m) => (
           <li>
             <a
-              href={`/models/${m.slug}`}
+              href={`/free/${m.slug}`}
               class="block rounded-(--radius-card) bg-card p-4 no-underline hover:bg-hover"
             >
               <span class="font-bold">{m.name}</span>

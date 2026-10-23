@@ -88,6 +88,11 @@ const summary =
       {model.context_window !== null && ` · 上下文 ${formatContext(model.context_window)}`}
     </p>
     {model.description && <p class="mt-2 text-sm text-sub">{model.description}</p>}
+    <p class="mt-2 text-sm">
+      <a href={`/free/${model.slug}`} class="text-hot">
+        {hasFree ? `${model.name} 免费渠道与免费额度 →` : `${model.name} 有没有免费额度？→`}
+      </a>
+    </p>
   </header>
 
   <div class="overflow-x-auto rounded-(--radius-card) bg-card">
