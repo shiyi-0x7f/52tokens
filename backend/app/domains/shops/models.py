@@ -31,6 +31,7 @@ class ShopCollectorKind(StrEnum):
     KAMI = "kami"
     DUJIAO = "dujiao"  # 独角数卡
     SHOP_API = "shopApi"
+    SHOP_GOODS_API = "shopGoodsApi"
     XIAOHEIWAN = "xiaoheiwan"
     OPENSORA_HTML = "opensoraHtml"
     MAKERICH_HTML = "makerichHtml"

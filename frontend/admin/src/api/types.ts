@@ -139,6 +139,7 @@ export type ShopCollectorKind =
   | "kami"
   | "dujiao"
   | "shopApi"
+  | "shopGoodsApi"
   | "xiaoheiwan"
   | "opensoraHtml"
   | "makerichHtml"
@@ -155,7 +156,7 @@ export type ShopCollectorKind =
 export interface ShopSource {
   id: number;
   host: string;
-  /** 店铺地址；多商户平台（shopApi）是具体商户的 /shop/<token> */
+  /** 店铺地址；多商户平台（shopApi / shopGoodsApi）是具体商户的 /shop/<token> */
   entry_url: string;
   name: string;
   collector_kind: ShopCollectorKind;
