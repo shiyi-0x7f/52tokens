@@ -3,5 +3,6 @@
 from app.domains.accounts import models as accounts_models
 from app.domains.catalog import models as catalog_models
 from app.domains.deals import models as deals_models
+from app.domains.outbound import models as outbound_models
 
-__all__ = ["accounts_models", "catalog_models", "deals_models"]
+__all__ = ["accounts_models", "catalog_models", "deals_models", "outbound_models"]

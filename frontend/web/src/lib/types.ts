@@ -72,7 +72,6 @@ export interface Deal {
   starts_at: string | null;
   ends_at: string | null;
   description: string;
-  link_url: string;
   is_promoted: boolean;
   source_url: string;
   in_app_only: boolean;

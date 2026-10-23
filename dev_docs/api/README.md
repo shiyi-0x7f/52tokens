@@ -85,15 +85,27 @@
 { "slug": "trae-daily-checkin", "title": "...", "deal_type": "checkin_points",
   "platform": { "slug": "trae", "name": "Trae" }, "reward_text": "+200 积分/天", "est_value_cny": null,
   "requirements": ["需登录"], "cycle": "daily", "starts_at": null, "ends_at": null, "description": "",
-  "link_url": "https://...", "is_promoted": false, "source_url": "https://...",
+  "is_promoted": false, "source_url": "https://...",
   "in_app_only": true, "confirmed_at": "...", "is_expired": false }
 ```
 
-`is_promoted=true` 表示 `link_url` 是推广链接，页面**必须**标注「推广」。
+`is_promoted=true` 表示该活动有推广链接，「去参与」入口**必须**标注「推广」。推广链接本身不随活动数据下发，入口统一指向公开站 `/go/deal/{slug}`，由下面的出站接口给出落地地址。
 
 ### `GET /internal/v1/deals/{slug}`
 
 字段同上；不存在或不可见 → `404`。
+
+### `POST /internal/v1/outbound/deals/{slug}`
+
+公开站 `/go/deal/{slug}` 调用：记录一次出站点击（表 `outbound_clicks`，不记 IP / UA），返回落地地址。有推广链接时落地到推广链接，否则落地到官方出处；每次按当前数据计算，后台改了推广链接立即生效。
+
+入参 `{ "referer_path": "/deals/xxx" }`（可选，站内来源页路径，最长 200，超长 `422`）。
+
+```json
+{ "code": 0, "message": "成功", "data": { "url": "https://...", "is_promoted": true } }
+```
+
+活动不存在或不可见 → `404`，不记录点击。公开站收到后 `302` 跳转（`Cache-Control: no-store`、`X-Robots-Tag: noindex, nofollow`），`/go/` 在 robots.txt 中禁止抓取。
 
 ### 登录与会话
 

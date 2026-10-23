@@ -57,11 +57,11 @@ async def test_affiliate_link_is_flagged(
 
     plain = (await db_client.get("/internal/v1/deals/plain", headers=AUTH)).json()["data"]
     assert plain["is_promoted"] is False
-    assert plain["link_url"] == plain["source_url"]
 
     promoted = (await db_client.get("/internal/v1/deals/promoted", headers=AUTH)).json()["data"]
     assert promoted["is_promoted"] is True
-    assert promoted["link_url"] == "https://aff.example.com/x"
+    # 推广链接不随活动数据下发，只能经出站跳转拿到
+    assert "https://aff.example.com/x" not in str(promoted)
 
 
 async def test_filters_by_type_and_platform(

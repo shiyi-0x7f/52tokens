@@ -31,7 +31,6 @@ def to_out(deal: Deal, now: datetime) -> DealOut:
         starts_at=deal.starts_at,
         ends_at=deal.ends_at,
         description=deal.description,
-        link_url=deal.aff_url or deal.source_url,
         is_promoted=deal.aff_url is not None,
         source_url=deal.source_url,
         in_app_only=deal.in_app_only,

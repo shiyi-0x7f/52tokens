@@ -20,6 +20,8 @@ from app.domains.catalog.service import CatalogService
 from app.domains.deals.admin import DealAdminService
 from app.domains.deals.repository import DealRepository
 from app.domains.deals.service import DealService
+from app.domains.outbound.repository import OutboundRepository
+from app.domains.outbound.service import OutboundService
 from app.integrations.scc import SccClient
 
 SessionDep = Annotated[AsyncSession, Depends(get_session)]
@@ -41,6 +43,10 @@ def get_catalog_service(session: SessionDep) -> CatalogService:
 
 def get_deal_service(session: SessionDep) -> DealService:
     return DealService(DealRepository(session))
+
+
+def get_outbound_service(session: SessionDep) -> OutboundService:
+    return OutboundService(DealRepository(session), OutboundRepository(session))
 
 
 def get_session_service(
@@ -78,6 +84,7 @@ def get_auth_service(
 
 CatalogServiceDep = Annotated[CatalogService, Depends(get_catalog_service)]
 DealServiceDep = Annotated[DealService, Depends(get_deal_service)]
+OutboundServiceDep = Annotated[OutboundService, Depends(get_outbound_service)]
 AuthServiceDep = Annotated[AuthService, Depends(get_auth_service)]
 
 # ---------- 后台 ----------

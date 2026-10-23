@@ -121,7 +121,7 @@ LLM 只负责"从文本里抽结构化字段 + 给置信度"，**发布必须过
 | SEO 基础设施 | 公开站分片 sitemap 端点、JSON-LD 组件、satori 分享图；后端数据变更 → 清页面缓存（Redis + Cloudflare purge） | |
 | 搜索 | 先用 PostgreSQL `pg_trgm` + 全文检索 | 量大再考虑 Meilisearch（需另行同意） |
 | 统计 | Umami 自托管（隐私友好、无 Cookie 横幅）+ 出站点击埋点（AFF 转化归因） | |
-| 推广链接 | `outbound_links` 统一跳转 `/go/{id}`：记录点击、`rel="sponsored nofollow"` | 商业化计量基础 |
+| 推广链接 | 统一跳转 `/go/{类型}/{slug}`（已实现 `/go/deal/{slug}`）：`outbound_clicks` 记录点击、`rel="sponsored nofollow"`；落地地址只在跳转时由后端给出，不进页面数据 | 商业化计量基础；用公开 slug 而不是内部 ID，避免暴露内部 ID |
 | 数据防护 | 公开站（Astro 服务端）是公开数据的唯一出口，FastAPI 的公开数据接口只对内网开放（后台接口经鉴权对外）；公开页面只下发 HTML，不提供公开 JSON 读接口；Cloudflare + 应用层限流 + Turnstile + 蜜罐 | 详见 `dev_docs/architecture/data-protection.md` |
 
 ## 6. 分期路线
