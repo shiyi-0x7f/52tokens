@@ -24,7 +24,8 @@ class ShopOfferOut(BaseModel):
     price: Decimal
     stock: int | None
     in_stock: bool
-    url: str
+    # 跳转标识：页面链接到 /go/offer/{token}，经过渡页提示后再去店铺；店铺链接本身不下发
+    token: str
     shop: str  # 店铺域名
     tags: list[str]
     # 「拼车」「价格待核实」：照常展示，但不参与有货最低价

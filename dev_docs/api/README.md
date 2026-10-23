@@ -90,7 +90,7 @@
   "platform": { "slug": "trae", "name": "Trae" }, "reward_text": "+200 积分/天", "est_value_cny": null,
   "requirements": ["需登录"], "cycle": "daily", "starts_at": null, "ends_at": null, "description": "",
   "steps": ["打开 Trae 客户端", "点右上角头像", "点「每日签到」"],
-  "is_promoted": false, "source_url": "https://...",
+  "is_promoted": false, "link_host": "trae.ai", "source_url": "https://...",
   "source_quote": "每日签到可获得 200 积分", "source_locate_url": "https://...#:~:text=...",
   "in_app_only": true, "confirmed_at": "...", "is_expired": false }
 ```
@@ -105,17 +105,18 @@
 
 字段同上；不存在或不可见 → `404`。
 
-### `POST /internal/v1/outbound/deals/{slug}`
+### 出站跳转 `/internal/v1/outbound/{deals/{slug} | offers/{token}}`
 
-公开站 `/go/deal/{slug}` 调用：记录一次出站点击（表 `outbound_clicks`，不记 IP / UA），返回落地地址。有推广链接时落地到推广链接，否则落地到官方出处；每次按当前数据计算，后台改了推广链接立即生效。
+公开站 `/go/deal/{slug}`（活动「去参与」）和 `/go/offer/{token}`（卡网报价「去店铺」）调用：`POST` 记一次出站点击（表 `outbound_clicks`，`target_type` 为 `deal` / `shop_offer`，不记 IP / UA），返回落地地址，公开站 `302` 跳转。
 
-入参 `{ "referer_path": "/deals/xxx" }`（可选，站内来源页路径，最长 200，超长 `422`）。
+跳转前的提示在页面内完成：入口链接带 `data-leave*` 属性（目标域名、平台 / 店铺、标题、是否推广），点击时弹出「即将前往第三方网站」提示框（`components/LeaveDialog.astro`），用户点「继续前往」才在新标签页打开 `/go/*`。没有 JS 时不拦截，链接照常打开。活动的目标域名来自 `link_host` 字段。
 
-```json
-{ "code": 0, "message": "成功", "data": { "url": "https://...", "is_promoted": true } }
-```
+入参 `{ "referer_path": "/deals/xxx" }`（可选，站内来源页路径，最长 200，超长 `422`），返回 `{ "url": "https://...", "is_promoted": true }`；卡网报价的 `is_promoted` 恒为 `false`（卡网商家没有推广关系）。
 
-活动不存在或不可见 → `404`，不记录点击。公开站收到后 `302` 跳转（`Cache-Control: no-store`、`X-Robots-Tag: noindex, nofollow`），`/go/` 在 robots.txt 中禁止抓取。
+- 活动：有推广链接时落地到推广链接，否则落地到官方出处（带原文定位片段）；每次按当前数据计算，后台改了推广链接立即生效。
+- 卡网报价：`token` 是报价的 `external_id`（比价页 `offers[].token`），只认比价页上可见的报价（店铺启用、未隐藏、商品对外展示）。店铺商品链接本身不下发到比价页。
+
+不存在或不可见 → `404`，不记录点击。跳转响应带 `Cache-Control: no-store`、`X-Robots-Tag: noindex, nofollow`，`/go/` 在 robots.txt 中禁止抓取。
 
 ### `GET /internal/v1/official-plans`
 
@@ -151,7 +152,7 @@
 字段同上，另有 `summary` 和 `offers`（最多 100 条）：
 
 ```json
-{ "title": "店铺原标题", "price": "90.00", "stock": 12, "in_stock": true, "url": "https://…", "shop": "店铺域名",
+{ "title": "店铺原标题", "price": "90.00", "stock": 12, "in_stock": true, "token": "跳转标识", "shop": "店铺域名",
   "tags": ["自动发货"], "flags": [], "last_seen_at": "…", "is_fresh": true }
 ```
 

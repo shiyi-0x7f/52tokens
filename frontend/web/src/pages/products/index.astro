@@ -1,20 +1,28 @@
 ---
+import BrandMark from "../../components/BrandMark.astro";
 import EmptyState from "../../components/EmptyState.astro";
 import ShopDisclaimer from "../../components/ShopDisclaimer.astro";
+import TypeChip from "../../components/TypeChip.astro";
 import BaseLayout from "../../layouts/BaseLayout.astro";
 import { internalGet } from "../../lib/api";
+import { brandOf } from "../../lib/brand";
 import { formatPrice } from "../../lib/format";
 import { loadOr } from "../../lib/load";
+import { shopTypeTone } from "../../lib/tones";
 import type { ShopProductSummary } from "../../lib/types";
 
 const [products, ok] = await loadOr<ShopProductSummary[]>([], () =>
   internalGet<ShopProductSummary[]>("/shop-products"),
 );
-// 后端已按商品排序，这里按平台分组并保持顺序
-const groups = [...new Set(products.map((p) => p.platform))].map((platform) => ({
-  platform,
-  items: products.filter((p) => p.platform === platform),
-}));
+// 平台分组的固定顺序；不在列表里的排最后
+const PLATFORM_ORDER = ["ChatGPT", "Claude", "Gemini", "Grok", "邮箱", "接码", "其他"];
+const rank = (p: string) => {
+  const i = PLATFORM_ORDER.indexOf(p);
+  return i < 0 ? PLATFORM_ORDER.length : i;
+};
+const groups = [...new Set(products.map((p) => p.platform))]
+  .sort((a, b) => rank(a) - rank(b))
+  .map((platform) => ({ platform, items: products.filter((p) => p.platform === platform) }));
 ---
 
 <BaseLayout
@@ -28,9 +36,9 @@ const groups = [...new Set(products.map((p) => p.platform))].map((platform) => (
       <a href="/models" class="text-hot">
         模型 API 价格
       </a>{" "}
-      和{" "}
-      <a href="/free" class="text-hot">
-        免费额度
+      和
+      <a href="/official-prices" class="text-hot">
+        官方订阅地区价
       </a>
     </p>
   </header>
@@ -43,27 +51,46 @@ const groups = [...new Set(products.map((p) => p.platform))].map((platform) => (
     <EmptyState title="报价采集中" hint="店铺报价采集后会在这里列出。" />
   ) : (
     groups.map((g) => (
-      <section class="mt-6">
-        <h2 class="mb-3 font-black">{g.platform}</h2>
+      <section class="mt-7">
+        <h2 class="mb-3 flex items-center gap-2 font-black">
+          <BrandMark name={g.platform} size="sm" />
+          {g.platform}
+          <span class="font-mono text-sm font-normal text-mute">{g.items.length}</span>
+        </h2>
         <ul class="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
           {g.items.map((p) => (
             <li>
               <a
                 href={`/products/${p.slug}`}
-                class="block h-full rounded-(--radius-card) bg-card p-4 no-underline hover:bg-hover"
+                class="press flex h-full flex-col overflow-hidden rounded-(--radius-card) bg-card no-underline hover:shadow-md"
               >
-                <span class="font-bold">{p.name}</span>
-                {p.spec && <span class="mt-1 block text-xs text-mute">{p.spec}</span>}
-                <span class="mt-3 flex items-baseline justify-between gap-2">
-                  {p.min_price ? (
-                    <span class="font-mono text-lg font-bold text-hot">
-                      {formatPrice(p.min_price, "CNY")}
-                      <span class="ml-0.5 text-xs font-normal text-mute">起</span>
+                <span class="h-1" style={`background:${brandOf(p.platform).color}`} />
+                <span class="flex flex-1 flex-col p-4">
+                  <span class="flex items-start justify-between gap-2">
+                    <span class="font-bold">{p.name}</span>
+                    <TypeChip label={p.product_type} tone={shopTypeTone(p.product_type)} />
+                  </span>
+                  {p.spec && <span class="mt-1 block text-xs text-mute">{p.spec}</span>}
+                  <span class="mt-auto flex items-baseline justify-between gap-2 pt-3">
+                    {p.min_price ? (
+                      <span class="font-mono text-xl font-bold text-hot">
+                        {formatPrice(p.min_price, "CNY")}
+                        <span class="ml-0.5 text-xs font-normal text-mute">起</span>
+                      </span>
+                    ) : (
+                      <span class="text-sm text-mute">暂无有货报价</span>
+                    )}
+                    <span
+                      class:list={[
+                        "rounded-full px-2 py-0.5 text-xs font-bold",
+                        p.in_stock_shops > 0
+                          ? "bg-tone-green-bg text-tone-green"
+                          : "bg-chip text-mute",
+                      ]}
+                    >
+                      {p.in_stock_shops} 家有货
                     </span>
-                  ) : (
-                    <span class="text-sm text-mute">暂无有货报价</span>
-                  )}
-                  <span class="text-xs text-sub">{p.in_stock_shops} 家有货</span>
+                  </span>
                 </span>
               </a>
             </li>

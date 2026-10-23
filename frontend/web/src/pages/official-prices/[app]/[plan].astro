@@ -1,4 +1,5 @@
 ---
+import BrandMark from "../../../components/BrandMark.astro";
 import JsonLd from "../../../components/JsonLd.astro";
 import BaseLayout from "../../../layouts/BaseLayout.astro";
 import { internalGet, isNotFound } from "../../../lib/api";
@@ -18,6 +19,8 @@ try {
 
 const cheapest = detail.cheapest;
 const fxDate = detail.prices.find((p) => p.fx_date)?.fx_date ?? null;
+// 比例条按本档位最贵地区归一（至少按美区 100% 算），最贵的地区条形满格
+const maxPercent = Math.max(100, ...detail.prices.map((p) => p.vs_us_percent ?? 0));
 const description = cheapest
   ? `${detail.plan_name} 在 ${detail.region_count} 个国家 / 地区的 App Store 价格对比：最便宜的是${cheapest.country_label}，约 ${formatPrice(cheapest.cny_price, "CNY")}${detail.us ? `，美区约 ${formatPrice(detail.us.cny_price, "CNY")}` : ""}。`
   : `${detail.plan_name} 各国 App Store 价格对比。`;
@@ -52,10 +55,15 @@ const description = cheapest
   </nav>
 
   <header class="mb-5 rounded-(--radius-card) bg-card p-6">
-    <p class="text-sm text-mute">
-      {detail.provider} · {detail.app_name}
-    </p>
-    <h1 class="mt-1 text-2xl font-black">{detail.plan_name} 各国价格</h1>
+    <div class="flex items-center gap-3">
+      <BrandMark name={detail.app_name} keys={[detail.app_slug]} size="lg" />
+      <div>
+        <p class="text-sm text-mute">
+          {detail.provider} · {detail.app_name}
+        </p>
+        <h1 class="mt-0.5 text-2xl font-black">{detail.plan_name} 各国价格</h1>
+      </div>
+    </div>
     <dl class="mt-4 grid gap-x-6 gap-y-2 text-sm sm:grid-cols-[auto_1fr]">
       {cheapest && (
         <>
@@ -100,12 +108,18 @@ const description = cheapest
           <th class="px-4 py-2.5 font-medium">地区</th>
           <th class="px-4 py-2.5 text-right font-medium">当地价格</th>
           <th class="px-4 py-2.5 text-right font-medium">折合人民币</th>
-          <th class="px-4 py-2.5 text-right font-medium">相对美区</th>
+          <th class="w-[34%] px-4 py-2.5 font-medium">相对美区（美区 = 100%）</th>
         </tr>
       </thead>
       <tbody>
-        {detail.prices.map((p) => (
-          <tr class="border-b border-line last:border-b-0">
+        {detail.prices.map((p, i) => (
+          <tr
+            class:list={[
+              "border-b border-line last:border-b-0",
+              i === 0 && "bg-tone-green-bg/60",
+              p.country_code === "US" && "bg-chip",
+            ]}
+          >
             <td class="px-4 py-3">
               <a href={p.source_url} rel="nofollow noopener" target="_blank" class="no-underline">
                 {p.country_label}
@@ -115,13 +129,30 @@ const description = cheapest
             <td class="px-4 py-3 text-right font-mono font-bold whitespace-nowrap">
               {formatPrice(p.cny_price, "CNY")}
             </td>
-            <td
-              class:list={[
-                "px-4 py-3 text-right font-mono whitespace-nowrap",
-                p.vs_us_percent !== null && p.vs_us_percent < 100 ? "text-good" : "text-sub",
-              ]}
-            >
-              {p.vs_us_percent === null ? "—" : `${p.vs_us_percent}%`}
+            <td class="px-4 py-3">
+              {p.vs_us_percent === null ? (
+                <span class="text-mute">—</span>
+              ) : (
+                <span class="flex items-center gap-2">
+                  <span class="h-2 flex-1 overflow-hidden rounded-full bg-chip">
+                    <span
+                      class:list={[
+                        "block h-full rounded-full",
+                        p.vs_us_percent < 100 ? "bg-tone-green" : "bg-tone-rose",
+                      ]}
+                      style={`width:${Math.round((p.vs_us_percent / maxPercent) * 100)}%`}
+                    />
+                  </span>
+                  <span
+                    class:list={[
+                      "w-11 text-right font-mono text-xs font-bold",
+                      p.vs_us_percent < 100 ? "text-tone-green" : "text-tone-rose",
+                    ]}
+                  >
+                    {p.vs_us_percent}%
+                  </span>
+                </span>
+              )}
             </td>
           </tr>
         ))}

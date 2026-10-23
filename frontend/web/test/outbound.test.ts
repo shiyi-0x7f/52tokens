@@ -1,6 +1,12 @@
 import { describe, expect, it } from "vitest";
 
-import { dealGoUrl, refererPath } from "../src/lib/outbound";
+import { dealGoUrl, offerGoUrl, refererPath } from "../src/lib/outbound";
+
+describe("offerGoUrl", () => {
+  it("encodes the token", () => {
+    expect(offerGoUrl("ab/c")).toBe("/go/offer/ab%2Fc");
+  });
+});
 
 const SITE = new URL("https://52tokens.example.com");
 

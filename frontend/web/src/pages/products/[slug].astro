@@ -1,9 +1,14 @@
 ---
+import BrandMark from "../../components/BrandMark.astro";
 import JsonLd from "../../components/JsonLd.astro";
 import ShopDisclaimer from "../../components/ShopDisclaimer.astro";
+import TypeChip from "../../components/TypeChip.astro";
 import BaseLayout from "../../layouts/BaseLayout.astro";
 import { internalGet, isNotFound } from "../../lib/api";
+import { brandOf } from "../../lib/brand";
 import { formatPrice, formatRelative } from "../../lib/format";
+import { offerGoUrl } from "../../lib/outbound";
+import { shopTypeTone } from "../../lib/tones";
 import type { ShopProductDetail } from "../../lib/types";
 
 const slug = Astro.params.slug ?? "";
@@ -17,6 +22,8 @@ try {
 
 const fresh = product.offers.filter((o) => o.is_fresh);
 const stale = product.offers.filter((o) => !o.is_fresh);
+// 后端已排好序：第一条新鲜、有货、没被标记的就是有货最低价
+const best = fresh.find((o) => o.in_stock && o.flags.length === 0);
 const lowest = product.min_price ? formatPrice(product.min_price, "CNY") : null;
 const description = lowest
   ? `${product.name} 卡网有货最低价 ${lowest}，${product.in_stock_shops} 家店铺有货。汇总各店铺公开报价，定时更新。`
@@ -48,26 +55,35 @@ const description = lowest
     / {product.platform}
   </nav>
 
-  <header class="mb-4 rounded-(--radius-card) bg-card p-6">
-    <p class="text-sm text-mute">
-      {product.platform} · {product.product_type}
-    </p>
-    <h1 class="mt-1 text-2xl font-black">{product.name}</h1>
-    {product.spec && <p class="mt-1 text-sm text-sub">{product.spec}</p>}
-    <p class="mt-4 flex flex-wrap items-baseline gap-x-4 gap-y-1">
-      {lowest ? (
-        <>
-          <span class="font-mono text-3xl font-bold text-hot">{lowest}</span>
-          <span class="text-sm text-sub">有货最低价 · {product.in_stock_shops} 家有货</span>
-          <span class="w-full text-xs text-mute">
-            拼车、价格待核实和两天内没更新的报价不计入最低价
-          </span>
-        </>
-      ) : (
-        <span class="text-sm text-sub">暂无有货报价</span>
-      )}
-    </p>
-    {product.summary && <p class="mt-4 text-sm leading-relaxed text-sub">{product.summary}</p>}
+  <header class="mb-4 overflow-hidden rounded-(--radius-card) bg-card">
+    <div class="h-1.5" style={`background:${brandOf(product.platform).color}`}></div>
+    <div class="p-6">
+      <div class="flex items-center gap-3">
+        <BrandMark name={product.platform} size="lg" />
+        <div class="min-w-0">
+          <p class="flex items-center gap-2 text-sm text-mute">
+            {product.platform}
+            <TypeChip label={product.product_type} tone={shopTypeTone(product.product_type)} />
+          </p>
+          <h1 class="mt-1 text-2xl font-black">{product.name}</h1>
+        </div>
+      </div>
+      {product.spec && <p class="mt-2 text-sm text-sub">{product.spec}</p>}
+      <p class="mt-4 flex flex-wrap items-baseline gap-x-4 gap-y-1">
+        {lowest ? (
+          <>
+            <span class="font-mono text-3xl font-bold text-hot">{lowest}</span>
+            <span class="text-sm text-sub">有货最低价 · {product.in_stock_shops} 家有货</span>
+            <span class="w-full text-xs text-mute">
+              拼车、价格待核实和两天内没更新的报价不计入最低价
+            </span>
+          </>
+        ) : (
+          <span class="text-sm text-sub">暂无有货报价</span>
+        )}
+      </p>
+      {product.summary && <p class="mt-4 text-sm leading-relaxed text-sub">{product.summary}</p>}
+    </div>
   </header>
 
   <ShopDisclaimer />
@@ -95,10 +111,19 @@ const description = lowest
           <tbody>
             {fresh.map((o) => (
               <tr
-                class:list={["border-b border-line last:border-b-0", !o.in_stock && "opacity-60"]}
+                class:list={[
+                  "border-b border-line last:border-b-0",
+                  o === best && "bg-tone-green-bg/60",
+                  !o.in_stock && "opacity-60",
+                ]}
               >
                 <td class="px-4 py-3">
                   <span class="block">
+                    {o === best && (
+                      <span class="mr-1.5 rounded bg-tone-green px-1.5 text-[11px] font-bold text-white">
+                        最低价
+                      </span>
+                    )}
                     {o.flags.map((f) => (
                       <span
                         class="mr-1.5 rounded border border-ad-line bg-ad-bg px-1.5 text-[11px] text-ad-ink"
@@ -113,18 +138,34 @@ const description = lowest
                     <span class="mt-1 block text-xs text-mute">{o.tags.join(" · ")}</span>
                   )}
                 </td>
-                <td class="px-4 py-3 text-right font-mono font-bold whitespace-nowrap">
+                <td
+                  class:list={[
+                    "px-4 py-3 text-right font-mono font-bold whitespace-nowrap",
+                    o === best && "text-base text-tone-green",
+                  ]}
+                >
                   {formatPrice(o.price, "CNY")}
                 </td>
                 <td class="px-4 py-3 text-right text-xs whitespace-nowrap">
-                  {o.in_stock ? (o.stock ?? "有货") : "无货"}
+                  <span
+                    class:list={[
+                      "rounded-full px-2 py-0.5 font-bold",
+                      o.in_stock ? "bg-tone-green-bg text-tone-green" : "bg-chip text-mute",
+                    ]}
+                  >
+                    {o.in_stock ? (o.stock ?? "有货") : "无货"}
+                  </span>
                 </td>
                 <td class="px-4 py-3 text-xs whitespace-nowrap">
                   <a
-                    href={o.url}
-                    rel="nofollow noopener noreferrer"
+                    href={offerGoUrl(o.token)}
+                    rel="nofollow noopener"
                     target="_blank"
                     class="text-sub"
+                    data-leave="shop"
+                    data-leave-host={o.shop}
+                    data-leave-label={`第三方店铺 ${o.shop}`}
+                    data-leave-title={`${o.title} · ${formatPrice(o.price, "CNY")}`}
                   >
                     {o.shop} ↗
                   </a>

@@ -6,6 +6,10 @@ export function dealGoUrl(slug: string): string {
   return `/go/deal/${encodeURIComponent(slug)}`;
 }
 
+export function offerGoUrl(token: string): string {
+  return `/go/offer/${encodeURIComponent(token)}`;
+}
+
 /** 只记站内来源页的路径（不含查询串）；站外或解析不了的来源记为空 */
 export function refererPath(referer: string | null, site: URL): string {
   if (!referer) return "";

@@ -8,7 +8,8 @@ interface RedirectOut {
   is_promoted: boolean;
 }
 
-// 「去参与」出站跳转：后端记一次点击并给出落地地址（有推广链接用推广链接）。
+// 「去参与」出站跳转：页面上先弹窗提示即将前往第三方网站，用户确认后才请求这里，
+// 后端记一次点击并给出落地地址（有推广链接用推广链接）。
 // robots.txt 禁止抓取 /go/，入口链接带 nofollow，避免爬虫刷点击
 export const GET: APIRoute = async ({ params, request, site, rewrite }) => {
   let target: RedirectOut | null;

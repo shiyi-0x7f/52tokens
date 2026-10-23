@@ -1,39 +1,53 @@
 ---
+import BrandMark from "./BrandMark.astro";
+import TypeChip from "./TypeChip.astro";
 import { formatRelative } from "../lib/format";
 import { CYCLE_LABELS, DEAL_TYPE_LABELS } from "../lib/labels";
+import { DEAL_TYPE_TONES } from "../lib/tones";
 import type { Deal } from "../lib/types";
 
 interface Props {
   deal: Deal;
+  /** 热榜名次；不传时不显示名次列 */
   rank?: number | undefined;
 }
 const { deal, rank } = Astro.props;
 const RANK_STYLES = ["text-hot text-[28px]", "text-hot-2 text-[26px]", "text-hot-3 text-2xl"];
-const rankStyle = (rank !== undefined && RANK_STYLES[rank - 1]) || "text-faint text-[22px]";
+const ROW_TINTS = ["bg-rank-1", "bg-rank-2", "bg-rank-3"];
+const ranked = rank !== undefined;
+const rankStyle = (ranked && RANK_STYLES[rank - 1]) || "text-faint text-[22px]";
+const rowTint = (ranked && ROW_TINTS[rank - 1]) || "";
 ---
 
 <a
   href={`/deals/${deal.slug}`}
   class:list={[
-    "grid grid-cols-[50px_minmax(0,1fr)_auto] items-center gap-3 border-b border-line px-4 py-3 no-underline last:border-b-0 hover:bg-hover",
+    "grid items-center gap-3 border-b border-line px-4 py-3 no-underline last:border-b-0 hover:bg-hover",
+    ranked ? "grid-cols-[36px_auto_minmax(0,1fr)_auto]" : "grid-cols-[auto_minmax(0,1fr)_auto]",
+    rowTint,
     deal.is_expired && "opacity-60",
   ]}
 >
-  <span class:list={["text-center font-mono font-bold italic", rankStyle]}>{rank ?? "·"}</span>
-  <span class="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1 text-[15px] font-medium">
-    <span class="rounded bg-chip px-1.5 text-[11px] font-normal text-sub">
-      {DEAL_TYPE_LABELS[deal.deal_type]}
-    </span>
+  {ranked && <span class:list={["text-center font-mono font-bold italic", rankStyle]}>{rank}</span>}
+  <BrandMark name={deal.platform.name} keys={[deal.platform.slug]} />
+  <span class="flex min-w-0 flex-col gap-1 text-[15px] font-medium">
     <span class="min-w-0">
-      {deal.platform.name} · {deal.title}
+      <TypeChip
+        label={DEAL_TYPE_LABELS[deal.deal_type]}
+        tone={DEAL_TYPE_TONES[deal.deal_type]}
+        class="mr-2 align-[1px]"
+      />
+      <span class="text-sub">{deal.platform.name}</span> · {deal.title}
+      {deal.is_expired && (
+        <span class="ml-2 rounded bg-sub px-1.5 text-[11px] font-bold text-white">已结束</span>
+      )}
     </span>
-    {deal.is_expired && (
-      <span class="rounded bg-sub px-1.5 text-[11px] font-bold text-white">已结束</span>
-    )}
-    <small class="w-full text-xs font-normal text-mute">
+    <small class="text-xs font-normal text-mute">
       {CYCLE_LABELS[deal.cycle]}
       {deal.in_app_only && " · 需在客户端内查看"} · {formatRelative(deal.confirmed_at)}确认
     </small>
   </span>
-  <span class="text-right font-mono text-sm font-bold whitespace-nowrap">{deal.reward_text}</span>
+  <span class="max-w-[13rem] rounded-full bg-hot/8 px-3 py-1 text-right text-sm font-bold text-hot sm:max-w-[18rem]">
+    {deal.reward_text}
+  </span>
 </a>

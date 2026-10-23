@@ -1,11 +1,15 @@
-"""出站跳转：落地地址、点击记录、不可见活动。"""
+"""出站跳转：落地地址、点击记录、不可见的活动 / 卡网报价。"""
+
+from decimal import Decimal
 
 import httpx
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.domains.catalog.models import PublishStatus
 from app.domains.deals.models import DealStatus
 from app.domains.outbound.models import OutboundClick, OutboundTarget
+from app.domains.shops.models import ShopCollectorKind, ShopOffer, ShopProduct, ShopSource
 from tests import factories as f
 from tests.conftest import AUTH
 
@@ -70,6 +74,62 @@ async def test_hidden_deal_is_not_found_and_not_recorded(
 
     assert (await _click(db_client, "pending")).status_code == 404
     assert (await _click(db_client, "missing")).status_code == 404
+    assert (await db_session.scalars(select(OutboundClick))).all() == []
+
+
+async def _shop_offer(session: AsyncSession, **kw: object) -> ShopOffer:
+    product = ShopProduct(
+        slug="chatgpt-plus",
+        name="Plus",
+        platform="ChatGPT",
+        product_type="订阅/会员",
+        status=kw.pop("product_status", PublishStatus.ACTIVE),
+    )
+    source = ShopSource(
+        host="kami.test",
+        entry_url="https://kami.test",
+        base_url="https://kami.test",
+        collector_kind=ShopCollectorKind.KAMI,
+        enabled=kw.pop("enabled", True),
+    )
+    session.add_all([product, source])
+    await session.flush()
+    offer = ShopOffer(
+        source_id=source.id,
+        product_id=product.id,
+        external_id="tok123",
+        title="ChatGPT Plus 月卡",
+        url="https://kami.test/item/9",
+        price=Decimal("99.00"),
+        hidden=kw.pop("hidden", False),
+    )
+    session.add(offer)
+    await session.commit()
+    return offer
+
+
+async def _click_offer(client: httpx.AsyncClient, token: str) -> httpx.Response:
+    body = {"referer_path": "/products/chatgpt-plus"}
+    return await client.post(f"/internal/v1/outbound/offers/{token}", json=body, headers=AUTH)
+
+
+async def test_shop_offer_click_is_recorded(
+    db_session: AsyncSession, db_client: httpx.AsyncClient
+) -> None:
+    offer = await _shop_offer(db_session)
+    resp = await _click_offer(db_client, "tok123")
+    assert resp.json()["data"] == {"url": "https://kami.test/item/9", "is_promoted": False}
+    click = (await db_session.scalars(select(OutboundClick))).one()
+    assert (click.target_type, click.target_id) == (OutboundTarget.SHOP_OFFER, offer.id)
+    assert click.referer_path == "/products/chatgpt-plus"
+
+
+async def test_hidden_or_disabled_shop_offer_is_not_found(
+    db_session: AsyncSession, db_client: httpx.AsyncClient
+) -> None:
+    await _shop_offer(db_session, enabled=False)
+    assert (await _click_offer(db_client, "tok123")).status_code == 404
+    assert (await _click_offer(db_client, "nope")).status_code == 404
     assert (await db_session.scalars(select(OutboundClick))).all() == []
 
 

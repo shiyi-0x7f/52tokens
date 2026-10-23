@@ -24,6 +24,8 @@ class DealOut(BaseModel):
     steps: list[str]
     # 有推广链接：页面「去参与」入口必须标「推广」；落地地址不下发，经 /go/deal/{slug} 跳转
     is_promoted: bool
+    # 「去参与」落地网站的域名：点击时弹窗提示「即将前往 xxx」用
+    link_host: str
     source_url: str
     # 官网原文摘录，及带 #:~:text= 片段的定位链接（打开后滚到原文）；
     # 没有原文时 source_quote 为空、source_locate_url 同 source_url

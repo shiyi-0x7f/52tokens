@@ -1,0 +1,110 @@
+---
+/**
+ * 跳转第三方网站前的页内提示：点击带 data-leave 的链接时弹出，确认后才打开链接。
+ *
+ * 链接上的属性：data-leave="deal|shop"、data-leave-host（目标域名）、data-leave-label（平台 / 店铺）、
+ * data-leave-title（活动 / 商品标题）、data-leave-promoted（推广链接时为 1）。
+ * 没有 JS 或浏览器不支持 <dialog> 时不拦截，链接照常打开。BaseLayout 里放一次即可。
+ */
+import PromotedLabel from "./PromotedLabel.astro";
+---
+
+<dialog
+  id="leave-dialog"
+  aria-labelledby="leave-dialog-title"
+  class="m-auto w-[min(92vw,30rem)] rounded-(--radius-card) bg-card p-0 text-ink shadow-xl backdrop:bg-black/40 backdrop:backdrop-blur-sm"
+>
+  <div class="p-6">
+    <p class="text-sm text-mute">即将离开 52tokens</p>
+    <h2 id="leave-dialog-title" class="mt-1 text-lg font-black">
+      前往第三方网站
+      <span data-field="host" class="mt-1 block font-mono text-xl break-all text-hot"></span>
+    </h2>
+    <p class="mt-3 text-sm">
+      <span data-field="label" class="font-bold"></span>
+      <span data-field="title" class="mt-0.5 block text-sub"></span>
+    </p>
+
+    <div
+      data-kind="shop"
+      class="mt-4 rounded-lg border border-line bg-bg px-4 py-3 text-sm leading-relaxed text-sub"
+    >
+      <p class="font-bold text-ink">这是第三方卡网店铺，不是 52tokens，也不是 AI 官方。</p>
+      <ul class="mt-2 list-disc space-y-1 pl-5">
+        <li>52tokens 只汇总公开报价，不认证、不推荐、不担保这家店铺，也不参与交易。</li>
+        <li>付款、发货和售后都由店铺负责；成品号、代充类商品存在封号、掉订阅等风险。</li>
+        <li>不要把你自己的账号密码、验证码交给任何人。</li>
+      </ul>
+    </div>
+    <div
+      data-kind="deal"
+      class="mt-4 rounded-lg border border-line bg-bg px-4 py-3 text-sm leading-relaxed text-sub"
+    >
+      活动规则、奖励发放以对方页面为准；52tokens 不代你登录或签到，也不会向你索要账号密码。
+      <p data-field="promoted" class="mt-2">
+        这是推广链接
+        <PromotedLabel />
+        ，不影响活动内容和本站排序。
+      </p>
+    </div>
+
+    <p class="mt-5 flex flex-wrap items-center gap-3">
+      <a
+        data-leave-go
+        target="_blank"
+        class="inline-flex min-h-11 items-center rounded-[10px] bg-hot px-5 font-bold text-white no-underline"
+      >
+        继续前往
+      </a>
+      <button type="button" data-leave-cancel class="min-h-11 px-2 text-sm text-sub">
+        取消
+      </button>
+    </p>
+  </div>
+</dialog>
+
+<script>
+  function setField(dialog: HTMLDialogElement, name: string, value: string): void {
+    const el = dialog.querySelector<HTMLElement>(`[data-field="${name}"]`);
+    if (el) el.textContent = value;
+  }
+
+  // 事件委托挂在 document 上：站内无刷新切换页面后 <dialog> 会被替换，监听器不受影响
+  document.addEventListener("click", (event) => {
+    const target = event.target as Element | null;
+    const dialog = document.getElementById("leave-dialog");
+    if (!(dialog instanceof HTMLDialogElement) || typeof dialog.showModal !== "function") return;
+
+    if (target?.closest("[data-leave-cancel]") || target === dialog) {
+      dialog.close(); // 取消，或点了弹窗外的遮罩
+      return;
+    }
+    if (target?.closest("[data-leave-go]")) {
+      setTimeout(() => dialog.close(), 0); // 让链接先在新标签页打开
+      return;
+    }
+
+    const link = target?.closest<HTMLAnchorElement>("a[data-leave]");
+    if (!link || event.button !== 0) return;
+    event.preventDefault();
+
+    const data = link.dataset;
+    setField(dialog, "host", data.leaveHost ?? "");
+    setField(dialog, "label", data.leaveLabel ?? "");
+    setField(dialog, "title", data.leaveTitle ?? "");
+    for (const block of dialog.querySelectorAll<HTMLElement>("[data-kind]")) {
+      block.hidden = block.dataset.kind !== data.leave;
+    }
+    const promoted = dialog.querySelector<HTMLElement>('[data-field="promoted"]');
+    if (promoted) promoted.hidden = data.leavePromoted !== "1";
+
+    const go = dialog.querySelector<HTMLAnchorElement>("[data-leave-go]");
+    if (go) {
+      go.href = link.href;
+      go.rel = link.rel;
+      go.textContent = `继续前往 ${data.leaveHost ?? ""}`;
+    }
+    dialog.showModal();
+    go?.focus();
+  });
+</script>

@@ -111,7 +111,8 @@ export interface ShopOffer {
   price: string;
   stock: number | null;
   in_stock: boolean;
-  url: string;
+  /** 跳转标识：链接到 /go/offer/{token}（页内弹窗提示后再去店铺），店铺链接不下发 */
+  token: string;
   /** 店铺域名 */
   shop: string;
   tags: string[];
@@ -142,6 +143,8 @@ export interface Deal {
   /** 参与步骤，按顺序 */
   steps: string[];
   is_promoted: boolean;
+  /** 「去参与」落地网站的域名，点击时弹窗提示用 */
+  link_host: string;
   source_url: string;
   /** 官网原文摘录（逐字出现在官方页面上），没有时为空串 */
   source_quote: string;

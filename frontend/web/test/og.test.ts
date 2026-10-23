@@ -18,6 +18,7 @@ const deal: Deal = {
   description: "",
   steps: [],
   is_promoted: false,
+  link_host: "trae.ai",
   source_url: "https://www.trae.ai",
   source_quote: "",
   source_locate_url: "https://www.trae.ai",

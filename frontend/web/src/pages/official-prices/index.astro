@@ -1,4 +1,5 @@
 ---
+import BrandMark from "../../components/BrandMark.astro";
 import EmptyState from "../../components/EmptyState.astro";
 import BaseLayout from "../../layouts/BaseLayout.astro";
 import { internalGet } from "../../lib/api";
@@ -9,10 +10,10 @@ import type { OfficialPlanSummary } from "../../lib/types";
 const [plans, ok] = await loadOr<OfficialPlanSummary[]>([], () =>
   internalGet<OfficialPlanSummary[]>("/official-plans"),
 );
-const apps = [...new Set(plans.map((p) => p.app_name))].map((name) => ({
-  name,
-  plans: plans.filter((p) => p.app_name === name),
-}));
+const apps = [...new Set(plans.map((p) => p.app_slug))].map((slug) => {
+  const items = plans.filter((p) => p.app_slug === slug);
+  return { slug, name: items[0]?.app_name ?? slug, plans: items };
+});
 const fetchedAt = plans.map((p) => p.fetched_at).find(Boolean);
 ---
 
@@ -35,7 +36,10 @@ const fetchedAt = plans.map((p) => p.fetched_at).find(Boolean);
   ) : (
     apps.map((app) => (
       <section class="mb-6">
-        <h2 class="mb-3 font-black">{app.name}</h2>
+        <h2 class="mb-3 flex items-center gap-2 font-black">
+          <BrandMark name={app.name} keys={[app.slug]} size="sm" />
+          {app.name}
+        </h2>
         <div class="overflow-x-auto rounded-(--radius-card) bg-card">
           <table class="w-full min-w-[560px] text-sm">
             <thead>

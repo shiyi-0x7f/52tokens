@@ -1,4 +1,5 @@
 ---
+import BrandMark from "../components/BrandMark.astro";
 import DealRow from "../components/DealRow.astro";
 import EmptyState from "../components/EmptyState.astro";
 import JsonLd from "../components/JsonLd.astro";
@@ -121,8 +122,9 @@ const platformCounts = CATEGORY_ORDER.map((c) => ({
           <ul class="text-sm">
             {cheapest.map((m) => (
               <li class="border-b border-line py-2 last:border-b-0">
-                <a href={`/models/${m.slug}`} class="flex justify-between no-underline">
-                  <span>{m.name}</span>
+                <a href={`/models/${m.slug}`} class="flex items-center gap-2 no-underline">
+                  <BrandMark name={m.family} keys={[m.family]} size="sm" />
+                  <span class="min-w-0 flex-1 truncate">{m.name}</span>
                   <span class="font-mono font-bold">
                     {formatPrice(priceOf(m), cheapestCurrency)}
                   </span>
@@ -147,8 +149,9 @@ const platformCounts = CATEGORY_ORDER.map((c) => ({
           <ul class="text-sm">
             {freeModels.map((m) => (
               <li class="border-b border-line py-2 last:border-b-0">
-                <a href={`/models/${m.slug}`} class="flex justify-between no-underline">
-                  <span>{m.name}</span>
+                <a href={`/models/${m.slug}`} class="flex items-center gap-2 no-underline">
+                  <BrandMark name={m.family} keys={[m.family]} size="sm" />
+                  <span class="min-w-0 flex-1 truncate">{m.name}</span>
                   <span class="font-bold text-good">免费</span>
                 </a>
               </li>
