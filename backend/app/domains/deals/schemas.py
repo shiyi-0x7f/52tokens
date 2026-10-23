@@ -21,8 +21,7 @@ class DealOut(BaseModel):
     starts_at: datetime | None
     ends_at: datetime | None
     description: str
-    # 页面跳转链接：有推广链接时用推广链接，并且 is_promoted=True，页面必须标「推广」
-    link_url: str
+    # 有推广链接：页面「去参与」入口必须标「推广」；落地地址不下发，经 /go/deal/{slug} 跳转
     is_promoted: bool
     source_url: str
     in_app_only: bool

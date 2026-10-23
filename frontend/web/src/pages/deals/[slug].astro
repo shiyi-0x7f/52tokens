@@ -6,6 +6,7 @@ import { internalGet, isNotFound } from "../../lib/api";
 import { formatDate, formatRelative } from "../../lib/format";
 import { CYCLE_LABELS, DEAL_TYPE_LABELS } from "../../lib/labels";
 import { loadOr } from "../../lib/load";
+import { dealGoUrl } from "../../lib/outbound";
 import type { Deal } from "../../lib/types";
 
 const slug = Astro.params.slug ?? "";
@@ -109,7 +110,7 @@ const related = sameplatform.filter((d) => d.slug !== deal.slug);
     {!deal.is_expired && (
       <p class="mt-6">
         <a
-          href={deal.link_url}
+          href={dealGoUrl(deal.slug)}
           rel={deal.is_promoted ? "sponsored nofollow noopener" : "nofollow noopener"}
           target="_blank"
           class="inline-flex min-h-11 items-center rounded-[10px] bg-hot px-5 font-bold text-white no-underline"

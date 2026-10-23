@@ -8,6 +8,7 @@ export const GET: APIRoute = ({ site }) => {
     "Allow: /",
     "Disallow: /admin/",
     "Disallow: /auth/",
+    "Disallow: /go/",
     "",
     `Sitemap: ${sitemap}`,
     "",
