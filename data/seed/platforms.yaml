@@ -100,11 +100,12 @@
   category: llm_api_global
   website_url: https://developers.cloudflare.com/workers-ai/
   status: active
+# 官方文档写明已于 2026-07-30 停服：下线（hidden），保留记录不删除
 - slug: github-models
   name: GitHub Models
   category: llm_api_global
   website_url: https://github.com/marketplace/models
-  status: active
+  status: hidden
 - slug: cohere
   name: Cohere
   category: llm_api_global
