@@ -1,0 +1,84 @@
+---
+import EmptyState from "../../components/EmptyState.astro";
+import BaseLayout from "../../layouts/BaseLayout.astro";
+import { internalGet } from "../../lib/api";
+import { formatPrice, formatRelative } from "../../lib/format";
+import { loadOr } from "../../lib/load";
+import type { OfficialPlanSummary } from "../../lib/types";
+
+const [plans, ok] = await loadOr<OfficialPlanSummary[]>([], () =>
+  internalGet<OfficialPlanSummary[]>("/official-plans"),
+);
+const apps = [...new Set(plans.map((p) => p.app_name))].map((name) => ({
+  name,
+  plans: plans.filter((p) => p.app_name === name),
+}));
+const fetchedAt = plans.map((p) => p.fetched_at).find(Boolean);
+---
+
+<BaseLayout
+  title="ChatGPT、Claude、Gemini、Grok 订阅各国价格对比 · 52tokens"
+  description="ChatGPT Plus、Claude Pro、Gemini、SuperGrok 等官方订阅在各国 App Store 的价格，折合人民币比较，找到最便宜的订阅地区。"
+>
+  <header class="mb-5">
+    <h1 class="text-2xl font-black">官方订阅地区价</h1>
+    <p class="mt-1 text-sm text-mute">
+      同一个官方订阅，在不同国家 / 地区的 App Store 价格差别很大。下面按人民币折算比较。
+      {fetchedAt && `价格${formatRelative(fetchedAt)}核实。`}
+    </p>
+  </header>
+
+  {!ok ? (
+    <EmptyState title="价格暂时加载失败" hint="请稍后刷新页面。" />
+  ) : plans.length === 0 ? (
+    <EmptyState title="价格整理中" hint="核实后会在这里列出。" />
+  ) : (
+    apps.map((app) => (
+      <section class="mb-6">
+        <h2 class="mb-3 font-black">{app.name}</h2>
+        <div class="overflow-x-auto rounded-(--radius-card) bg-card">
+          <table class="w-full min-w-[560px] text-sm">
+            <thead>
+              <tr class="border-b border-line text-left text-xs text-mute">
+                <th class="px-4 py-2.5 font-medium">订阅</th>
+                <th class="px-4 py-2.5 text-right font-medium">美区</th>
+                <th class="px-4 py-2.5 text-right font-medium">最便宜地区</th>
+              </tr>
+            </thead>
+            <tbody>
+              {app.plans.map((p) => (
+                <tr class="border-b border-line last:border-b-0">
+                  <td class="px-4 py-3">
+                    <a href={`/official-prices/${p.app_slug}/${p.plan_slug}`} class="font-medium">
+                      {p.plan_name}
+                    </a>
+                    <span class="ml-2 text-xs text-mute">{p.region_count} 个地区</span>
+                  </td>
+                  <td class="px-4 py-3 text-right font-mono whitespace-nowrap">
+                    {p.us ? `${p.us.price_text} ≈ ${formatPrice(p.us.cny_price, "CNY")}` : "—"}
+                  </td>
+                  <td class="px-4 py-3 text-right whitespace-nowrap">
+                    {p.cheapest ? (
+                      <>
+                        <span class="text-sub">{p.cheapest.country_label}</span>{" "}
+                        <span class="font-mono font-bold text-hot">
+                          {formatPrice(p.cheapest.cny_price, "CNY")}
+                        </span>
+                      </>
+                    ) : (
+                      "—"
+                    )}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </section>
+    ))
+  )}
+  <p class="text-xs text-mute">
+    价格来自各国 App Store 的公开页面；订阅需要对应地区的 Apple ID 和当地支付方式，App Store
+    价格可能含当地税费，与官网网页订阅价不同。
+  </p>
+</BaseLayout>

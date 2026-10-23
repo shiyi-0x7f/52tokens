@@ -60,6 +60,38 @@ export interface ModelDetail {
   prices: Price[];
 }
 
+/** 官方订阅地区价（各国 App Store）；人民币价按快照当天汇率折算 */
+export interface RegionPrice {
+  country_code: string;
+  country_label: string;
+  currency: string;
+  /** 当地货币原文，如 "$19.99" */
+  price_text: string;
+  cny_price: string | null;
+  /** 相对美区人民币价的百分比（美区 = 100） */
+  vs_us_percent: number | null;
+  source_url: string;
+  fx_date: string | null;
+}
+
+export interface OfficialPlanSummary {
+  app_slug: string;
+  app_name: string;
+  provider: string;
+  plan_slug: string;
+  plan_name: string;
+  billing_period: string;
+  us: RegionPrice | null;
+  cheapest: RegionPrice | null;
+  region_count: number;
+  fetched_at: string | null;
+}
+
+export interface OfficialPlanDetail extends OfficialPlanSummary {
+  prices: RegionPrice[];
+  missing_regions: string[];
+}
+
 /** 卡网比价：外层只有价格和有货店铺数，不出现商家名 */
 export interface ShopProductSummary {
   slug: string;

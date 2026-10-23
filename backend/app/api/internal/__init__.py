@@ -5,7 +5,7 @@
 
 from fastapi import APIRouter, Depends
 
-from app.api.internal import auth, catalog, deals, meta, outbound, shops
+from app.api.internal import auth, catalog, deals, meta, official, outbound, shops
 from app.core.security import require_internal_token
 
 router = APIRouter(prefix="/internal/v1", dependencies=[Depends(require_internal_token)])
@@ -14,4 +14,5 @@ router.include_router(catalog.router)
 router.include_router(deals.router)
 router.include_router(outbound.router)
 router.include_router(shops.router)
+router.include_router(official.router)
 router.include_router(auth.router)

@@ -25,6 +25,8 @@ from app.domains.deals.source_repository import DealSourceRepository
 from app.domains.deals.sources_admin import SourceAdminService
 from app.domains.deals.watch import DealWatchService
 from app.domains.deals.watch_batch import BatchCheckService
+from app.domains.official.repository import OfficialRepository
+from app.domains.official.service import OfficialService
 from app.domains.outbound.repository import OutboundRepository
 from app.domains.outbound.service import OutboundService
 from app.domains.shops.admin import ShopAdminService
@@ -53,6 +55,10 @@ def get_catalog_service(session: SessionDep) -> CatalogService:
 
 def get_deal_service(session: SessionDep) -> DealService:
     return DealService(DealRepository(session))
+
+
+def get_official_service(session: SessionDep) -> OfficialService:
+    return OfficialService(OfficialRepository(session))
 
 
 def get_shop_service(session: SessionDep) -> ShopService:
@@ -100,6 +106,7 @@ CatalogServiceDep = Annotated[CatalogService, Depends(get_catalog_service)]
 DealServiceDep = Annotated[DealService, Depends(get_deal_service)]
 OutboundServiceDep = Annotated[OutboundService, Depends(get_outbound_service)]
 ShopServiceDep = Annotated[ShopService, Depends(get_shop_service)]
+OfficialServiceDep = Annotated[OfficialService, Depends(get_official_service)]
 AuthServiceDep = Annotated[AuthService, Depends(get_auth_service)]
 
 # ---------- 后台 ----------

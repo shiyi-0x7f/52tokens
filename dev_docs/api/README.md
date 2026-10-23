@@ -117,6 +117,24 @@
 
 活动不存在或不可见 → `404`，不记录点击。公开站收到后 `302` 跳转（`Cache-Control: no-store`、`X-Robots-Tag: noindex, nofollow`），`/go/` 在 robots.txt 中禁止抓取。
 
+### `GET /internal/v1/official-plans`
+
+官方订阅档位（ChatGPT / Claude / Gemini / Grok 共 14 个）及各国 App Store 价格摘要：
+
+```json
+{ "app_slug": "chatgpt", "app_name": "ChatGPT", "provider": "OpenAI", "plan_slug": "plus-monthly",
+  "plan_name": "ChatGPT Plus", "billing_period": "monthly", "us": { …地区价… }, "cheapest": { …地区价… },
+  "region_count": 41, "fetched_at": "2026-07-24T05:52:36Z" }
+```
+
+地区价：`{ country_code, country_label, currency, price_text, cny_price, vs_us_percent, source_url, fx_date }`。人民币价按 `fx_date` 当天汇率折算；`vs_us_percent` 为相对美区人民币价的百分比。只比较 `status=available` 的地区。
+
+### `GET /internal/v1/official-plans/{app_slug}/{plan_slug}`
+
+字段同上，另有 `prices`（全部有价格的地区，按人民币价升序）和 `missing_regions`（没上架该档位的地区名）。不存在 → `404`。
+
+数据来源：`data/seed/official_plans.yaml` + `data/seed/official_prices.json`（种子导入，按（应用, 档位）和（档位, 地区）upsert）。
+
 ### `GET /internal/v1/shop-products`
 
 卡网比价商品列表（不含「其他商品」和下线的商品；没有报价的商品不出现）。外层**不出现商家名**：
