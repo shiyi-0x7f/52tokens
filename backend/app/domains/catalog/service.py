@@ -68,6 +68,12 @@ class CatalogService:
     async def list_platforms(self, category: PlatformCategory | None) -> list[PlatformOut]:
         return [PlatformOut.model_validate(p) for p in await self.repo.list_platforms(category)]
 
+    async def get_platform(self, slug: str) -> PlatformOut:
+        platform = await self.repo.get_public_platform(slug)
+        if platform is None:
+            raise AppError("NOT_FOUND")
+        return PlatformOut.model_validate(platform)
+
     async def list_models(self) -> list[ModelSummary]:
         summaries: list[ModelSummary] = []
         for model in await self.repo.list_models_with_prices():

@@ -54,8 +54,8 @@ const related = sameplatform.filter((d) => d.slug !== deal.slug);
       签到 & 活动
     </a>{" "}
     /
-    <a href={`/deals?type=${deal.deal_type}`} class="no-underline">
-      {typeLabel}
+    <a href={`/platforms/${deal.platform.slug}`} class="no-underline">
+      {deal.platform.name}
     </a>
   </nav>
 
@@ -124,7 +124,15 @@ const related = sameplatform.filter((d) => d.slug !== deal.slug);
 
   {related.length > 0 && (
     <section class="mt-6">
-      <h2 class="mb-3 font-black">{deal.platform.name} 的其他活动</h2>
+      <h2 class="mb-3 flex items-center font-black">
+        {deal.platform.name} 的其他活动
+        <a
+          href={`/platforms/${deal.platform.slug}`}
+          class="ml-auto text-xs font-normal text-mute no-underline"
+        >
+          全部 →
+        </a>
+      </h2>
       <ul class="rounded-(--radius-card) bg-card">
         {related.map((d) => (
           <li class="border-b border-line last:border-b-0">
