@@ -45,6 +45,8 @@ class Settings(BaseSettings):
     turnstile_secret_key: SecretStr = SecretStr("1x0000000000000000000000000000000AA")
 
     session_ttl_days: int = 30
+    # 公开站写入的会话 Cookie 名；后台 SPA 与公开站同域，后台接口直接读它
+    session_cookie_name: str = "t52_session"
     # 这些邮箱登录后自动成为后台管理员（逗号分隔）
     admin_emails: str = ""
 

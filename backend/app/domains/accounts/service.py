@@ -2,10 +2,9 @@
 
 - Google：52tokens 自己完成 OAuth（SCC 在国内连不到 Google），再经 SCC 联合登录建号。
 - 微信网站应用扫码、邮箱验证码：直接用 SCC 已有接口。
-会话令牌只以 SHA-256 摘要作为存储键，泄露存储也拿不到可用令牌。
+会话本身的读写在 SessionService。
 """
 
-import hashlib
 import json
 import secrets
 from datetime import UTC, datetime
@@ -18,6 +17,7 @@ from app.core.kv import KeyValueStore
 from app.core.turnstile import verify_turnstile
 from app.domains.accounts.repository import UserRepository
 from app.domains.accounts.schemas import AuthorizeOut, EmailSendOut, SessionOut, UserOut
+from app.domains.accounts.sessions import SessionService
 from app.integrations import google_oauth
 from app.integrations.scc import SccClient, SccUser
 
@@ -28,10 +28,6 @@ def _state_key(state: str) -> str:
     return f"oauth:google:{state}"
 
 
-def _session_key(token: str) -> str:
-    return f"session:{hashlib.sha256(token.encode()).hexdigest()}"
-
-
 class AuthService:
     def __init__(
         self,
@@ -40,12 +36,14 @@ class AuthService:
         store: KeyValueStore,
         http: httpx.AsyncClient,
         users: UserRepository,
+        sessions: SessionService,
         scc: SccClient,
     ) -> None:
         self.settings = settings
         self.store = store
         self.http = http
         self.users = users
+        self.sessions = sessions
         self.scc = scc
 
     # ---------- 公共：SCC 用户 → 本地用户 → 会话 ----------
@@ -67,12 +65,10 @@ class AuthService:
             is_admin=is_admin,
             now=now,
         )
-        token = secrets.token_urlsafe(32)
-        ttl = self.settings.session_ttl_days * 86400
-        await self.store.set(_session_key(token), str(user.id), ttl)
+        token = await self.sessions.open(user)
         return SessionOut(
             session_token=token,
-            expires_in=ttl,
+            expires_in=self.sessions.ttl_seconds,
             next=next_path,
             user=UserOut.model_validate(user),
         )
@@ -156,18 +152,3 @@ class AuthService:
         scc_user = await self.scc.email_login(email, code)
         # 能收到验证码即证明邮箱归属
         return await self._open_session(scc_user, verified_email=email)
-
-    # ---------- 会话 ----------
-
-    async def get_session_user(self, token: str) -> UserOut:
-        user_id = await self.store.get(_session_key(token))
-        if user_id is None:
-            raise AppError("UNAUTHORIZED")
-        user = await self.users.get(int(user_id))
-        if user is None:
-            await self.store.delete(_session_key(token))
-            raise AppError("UNAUTHORIZED")
-        return UserOut.model_validate(user)
-
-    async def logout(self, token: str) -> None:
-        await self.store.delete(_session_key(token))

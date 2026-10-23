@@ -120,6 +120,32 @@
 会话无效 → `401`；SCC 判定账号禁用 → `403`；邮箱已关联其他 Google 账号 → `409`；
 Google / SCC 不可达 → `502`；Google 或 SCC 凭据未配置 → `503`。
 
+## 后台接口 `/api/admin/*`
+
+只给后台 SPA 用，经 nginx 反代对外（与公开站同域）。
+
+- **鉴权**：读公开站写入的会话 Cookie `t52_session`，用户必须是管理员（`ADMIN_EMAILS` 里、且邮箱已验证的账号登录后自动成为管理员）。未登录 `401`，非管理员 `403`。
+- **防 CSRF**：除 GET 外的请求必须带 `X-Requested-With: 52tokens-admin`，否则 `403`。
+- **分页**：列表返回 `{ items, total, page, page_size }`，`page_size` 最大 100。
+
+| 接口 | 说明 |
+| --- | --- |
+| `GET /api/admin/me` | 当前管理员 |
+| `GET /api/admin/platforms` | 全部平台（含未发布），供下拉选择 |
+| `GET /api/admin/deals?status=&platform_id=&q=&page=&page_size=` | 活动列表，按更新时间倒序 |
+| `GET /api/admin/deals/{id}` | 活动详情 |
+| `POST /api/admin/deals` | 新建活动（一律为待审核；`slug` 留空自动生成） |
+| `PUT /api/admin/deals/{id}` | 编辑活动（发布过的活动不能改 `slug`） |
+| `POST /api/admin/deals/{id}/publish` | 发布：状态 `active`，写入核实时间；已过截止时间的不能发布 |
+| `POST /api/admin/deals/{id}/reject` | 驳回，body `{ reason }` |
+| `POST /api/admin/deals/{id}/expire` | 标记已结束（页面保留，下沉到「已结束」） |
+| `POST /api/admin/deals/{id}/reconfirm` | 重新核实：只刷新核实时间 |
+| `GET /api/admin/prices?platform_id=&q=&page=&page_size=` | 价格列表 |
+| `POST /api/admin/prices` | 按（平台, 模型）新建或更新价格；保存即视为已核实并发布；模型不存在时需填 `model_name` 和 `family` |
+| `POST /api/admin/prices/{id}/hide` / `show` | 隐藏 / 恢复价格 |
+
+发布、驳回、下线会记录操作人（`reviewed_by_id`）和时间（`reviewed_at`）。
+
 ## 数据来源
 
 ### 种子数据（人工核实）
