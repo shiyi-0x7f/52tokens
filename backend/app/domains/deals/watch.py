@@ -7,7 +7,7 @@
 - 已驳回的活动也参与匹配，避免同一条线索被反复提出。
 """
 
-from collections.abc import Sequence
+from collections.abc import Awaitable, Callable, Sequence
 from datetime import UTC, date, datetime, time
 from decimal import Decimal
 from typing import Literal, Protocol
@@ -41,6 +41,9 @@ class Extractor(Protocol):
     async def extract[M: BaseModel](self, *, system: str, user: str, schema: type[M]) -> M: ...
 
 
+ProgressCallback = Callable[[int, int], Awaitable[None]]  # (已检查, 总数)
+
+
 class CheckReport(BaseModel):
     source_id: int
     status: Literal["failed", "unchanged", "extracted"]
@@ -68,14 +71,21 @@ class DealWatchService:
         self.collector = collector
         self.llm = llm
 
-    async def check_all(self) -> list[CheckReport]:
+    async def check_all(self, on_progress: ProgressCallback | None = None) -> list[CheckReport]:
         reports = []
-        for source in await self.repo.list_enabled():
+        sources = await self.repo.list_enabled()
+        for done, source in enumerate(sources, start=1):
             try:
                 reports.append(await self.check(source))
-            except Exception:
+            except Exception as exc:
                 # 单个来源出意外不影响其他来源；完整堆栈进日志
                 logger.exception("检查监测来源出错 source={}", source.id)
+                await self.repo.rollback()  # 会话可能已失效，回滚后才能继续检查下一个
+                reports.append(
+                    CheckReport(source_id=source.id, status="failed", error=f"意外错误：{exc}")
+                )
+            if on_progress is not None:
+                await on_progress(done, len(sources))
         return reports
 
     async def check(self, source: DealSource) -> CheckReport:

@@ -5,10 +5,12 @@ from collections.abc import AsyncIterator
 import httpx
 import pytest
 from fastapi import FastAPI
-from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.ext.asyncio import AsyncEngine, AsyncSession, async_sessionmaker
 
 from app.api.deps import get_http
+from app.db.session import get_sessionmaker
 from app.domains.deals.models import DealOrigin
+from app.domains.deals.watch_batch import RUNNING_KEY
 from tests import factories as f
 from tests.conftest import CSRF
 from tests.fakes import MemoryStore
@@ -89,6 +91,40 @@ async def test_check_now_without_llm_key_reports_reason(
     listed = (await admin.get("/api/admin/sources")).json()["data"]["items"][0]
     assert listed["fail_count"] == 1
     assert listed["checked_at"] is not None
+
+
+async def test_check_all_runs_in_background_and_is_exclusive(
+    app: FastAPI,
+    db_engine: AsyncEngine,
+    db_session: AsyncSession,
+    admin: httpx.AsyncClient,
+    store: MemoryStore,
+) -> None:
+    app.dependency_overrides[get_sessionmaker] = lambda: async_sessionmaker(
+        db_engine, expire_on_commit=False
+    )
+    p = await f.platform(db_session, "trae")
+    await f.deal_source(db_session, p, url="https://a.example.com")
+    await f.deal_source(db_session, p, url="https://b.example.com")
+    await f.deal_source(db_session, p, url="https://c.example.com", enabled=False)
+    await db_session.commit()
+
+    idle = (await admin.get("/api/admin/sources/check-all")).json()["data"]
+    assert idle == {"running": None, "last": None}
+
+    started = await admin.post("/api/admin/sources/check-all", headers=CSRF)
+    assert started.status_code == 200
+    assert started.json()["data"]["running"] is not None
+
+    # 测试客户端会等后台任务跑完才返回，这里已经结束
+    status = (await admin.get("/api/admin/sources/check-all")).json()["data"]
+    assert status["running"] is None
+    last = status["last"]
+    assert (last["checked"], last["failed"], last["created"]) == (2, 2, 0)  # 没配 LLM key
+
+    await store.set_if_absent(RUNNING_KEY, '{"started_at": "2026-10-23T00:00:00Z"}', 60)
+    busy = await admin.post("/api/admin/sources/check-all", headers=CSRF)
+    assert busy.status_code == 409
 
 
 async def test_deal_admin_shows_origin(db_session: AsyncSession, admin: httpx.AsyncClient) -> None:

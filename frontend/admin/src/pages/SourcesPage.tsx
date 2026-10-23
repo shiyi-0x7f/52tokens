@@ -20,6 +20,7 @@ import { useCheckSource, useDeleteSource, usePlatforms, useSources } from "../ap
 import type { CheckReport, Source } from "../api/types";
 import { formatDateTime, fromNow } from "../lib/format";
 import { useErrorNotice } from "../lib/useErrorNotice";
+import { BatchCheckBar } from "./BatchCheckBar";
 import { SourceFormModal } from "./SourceFormModal";
 
 function reportText(report: CheckReport): string {
@@ -167,6 +168,7 @@ export function SourcesPage() {
         每 6 小时抓取一次启用的页面，正文有变化才交给 LLM
         抽取活动；新活动进「活动审核」的待审核列表。
       </Typography.Paragraph>
+      <BatchCheckBar />
       <Space wrap style={{ marginBottom: 16 }}>
         <Select
           allowClear

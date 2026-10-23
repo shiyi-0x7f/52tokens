@@ -2,6 +2,7 @@ import { keepPreviousData, useMutation, useQuery, useQueryClient } from "@tansta
 
 import { api } from "./client";
 import type {
+  BatchStatus,
   CheckReport,
   Deal,
   DealInput,
@@ -149,6 +150,22 @@ export function useCheckSource() {
         client.invalidateQueries({ queryKey: ["sources"] }),
         client.invalidateQueries({ queryKey: ["deals"] }),
       ]),
+  });
+}
+
+/** 批量检查状态：跑的时候每 2 秒刷新一次进度，跑完停止轮询 */
+export const useBatchStatus = () =>
+  useQuery({
+    queryKey: ["sources", "check-all"],
+    queryFn: () => api<BatchStatus>("GET", "/sources/check-all"),
+    refetchInterval: (query) => (query.state.data?.running ? 2000 : false),
+  });
+
+export function useStartBatch() {
+  const client = useQueryClient();
+  return useMutation({
+    mutationFn: () => api<BatchStatus>("POST", "/sources/check-all"),
+    onSuccess: (status) => client.setQueryData(["sources", "check-all"], status),
   });
 }
 

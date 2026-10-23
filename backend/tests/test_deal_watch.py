@@ -4,6 +4,7 @@ from datetime import date, timedelta
 from typing import Any
 
 import httpx
+import pytest
 from pydantic import BaseModel
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -12,9 +13,16 @@ from app.collectors.base import Collector, CollectResult, SourceConfig
 from app.collectors.page_watch import PageSnapshot, content_hash
 from app.domains.deals.models import Deal, DealOrigin, DealSource, DealStatus
 from app.domains.deals.source_repository import DealSourceRepository
-from app.domains.deals.watch import NO_LLM_ERROR, DealWatchService
+from app.domains.deals.watch import (
+    NO_LLM_ERROR,
+    CheckReport,
+    DealWatchService,
+    ProgressCallback,
+)
+from app.domains.deals.watch_batch import BatchCheckService
 from app.integrations.llm import LlmError
 from tests import factories as f
+from tests.fakes import MemoryStore
 
 PAGE_TEXT = "新用户注册送 100 万 tokens。每日签到送 200 积分。"
 
@@ -187,6 +195,36 @@ async def test_fetch_and_llm_failures_are_recorded(db_session: AsyncSession) -> 
     assert src.fail_count == 2
     assert src.content_hash is None
     assert await _deals(db_session) == []
+
+
+async def test_batch_lock_is_released_even_on_error(db_session: AsyncSession) -> None:
+    store = MemoryStore()
+    batch = BatchCheckService(store)
+    assert await batch.acquire()
+    assert not await batch.acquire()
+
+    class Boom(DealWatchService):
+        async def check_all(self, on_progress: ProgressCallback | None = None) -> list[CheckReport]:
+            raise RuntimeError("boom")
+
+    with pytest.raises(RuntimeError):
+        await batch.run(Boom(DealSourceRepository(db_session), FakeCollector(), None))
+    assert (await batch.status()).running is None
+    assert await batch.acquire()
+
+
+async def test_check_all_reports_progress(db_session: AsyncSession) -> None:
+    p = await f.platform(db_session, "trae")
+    await f.deal_source(db_session, p, url="https://a.example.com")
+    await f.deal_source(db_session, p, url="https://b.example.com")
+    await db_session.commit()
+    seen: list[tuple[int, int]] = []
+
+    async def on_progress(done: int, total: int) -> None:
+        seen.append((done, total))
+
+    await _service(db_session, FakeLlm()).check_all(on_progress)
+    assert seen == [(1, 2), (2, 2)]
 
 
 async def test_check_all_only_enabled(db_session: AsyncSession) -> None:

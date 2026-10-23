@@ -160,6 +160,8 @@ Google / SCC 不可达 → `502`；Google 或 SCC 凭据未配置 → `503`。
 | `POST /api/admin/sources` | 添加来源 `{ platform_id, url, label, enabled }`；同一 URL 只能登记一次（`409`） |
 | `PUT /api/admin/sources/{id}` | 编辑来源；改了 URL 或平台会清空正文 hash，下次检查重新抽取 |
 | `DELETE /api/admin/sources/{id}` | 删除来源；由它采集到的活动保留（`source_id` 置空） |
+| `POST /api/admin/sources/check-all` | 全部检查：后台逐个检查所有启用的来源，立即返回 `{ running, last }`；已有一批在跑（含 worker 定时检查）时 `409` |
+| `GET /api/admin/sources/check-all` | 批量检查状态：`running` 为 `{ started_at, total, done }` 或 `null`；`last` 为上一批汇总 `{ started_at, finished_at, checked, created, reconfirmed, failed }` 或 `null` |
 | `POST /api/admin/sources/{id}/check` | 立即检查一次，同步返回 `{ source_id, status, created, reconfirmed, error }`，`status` 为 `failed` / `unchanged` / `extracted`；含 LLM 调用，可能耗时数十秒 |
 
 发布、驳回、下线会记录操作人（`reviewed_by_id`）和时间（`reviewed_at`）。

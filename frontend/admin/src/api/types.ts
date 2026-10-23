@@ -115,6 +115,18 @@ export interface CheckReport {
   error: string;
 }
 
+export interface BatchStatus {
+  running: { started_at: string; total: number; done: number } | null;
+  last: {
+    started_at: string;
+    finished_at: string;
+    checked: number;
+    created: number;
+    reconfirmed: number;
+    failed: number;
+  } | null;
+}
+
 export type Currency = "CNY" | "USD";
 
 export interface Price {
