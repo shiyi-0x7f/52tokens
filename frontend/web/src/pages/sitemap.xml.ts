@@ -2,16 +2,26 @@ import type { APIRoute } from "astro";
 
 import { internalGet } from "../lib/api";
 import { buildSitemap, type SitemapEntry } from "../lib/sitemap";
-import type { Deal, ModelSummary } from "../lib/types";
+import type { Deal, ModelSummary, OfficialPlanSummary, ShopProductSummary } from "../lib/types";
 
-const STATIC_PATHS = ["/", "/models", "/free", "/deals", "/platforms"];
+const STATIC_PATHS = [
+  "/",
+  "/models",
+  "/free",
+  "/deals",
+  "/platforms",
+  "/official-prices",
+  "/products",
+];
 
 export const GET: APIRoute = async ({ site }) => {
   const base = site ?? new URL("http://127.0.0.1:4321");
-  const [models, deals] = await Promise.all([
+  const [models, deals, shopProducts, plans] = await Promise.all([
     internalGet<ModelSummary[]>("/models"),
     // 已结束的活动页面保留，同样进 sitemap
     internalGet<Deal[]>("/deals", { include_expired: true, limit: 100 }),
+    internalGet<ShopProductSummary[]>("/shop-products"),
+    internalGet<OfficialPlanSummary[]>("/official-plans"),
   ]);
   // 平台页只收有活动的平台（没有活动的平台页是 noindex），lastmod 取其活动最近的核实时间
   const platformLastmod = new Map<string, string>();
@@ -27,6 +37,16 @@ export const GET: APIRoute = async ({ site }) => {
       .filter((m) => m.has_free)
       .map((m) => ({ loc: new URL(`/free/${m.slug}`, base).href })),
     ...deals.map((d) => ({ loc: new URL(`/deals/${d.slug}`, base).href, lastmod: d.confirmed_at })),
+    ...plans
+      .filter((p) => p.region_count > 0)
+      .map((p) => ({
+        loc: new URL(`/official-prices/${p.app_slug}/${p.plan_slug}`, base).href,
+        ...(p.fetched_at ? { lastmod: p.fetched_at } : {}),
+      })),
+    // 卡网商品页只收有有货报价的
+    ...shopProducts
+      .filter((p) => p.in_stock_shops > 0)
+      .map((p) => ({ loc: new URL(`/products/${p.slug}`, base).href })),
     ...[...platformLastmod].map(([slug, lastmod]) => ({
       loc: new URL(`/platforms/${slug}`, base).href,
       lastmod,

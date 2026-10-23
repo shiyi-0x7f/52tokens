@@ -135,6 +135,54 @@ export interface BatchStatus {
   } | null;
 }
 
+export type ShopCollectorKind =
+  | "kami"
+  | "dujiao"
+  | "shopApi"
+  | "xiaoheiwan"
+  | "opensoraHtml"
+  | "makerichHtml"
+  | "beibeiHtml"
+  | "ikunloveApi"
+  | "getgptApi"
+  | "publicProductsApi"
+  | "shopUserProductsApi"
+  | "unicornHtml"
+  | "mooncakeCatalog"
+  | "blackcatWholesale"
+  | "genericHtml";
+
+export interface ShopSource {
+  id: number;
+  host: string;
+  /** 店铺地址；多商户平台（shopApi）是具体商户的 /shop/<token> */
+  entry_url: string;
+  name: string;
+  collector_kind: ShopCollectorKind;
+  enabled: boolean;
+  checked_at: string | null;
+  success_at: string | null;
+  last_error: string;
+  fail_count: number;
+  offer_count: number;
+}
+
+export interface ShopSourceInput {
+  entry_url: string;
+  collector_kind: ShopCollectorKind;
+  name: string;
+  enabled: boolean;
+}
+
+export interface ShopSyncReport {
+  source_id: number;
+  status: "synced" | "failed";
+  offers: number;
+  created: number;
+  gone: number;
+  error: string;
+}
+
 export type Currency = "CNY" | "USD";
 
 export interface Price {

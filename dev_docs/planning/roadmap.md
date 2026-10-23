@@ -68,8 +68,8 @@ LLM 只负责"从文本里抽结构化字段 + 给置信度"，**发布必须过
 | `/free/{model}`（已实现；平台维度由 `/platforms/{platform}` 承担） | "XX API 免费额度""免费 Claude API" | 优惠 + 官方 API：免费渠道 + 提供该模型的平台的免费额度 / 注册赠送 / 试用 + 最便宜付费价 + 按数据生成的 FAQ；都没有时 noindex |
 | `/platforms/{platform}`（已实现，附 `/platforms/{platform}/rss.xml`） | "XX 签到""XX 优惠码""XX 新用户送" | 优惠；原计划 `/deals/{platform}` 与活动详情 `/deals/{slug}` 冲突，改用平台路径 |
 | `/deals/{platform}/{slug}` | 单个活动长尾词 | 优惠 |
-| `/official-prices/{plan}/{region}` | "ChatGPT Plus 土耳其价格" | 官方订阅 |
-| `/products/{product}` | "ChatGPT Plus 多少钱""Claude Pro 便宜" | 卡网 |
+| `/official-prices/{app}/{plan}`（已实现：14 个档位 × 41 个地区，2026-07-24 快照；单地区页 `/{region}` 暂不做，避免 580 个薄页面） | "ChatGPT Plus 各国价格""ChatGPT Plus 土耳其价格" | 官方订阅；数据快照需要 App Store 价格采集器定期刷新（待做） |
+| `/products/{product}`（已实现：46 个标准商品、71 个店铺、15 种店铺系统采集，每 3 小时同步） | "ChatGPT Plus 多少钱""Claude Pro 便宜" | 卡网；有货最低价不计拼车 / 异常低价 / 48 小时未更新的报价 |
 | `/reports/{yyyy-mm}` | "2026 年 11 月 AI 订阅价格" | 汇总（可外链资产） |
 
 **技术 SEO 清单**：

@@ -1,0 +1,702 @@
+# 卡网比价的标准商品（归类目标）。aliases 是常见叫法，供人工核对归类时参考。
+# status: hidden 的商品照样参与归类（准确识别出来），但不对外展示：
+#   identity-verification（真人 / KYC 验证）帮人绕过实名验证，风险高。
+# 导入：cd backend && uv run python -m app.cli.seed（按 slug upsert）
+
+- slug: chatgpt-free-account
+  name: ChatGPT 普号
+  platform: ChatGPT
+  product_type: 成品账号
+  spec: 普通账号
+  summary: ChatGPT 普号、Free 号、白号或 OpenAI 普通账号。
+  aliases:
+    - chatgpt free
+    - gpt 普号
+    - openai 普号
+    - 白号
+    - 普通号
+    - 普通账号
+  sort_order: 10
+  status: active
+- slug: chatgpt-plus
+  name: ChatGPT Plus 试用订阅
+  platform: ChatGPT
+  product_type: 订阅/会员
+  spec: 日抛 · 成品号 · 网页号 · 已/未接码
+  summary: ChatGPT Plus 试用订阅主要指短期体验或首登质保的成品号；这里归集日抛、短期成品号、网页号、已接码/未接码成品号，以及 Pix/iDEAL/UPI/欧洲渠道报价。购买前重点核对接码状态、可用端和售后限制。
+  aliases:
+    - gpt plus
+    - chatgpt plus
+    - plus 月卡
+    - plus 一个月
+    - plus 卡密
+    - plus 直充
+    - plus 成品号
+    - plus 独享账号
+    - plus 账号
+    - plus 日抛
+    - plus 日抛号
+    - plus 网页号
+    - plus 已接码
+    - plus 未接码
+    - plus 试用订阅
+    - puls
+    - pulus
+  sort_order: 20
+  status: active
+- slug: chatgpt-plus-recharge
+  name: ChatGPT Plus 正价代充
+  platform: ChatGPT
+  product_type: 订阅/会员
+  spec: 官方充值 · 正价/正规 · 真实付费
+  summary: 明确标注官方、官网、正价、正规或真实付费的 ChatGPT Plus 充值渠道。普通 CDK、卡密和未知渠道充值归入试用订阅。
+  aliases:
+    - plus 官方充值
+    - plus 官方直充
+    - plus 官方代充
+    - plus 官网直充
+    - plus 正价充值
+    - plus 正规充值
+    - plus 真实付费
+  sort_order: 30
+  status: active
+- slug: chatgpt-go
+  name: ChatGPT Go
+  platform: ChatGPT
+  product_type: 订阅/会员
+  spec: Go
+  summary: ChatGPT Go 月卡、年卡、激活码、内购直充或成品权益。
+  aliases:
+    - chatgpt go
+    - gpt go
+    - go 月卡
+    - go 年卡
+    - go 激活码
+    - go 直充
+  sort_order: 40
+  status: active
+- slug: chatgpt-team-business
+  name: ChatGPT Team / Business
+  platform: ChatGPT
+  product_type: 订阅/会员
+  spec: K12 · Bug Team · 母号/子号 · 邀请/自动拉
+  summary: ChatGPT Team、Business、K12、Bug Team、团队号、母号、邀请、自动拉或 Team 成品号。
+  aliases:
+    - team
+    - business
+    - t5
+    - t5倍
+    - k12
+    - k12 子号
+    - bug team
+    - team bug
+    - 母号
+    - 子号
+    - 自动拉
+    - 直拉
+    - 邀请
+    - 团队号
+  sort_order: 50
+  status: active
+- slug: chatgpt-pro-5x
+  name: ChatGPT Pro 5x
+  platform: ChatGPT
+  product_type: 订阅/会员
+  spec: Pro / 5x
+  summary: ChatGPT Pro 5x 充值、代开或卡密。
+  aliases:
+    - pro 5x
+    - pro x5
+    - 5倍
+    - 100刀
+    - 100 美元
+    - 100美元
+  sort_order: 60
+  status: active
+- slug: chatgpt-pro-20x
+  name: ChatGPT Pro 20x
+  platform: ChatGPT
+  product_type: 订阅/会员
+  spec: Pro / 20x
+  summary: ChatGPT Pro 20x 充值、代开或卡密。
+  aliases:
+    - pro 20x
+    - pro x20
+    - 20倍
+    - 200刀
+    - 200 美元
+    - 200美元
+  sort_order: 70
+  status: active
+- slug: openai-api-cdk
+  name: API / CDK / 额度
+  platform: 其他
+  product_type: API额度
+  spec: API 额度 / CDK
+  summary: 通用 API、中转、余额、额度、Codex API 或 OpenAI API 商品。
+  aliases:
+    - api cdk
+    - codexapi
+    - codex api
+    - token
+    - 中转
+    - 余额
+    - 额度
+  sort_order: 80
+  status: active
+- slug: chatgpt-codex-service
+  name: Codex / ChatGPT 周边与自助服务
+  platform: ChatGPT
+  product_type: 辅助服务
+  spec: 提链 · 扫码 · 自助充值 · 额度重置
+  summary: Codex 或 ChatGPT 使用过程中的提链、支付二维码处理、扫码对接、自助充值、额度重置和其他辅助服务。不含成品账号、独立接码服务、API 额度或人工正价代充。
+  aliases:
+    - codex 重置额度
+    - 重置额度
+    - 长链提取
+    - 链接提取
+    - 提链
+    - 扫码对接
+    - 自助充值
+    - 服务包
+    - 周边服务
+  sort_order: 90
+  status: active
+- slug: claude-pro-month
+  name: Claude Pro
+  platform: Claude
+  product_type: 订阅/会员
+  spec: Pro
+  summary: Claude Pro 订阅、直充或卡密。
+  aliases:
+    - claude pro
+    - pro 尼区
+    - claude 月卡
+  sort_order: 100
+  status: active
+- slug: claude-team-standard
+  name: Claude Team Standard
+  platform: Claude
+  product_type: 订阅/会员
+  spec: Team Standard / 1.25x
+  summary: Claude Team 标准席位、Standard seat 或 1.25x 团队订阅。
+  aliases:
+    - claude team standard
+    - team standard
+    - 标准席位
+    - 1.25x
+    - 1.25倍
+  sort_order: 110
+  status: active
+- slug: claude-team-premium
+  name: Claude Team Premium
+  platform: Claude
+  product_type: 订阅/会员
+  spec: Team Premium / 6.25x
+  summary: Claude Team 高级席位、Premium seat 或 6.25x 团队订阅。
+  aliases:
+    - claude team premium
+    - team premium
+    - 高级席位
+    - 6.25x
+    - 6.25倍
+  sort_order: 120
+  status: active
+- slug: claude-max-5x
+  name: Claude Max 5x
+  platform: Claude
+  product_type: 订阅/会员
+  spec: Max / 5x
+  summary: Claude Max 5x 官方套餐、账号或代开。
+  aliases:
+    - claude max x5
+    - max 5x
+  sort_order: 130
+  status: active
+- slug: claude-max-20x
+  name: Claude Max 20x
+  platform: Claude
+  product_type: 订阅/会员
+  spec: Max / 20x
+  summary: Claude Max 20x 官方套餐、账号或代开。
+  aliases:
+    - claude max x20
+    - max 20x
+  sort_order: 140
+  status: active
+- slug: claude-account
+  name: Claude 普号 / 兑换号
+  platform: Claude
+  product_type: 成品账号
+  spec: 普通账号
+  summary: Claude 普号、free 号、礼品卡兑换专用号。
+  aliases:
+    - claude free
+    - claude 普通账号
+    - claude 普号
+  sort_order: 150
+  status: active
+- slug: gemini-pro-year
+  name: Gemini Pro 成品号
+  platform: Gemini
+  product_type: 成品账号
+  spec: Pro / 成品号
+  summary: Gemini Pro、Google AI Pro、Pixel 渠道、Gmail 老号或家庭组等成品账号。
+  aliases:
+    - gemini pro 成品号
+    - gemini 一年成品号
+    - gemini 12个月成品号
+    - pixel gemini
+    - google ai pro 成品号
+  sort_order: 160
+  status: active
+- slug: gemini-pro-recharge
+  name: Gemini Pro 充值/开通
+  platform: Gemini
+  product_type: 订阅/会员
+  spec: Pro / 充值开通
+  summary: Gemini Pro、Google AI Pro 的 CDK、自助充值、优惠链接、绑卡、激活链接或代开通服务。
+  aliases:
+    - gemini pro 充值
+    - gemini cdk
+    - gemini 优惠链接
+    - google ai pro 充值
+    - gemini 自助开通
+  sort_order: 170
+  status: active
+- slug: gemini-ultra
+  name: Google AI Ultra / Gemini Ultra
+  platform: Gemini
+  product_type: 订阅/会员
+  spec: Ultra
+  summary: Gemini Ultra、Google AI Ultra、企业 Ultra、反重力或 Flow 积分。
+  aliases:
+    - ai ultra
+    - gemini ultra
+    - 250美元
+    - 反重力
+    - flow
+  sort_order: 180
+  status: active
+- slug: super-grok
+  name: Super Grok
+  platform: Grok
+  product_type: 订阅/会员
+  spec: Super
+  summary: Super Grok 成品号、卡密、直充、激活码、月卡或年卡。
+  aliases:
+    - super grok
+    - supergrok
+    - grok super
+    - grok 激活码
+  sort_order: 190
+  status: active
+- slug: super-grok-heavy
+  name: SuperGrok Heavy / Grok Heavy
+  platform: Grok
+  product_type: 订阅/会员
+  spec: Heavy
+  summary: SuperGrok Heavy、Grok Heavy 高阶订阅、代充、成品号、月卡或年卡。
+  aliases:
+    - super grok heavy
+    - supergrok heavy
+    - grok heavy
+    - heavy grok
+    - grok super heavy
+    - grok heavy 会员
+  sort_order: 200
+  status: active
+- slug: grok-account
+  name: Grok 普号 / 体验号
+  platform: Grok
+  product_type: 成品账号
+  spec: 普通账号 / 体验
+  summary: Grok 普号、体验卡、短期成品号。
+  aliases:
+    - grok 普号
+    - grok 体验
+    - 直登成品
+  sort_order: 210
+  status: active
+- slug: gmail-account
+  name: Gmail / Google 邮箱
+  platform: 邮箱
+  product_type: 邮箱/账号
+  spec: Gmail / Google
+  summary: 纯 Gmail、Google 邮箱、谷歌邮箱、Google 账号等邮箱商品。
+  aliases:
+    - gmail
+    - google 邮箱
+    - 谷歌邮箱
+    - google 账号
+    - 谷歌账号
+    - gmail 邮箱
+  sort_order: 220
+  status: active
+- slug: outlook-account
+  name: Outlook / Hotmail 邮箱
+  platform: 邮箱
+  product_type: 邮箱/账号
+  spec: Outlook / Hotmail / Microsoft
+  summary: 纯 Outlook、Hotmail、Microsoft、微软邮箱、OAuth2 邮箱商品。
+  aliases:
+    - outlook
+    - hotmail
+    - 微软邮箱
+    - microsoft 邮箱
+    - oauth2
+    - graph 令牌
+  sort_order: 230
+  status: active
+- slug: education-email
+  name: 教育邮箱
+  platform: 邮箱
+  product_type: 邮箱/账号
+  spec: Edu
+  summary: 教育邮箱、学校邮箱、edu 邮箱等商品。
+  aliases:
+    - 教育邮箱
+    - edu 邮箱
+    - 学校邮箱
+    - edu mail
+    - .edu
+  sort_order: 240
+  status: active
+- slug: email-account
+  name: 其他邮箱
+  platform: 邮箱
+  product_type: 邮箱/账号
+  spec: 其他邮箱
+  summary: 域名邮箱、自建邮箱、无法进一步确认类型的纯邮箱商品。
+  aliases:
+    - 邮箱账号
+    - 域名邮箱
+    - 企业邮箱
+    - 其他邮箱
+  sort_order: 250
+  status: active
+- slug: icloud-email
+  name: iCloud 邮箱
+  platform: 邮箱
+  product_type: 邮箱/账号
+  spec: iCloud
+  summary: 纯 iCloud 邮箱、iCloud 隐私邮箱、iCloud 邮箱母号或取码邮箱商品。
+  aliases:
+    - icloud
+    - icloud 邮箱
+    - icloud邮箱
+    - icoud
+    - icoud 邮箱
+    - icoud邮箱
+    - icloud 隐私邮箱
+    - icloud 母号
+    - icloud 子号
+  sort_order: 260
+  status: active
+- slug: virtual-card
+  name: 虚拟卡
+  platform: 其他
+  product_type: 虚拟卡
+  spec: VISA / MasterCard
+  summary: VISA、MasterCard、0刀卡、1刀卡、BIN 卡或虚拟信用卡。
+  aliases:
+    - visa
+    - mastercard
+    - 虚拟卡
+    - 虚拟信用卡
+    - 0刀卡
+    - 1刀卡
+    - bin 卡
+    - "485954"
+    - paypal 虚拟卡
+  sort_order: 270
+  status: active
+- slug: openai-phone-verification
+  name: OpenAI / ChatGPT 接码
+  platform: 接码
+  product_type: 接码/验证
+  spec: OpenAI / ChatGPT
+  summary: OpenAI、ChatGPT、Codex、GPT 注册或登录相关手机接码服务。
+  aliases:
+    - openai 接码
+    - chatgpt 接码
+    - gpt 接码
+    - codex 接码
+  sort_order: 280
+  status: active
+- slug: google-phone-verification
+  name: Google / Gemini 接码
+  platform: 接码
+  product_type: 接码/验证
+  spec: Google / Gemini
+  summary: Google、Gmail、Gemini、Pixel 等 Google 相关手机接码服务。
+  aliases:
+    - google 接码
+    - gmail 接码
+    - gemini 接码
+    - 谷歌接码
+  sort_order: 290
+  status: active
+- slug: paypal-phone-verification
+  name: PayPal 接码
+  platform: 接码
+  product_type: 接码/验证
+  spec: PayPal
+  summary: PayPal 注册或验证相关手机接码服务。
+  aliases:
+    - paypal 接码
+    - paypal 验证
+    - paypal 手机验证
+  sort_order: 300
+  status: active
+- slug: phone-verification
+  name: 通用接码
+  platform: 接码
+  product_type: 接码/验证
+  spec: 短信 / 手机号验证
+  summary: 无法确认具体平台的手机接码、短信验证码、一次性验证、注册辅助验证等服务。
+  aliases:
+    - 接码
+    - 手机接码
+    - 短信验证
+    - 验证码
+    - 一次性接码
+    - 手机号验证
+    - 通用接码
+  sort_order: 310
+  status: active
+- slug: identity-verification
+  name: 真人 / KYC 验证
+  platform: 接码
+  product_type: 接码/验证
+  spec: KYC / 真人验证
+  summary: Claude、ChatGPT 或其他平台的人脸、实名、Persona、KYC 等人工验证服务。
+  aliases:
+    - kyc
+    - 真人认证
+    - 实名认证
+    - 人脸验证
+    - persona
+  sort_order: 320
+  status: hidden
+- slug: cursor-account
+  name: Cursor 账号
+  platform: 其他
+  product_type: 工具账号
+  spec: Cursor
+  summary: Cursor Pro、Cursor 账号、Cursor 成品号或相关权益。
+  aliases:
+    - cursor
+    - cursor pro
+    - cursor 账号
+    - cursor 成品号
+  sort_order: 330
+  status: active
+- slug: kiro-account
+  name: Kiro 普号 / Free
+  platform: 其他
+  product_type: 工具账号
+  spec: Free / 普号
+  summary: Kiro 普号、Free 账号、固定 50 额度或 kirors 导入格式的基础账号。
+  aliases:
+    - kiro
+    - kiro 普号
+    - kiro free
+    - 固定50额度
+    - kirors
+    - kiro rs
+  sort_order: 340
+  status: active
+- slug: kiro-pro-account
+  name: Kiro Pro / 额度号
+  platform: 其他
+  product_type: 工具账号
+  spec: Pro / 额度
+  summary: Kiro Pro、Pro+、Pro Max、Power、额度号或可超额相关权益。
+  aliases:
+    - kiro pro
+    - kiro pro+
+    - kiro promax
+    - kiro power
+    - kiro 积分
+    - kiro 额度
+  sort_order: 350
+  status: active
+- slug: windsurf-account
+  name: Windsurf 账号
+  platform: 其他
+  product_type: 工具账号
+  spec: Windsurf
+  summary: Windsurf 账号、Windsurf 会员或相关权益。
+  aliases:
+    - windsurf
+    - wind surf
+    - windsurf 账号
+  sort_order: 360
+  status: active
+- slug: perplexity-account
+  name: Perplexity 账号
+  platform: 其他
+  product_type: 工具账号
+  spec: Perplexity
+  summary: Perplexity Pro、Perplexity 账号或相关权益。
+  aliases:
+    - perplexity
+    - perplexity pro
+    - perplexity 账号
+  sort_order: 370
+  status: active
+- slug: suno-account
+  name: Suno 账号
+  platform: 其他
+  product_type: 工具账号
+  spec: Suno
+  summary: Suno Pro、Suno 账号或相关权益。
+  aliases:
+    - suno
+    - suno pro
+    - suno 账号
+  sort_order: 380
+  status: active
+- slug: dreamina-account
+  name: Dreamina / 即梦
+  platform: 其他
+  product_type: 工具账号
+  spec: Basic / Seedance 2.0
+  summary: Dreamina 海外版即梦、Seedance 2.0 视频生成相关成品账号、积分或 Basic 权益。
+  aliases:
+    - dreamina
+    - dreamina ai
+    - 即梦
+    - 即梦 ai
+    - 吉梦
+    - jimeng
+    - jimeng ai
+    - 海外即梦
+    - 海外版即梦
+    - seedance
+    - seedance 2.0
+    - seedance2.0
+    - seedance2
+    - c档 2.0
+    - c档2.0
+    - c 档 2.0
+    - c 档2.0
+    - dreamina basic
+    - 即梦 basic
+  sort_order: 390
+  status: active
+- slug: apple-id-account
+  name: Apple ID / 苹果账号
+  platform: 其他
+  product_type: 工具账号
+  spec: Apple ID
+  summary: Apple ID、苹果 ID、美区 ID、土区 ID 等地区账号或相关权益。
+  aliases:
+    - apple id
+    - 苹果 id
+    - 苹果账号
+    - 美区 id
+    - 土区 id
+    - apple 账号
+  sort_order: 400
+  status: active
+- slug: x-twitter-account
+  name: X / 推特账号
+  platform: 其他
+  product_type: 工具账号
+  spec: X / Twitter
+  summary: X、Twitter、推特普通账号、老号、三绑、2FA 或 token 登录账号。
+  aliases:
+    - twitter
+    - 推特
+    - 推特账号
+    - x 账号
+    - x账号
+    - 推特老号
+    - x/twitter
+    - x-twitter
+  sort_order: 410
+  status: active
+- slug: x-twitter-premium
+  name: X Premium / 推特会员
+  platform: 其他
+  product_type: 订阅/会员
+  spec: Premium / Premium+
+  summary: X Premium、Twitter Premium、推特蓝标、蓝 V、会员月卡、年卡、CDK、直充或代开。
+  aliases:
+    - x premium
+    - twitter premium
+    - 推特 premium
+    - 推特会员
+    - 推特蓝标
+    - 推特蓝v
+    - 蓝 v
+    - 蓝标
+    - premium+
+  sort_order: 420
+  status: active
+- slug: telegram-account
+  name: Telegram 账号
+  platform: 其他
+  product_type: 工具账号
+  spec: 成品账号 / 地区号
+  summary: Telegram、TG、电报、飞机号成品账号、老号、精养号、地区号、API 链接或直登账号。
+  aliases:
+    - telegram
+    - tg
+    - 电报
+    - 飞机号
+    - telegram 账号
+    - tg 账号
+    - 电报账号
+    - telegram 老号
+  sort_order: 430
+  status: active
+- slug: telegram-premium
+  name: Telegram Premium / Pro 会员
+  platform: 其他
+  product_type: 订阅/会员
+  spec: Premium / Stars
+  summary: Telegram Premium、Pro 会员、3/6/12 个月会员、会员兑换码、代开、用户名赠送会员或 Telegram Stars 星星增值功能。
+  aliases:
+    - telegram premium
+    - telegram pro
+    - tg premium
+    - tg pro
+    - telegram 会员
+    - tg 会员
+    - telegram 星星
+    - telegram stars
+    - 星星代充
+  sort_order: 440
+  status: active
+- slug: gift-card
+  name: 礼品卡
+  platform: 其他
+  product_type: 礼品卡
+  spec: Apple / 通用礼品卡
+  summary: Apple Gift Card、App Store、iTunes、Netflix、Spotify 等礼品卡或充值卡商品。
+  aliases:
+    - 礼品卡
+    - gift card
+    - giftcard
+    - apple gift card
+    - app store 卡
+    - itunes 卡
+  sort_order: 450
+  status: active
+- slug: other-product
+  name: 其他商品
+  platform: 其他
+  product_type: 其他
+  spec: 其他
+  summary: 教程、代理、社交账号、流量服务、资料、无法识别商品等。
+  aliases:
+    - other
+    - 教程
+    - 代理
+    - 社交账号
+    - 资料
+  sort_order: 460
+  status: active

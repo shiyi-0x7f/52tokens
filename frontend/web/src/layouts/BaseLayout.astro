@@ -40,6 +40,8 @@ const nav = [
   { href: "/free", label: "免费额度" },
   { href: "/deals", label: "签到 & 活动" },
   { href: "/platforms", label: "平台" },
+  { href: "/official-prices", label: "订阅地区价" },
+  { href: "/products", label: "卡网比价" },
 ];
 const current = (href: string) =>
   href === "/" ? Astro.url.pathname === "/" : Astro.url.pathname.startsWith(href);

@@ -60,6 +60,73 @@ export interface ModelDetail {
   prices: Price[];
 }
 
+/** 官方订阅地区价（各国 App Store）；人民币价按快照当天汇率折算 */
+export interface RegionPrice {
+  country_code: string;
+  country_label: string;
+  currency: string;
+  /** 当地货币原文，如 "$19.99" */
+  price_text: string;
+  cny_price: string | null;
+  /** 相对美区人民币价的百分比（美区 = 100） */
+  vs_us_percent: number | null;
+  source_url: string;
+  fx_date: string | null;
+}
+
+export interface OfficialPlanSummary {
+  app_slug: string;
+  app_name: string;
+  provider: string;
+  plan_slug: string;
+  plan_name: string;
+  billing_period: string;
+  us: RegionPrice | null;
+  cheapest: RegionPrice | null;
+  region_count: number;
+  fetched_at: string | null;
+}
+
+export interface OfficialPlanDetail extends OfficialPlanSummary {
+  prices: RegionPrice[];
+  missing_regions: string[];
+}
+
+/** 卡网比价：外层只有价格和有货店铺数，不出现商家名 */
+export interface ShopProductSummary {
+  slug: string;
+  name: string;
+  platform: string;
+  product_type: string;
+  spec: string;
+  /** 有货最低价（人民币）：只算近 48 小时采集到且有货的报价 */
+  min_price: string | null;
+  in_stock_shops: number;
+  offer_count: number;
+}
+
+export interface ShopOffer {
+  /** 店铺原标题 */
+  title: string;
+  price: string;
+  stock: number | null;
+  in_stock: boolean;
+  url: string;
+  /** 店铺域名 */
+  shop: string;
+  tags: string[];
+  /** 「拼车」「价格待核实」：照常展示，但不参与有货最低价 */
+  flags: string[];
+  last_seen_at: string;
+  /** 近 48 小时采集到过；否则可能已失效 */
+  is_fresh: boolean;
+}
+
+export interface ShopProductDetail extends ShopProductSummary {
+  summary: string;
+  offers: ShopOffer[];
+}
+
 export interface Deal {
   slug: string;
   title: string;

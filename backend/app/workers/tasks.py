@@ -1,5 +1,6 @@
 """worker 任务。CLI（app.cli.collect）、定时任务和后台「全部检查」调用的是同一组函数。"""
 
+from datetime import UTC, datetime
 from typing import Any
 
 import httpx
@@ -21,6 +22,8 @@ from app.domains.deals.repository import DealRepository
 from app.domains.deals.source_repository import DealSourceRepository
 from app.domains.deals.watch import DealWatchService
 from app.domains.deals.watch_batch import BatchCheckService, BatchSummary
+from app.domains.shops.repository import ShopRepository
+from app.domains.shops.sync import ShopSyncService
 from app.integrations.llm import llm_from_settings
 
 
@@ -58,6 +61,40 @@ async def run_watch_batch(
         llm = llm_from_settings(http, get_settings())
         watch = DealWatchService(DealSourceRepository(session), PageWatchCollector(http), llm)
         return await batch.run(watch)
+
+
+SHOP_SYNC_LOCK = "shop_sync:running"
+SHOP_SYNC_LOCK_TTL = 3 * 3600  # 进程中途挂掉时锁的兜底过期时间
+
+
+async def sync_shops(ctx: dict[str, Any]) -> dict[str, Any]:
+    """采集全部启用的卡网店铺并入库。已有一批在跑时跳过。"""
+    store = get_store()
+    if not await store.set_if_absent(
+        SHOP_SYNC_LOCK, datetime.now(UTC).isoformat(), SHOP_SYNC_LOCK_TTL
+    ):
+        logger.info("已有一批卡网同步在进行，本次跳过")
+        return {"skipped": True, "errors": []}
+    try:
+        async with get_sessionmaker()() as session:
+            reports = await ShopSyncService(ShopRepository(session), ctx["http"]).sync_all()
+    finally:
+        await store.delete(SHOP_SYNC_LOCK)
+    failed = [r for r in reports if r.status == "failed"]
+    logger.info(
+        "卡网同步完成 店铺={} 失败={} 报价={}",
+        len(reports),
+        len(failed),
+        sum(r.offers for r in reports),
+    )
+    # 单个店铺的失败原因记在店铺上（后台可见），这里只给汇总
+    return {
+        "sources": len(reports),
+        "failed": len(failed),
+        "offers": sum(r.offers for r in reports),
+        "created": sum(r.created for r in reports),
+        "errors": [],
+    }
 
 
 async def check_deal_liveness(ctx: dict[str, Any]) -> dict[str, Any]:

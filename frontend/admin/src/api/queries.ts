@@ -12,6 +12,10 @@ import type {
   Platform,
   Price,
   PriceInput,
+  ShopCollectorKind,
+  ShopSource,
+  ShopSourceInput,
+  ShopSyncReport,
   Source,
   SourceInput,
 } from "./types";
@@ -166,6 +170,40 @@ export function useStartBatch() {
   return useMutation({
     mutationFn: () => api<BatchStatus>("POST", "/sources/check-all"),
     onSuccess: (status) => client.setQueryData(["sources", "check-all"], status),
+  });
+}
+
+export interface ShopSourceQuery {
+  collector_kind?: ShopCollectorKind | undefined;
+  state?: "ok" | "failed" | "unchecked" | undefined;
+  q?: string | undefined;
+  page: number;
+  page_size: number;
+}
+
+export const useShopSources = (query: ShopSourceQuery) =>
+  useQuery({
+    queryKey: ["shop-sources", query],
+    queryFn: () => api<Page<ShopSource>>("GET", "/shop-sources", { params: { ...query } }),
+    placeholderData: keepPreviousData,
+  });
+
+export function useSaveShopSource() {
+  const client = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, input }: { id?: number | undefined; input: ShopSourceInput }) =>
+      id === undefined
+        ? api<ShopSource>("POST", "/shop-sources", { body: input })
+        : api<ShopSource>("PUT", `/shop-sources/${id}`, { body: input }),
+    onSuccess: () => client.invalidateQueries({ queryKey: ["shop-sources"] }),
+  });
+}
+
+export function useSyncShopSource() {
+  const client = useQueryClient();
+  return useMutation({
+    mutationFn: (id: number) => api<ShopSyncReport>("POST", `/shop-sources/${id}/sync`),
+    onSettled: () => client.invalidateQueries({ queryKey: ["shop-sources"] }),
   });
 }
 

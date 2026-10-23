@@ -9,6 +9,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.cli.seed import DEFAULT_SEED_DIR, seed
 from app.domains.catalog.models import ModelPrice, Platform, PublishStatus
 from app.domains.deals.models import Deal, DealSource
+from app.domains.shops.models import ShopProduct
 
 PLATFORMS = """
 - slug: bailian
@@ -58,7 +59,17 @@ async def _count(session: AsyncSession, model: type) -> int:
 async def test_seed_is_idempotent_and_updates(tmp_path: Path, db_session: AsyncSession) -> None:
     seed_dir = _write(tmp_path, platforms=PLATFORMS, models=MODELS, prices=PRICES, deals=DEALS)
     first = await seed(db_session, seed_dir)
-    assert first == {"platforms": 1, "models": 1, "prices": 1, "deals": 1, "deal_sources": 0}
+    assert first == {
+        "platforms": 1,
+        "models": 1,
+        "prices": 1,
+        "deals": 1,
+        "deal_sources": 0,
+        "shop_products": 0,
+        "shop_sources": 0,
+        "official_plans": 0,
+        "official_prices": 0,
+    }
 
     await seed(db_session, seed_dir)
     assert await _count(db_session, Platform) == 1
@@ -116,6 +127,19 @@ async def test_unknown_reference_is_rejected(tmp_path: Path, db_session: AsyncSe
 async def test_repository_seed_files_are_valid(db_session: AsyncSession) -> None:
     counts = await seed(db_session, DEFAULT_SEED_DIR)
     assert counts["platforms"] > 0
+    assert counts["shop_products"] > 0
+    assert counts["shop_sources"] > 0
+    assert counts["official_plans"] > 0
+    assert counts["official_prices"] > 0
+    # 重复导入幂等
+    again = await seed(db_session, DEFAULT_SEED_DIR)
+    assert again == counts
+    # 帮人绕过实名验证的商品照样参与归类，但不对外展示
+    kyc = await db_session.scalar(
+        select(ShopProduct).where(ShopProduct.slug == "identity-verification")
+    )
+    assert kyc is not None
+    assert kyc.status == PublishStatus.HIDDEN
     # 仓库种子里的平台只放核实过的名称和官网，要么发布，要么明确下线（如已停服），不留草稿
     drafts = await db_session.scalar(
         select(func.count()).select_from(Platform).where(Platform.status == PublishStatus.DRAFT)

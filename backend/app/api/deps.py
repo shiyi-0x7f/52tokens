@@ -25,8 +25,14 @@ from app.domains.deals.source_repository import DealSourceRepository
 from app.domains.deals.sources_admin import SourceAdminService
 from app.domains.deals.watch import DealWatchService
 from app.domains.deals.watch_batch import BatchCheckService
+from app.domains.official.repository import OfficialRepository
+from app.domains.official.service import OfficialService
 from app.domains.outbound.repository import OutboundRepository
 from app.domains.outbound.service import OutboundService
+from app.domains.shops.admin import ShopAdminService
+from app.domains.shops.repository import ShopRepository
+from app.domains.shops.service import ShopService
+from app.domains.shops.sync import ShopSyncService
 from app.integrations.llm import llm_from_settings
 from app.integrations.scc import SccClient
 
@@ -49,6 +55,14 @@ def get_catalog_service(session: SessionDep) -> CatalogService:
 
 def get_deal_service(session: SessionDep) -> DealService:
     return DealService(DealRepository(session))
+
+
+def get_official_service(session: SessionDep) -> OfficialService:
+    return OfficialService(OfficialRepository(session))
+
+
+def get_shop_service(session: SessionDep) -> ShopService:
+    return ShopService(ShopRepository(session))
 
 
 def get_outbound_service(session: SessionDep) -> OutboundService:
@@ -91,6 +105,8 @@ def get_auth_service(
 CatalogServiceDep = Annotated[CatalogService, Depends(get_catalog_service)]
 DealServiceDep = Annotated[DealService, Depends(get_deal_service)]
 OutboundServiceDep = Annotated[OutboundService, Depends(get_outbound_service)]
+ShopServiceDep = Annotated[ShopService, Depends(get_shop_service)]
+OfficialServiceDep = Annotated[OfficialService, Depends(get_official_service)]
 AuthServiceDep = Annotated[AuthService, Depends(get_auth_service)]
 
 # ---------- 后台 ----------
@@ -141,6 +157,14 @@ def get_price_admin_service(session: SessionDep) -> PriceAdminService:
 DealAdminServiceDep = Annotated[DealAdminService, Depends(get_deal_admin_service)]
 PriceAdminServiceDep = Annotated[PriceAdminService, Depends(get_price_admin_service)]
 SourceAdminServiceDep = Annotated[SourceAdminService, Depends(get_source_admin_service)]
+
+
+def get_shop_admin_service(session: SessionDep, http: HttpDep) -> ShopAdminService:
+    repo = ShopRepository(session)
+    return ShopAdminService(repo, ShopSyncService(repo, http))
+
+
+ShopAdminServiceDep = Annotated[ShopAdminService, Depends(get_shop_admin_service)]
 
 
 def get_batch_check_service(store: StoreDep) -> BatchCheckService:

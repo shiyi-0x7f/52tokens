@@ -117,6 +117,46 @@
 
 活动不存在或不可见 → `404`，不记录点击。公开站收到后 `302` 跳转（`Cache-Control: no-store`、`X-Robots-Tag: noindex, nofollow`），`/go/` 在 robots.txt 中禁止抓取。
 
+### `GET /internal/v1/official-plans`
+
+官方订阅档位（ChatGPT / Claude / Gemini / Grok 共 14 个）及各国 App Store 价格摘要：
+
+```json
+{ "app_slug": "chatgpt", "app_name": "ChatGPT", "provider": "OpenAI", "plan_slug": "plus-monthly",
+  "plan_name": "ChatGPT Plus", "billing_period": "monthly", "us": { …地区价… }, "cheapest": { …地区价… },
+  "region_count": 41, "fetched_at": "2026-07-24T05:52:36Z" }
+```
+
+地区价：`{ country_code, country_label, currency, price_text, cny_price, vs_us_percent, source_url, fx_date }`。人民币价按 `fx_date` 当天汇率折算；`vs_us_percent` 为相对美区人民币价的百分比。只比较 `status=available` 的地区。
+
+### `GET /internal/v1/official-plans/{app_slug}/{plan_slug}`
+
+字段同上，另有 `prices`（全部有价格的地区，按人民币价升序）和 `missing_regions`（没上架该档位的地区名）。不存在 → `404`。
+
+数据来源：`data/seed/official_plans.yaml` + `data/seed/official_prices.json`（种子导入，按（应用, 档位）和（档位, 地区）upsert）。
+
+### `GET /internal/v1/shop-products`
+
+卡网比价商品列表（不含「其他商品」和下线的商品；没有报价的商品不出现）。外层**不出现商家名**：
+
+```json
+{ "slug": "chatgpt-plus", "name": "ChatGPT Plus 试用订阅", "platform": "ChatGPT", "product_type": "订阅/会员",
+  "spec": "…", "min_price": "90.00", "in_stock_shops": 15, "offer_count": 49 }
+```
+
+`min_price` / `in_stock_shops` 只算**可比**的报价：近 48 小时采集到、有货、不是拼车 / 多人共享、不是异常低价（同商品有 3 条以上可比报价时，低于中位数 30% 的视为占位价）。
+
+### `GET /internal/v1/shop-products/{slug}`
+
+字段同上，另有 `summary` 和 `offers`（最多 100 条）：
+
+```json
+{ "title": "店铺原标题", "price": "90.00", "stock": 12, "in_stock": true, "url": "https://…", "shop": "店铺域名",
+  "tags": ["自动发货"], "flags": [], "last_seen_at": "…", "is_fresh": true }
+```
+
+`flags` 为「拼车」或「价格待核实」的照常展示，但不计入最低价。排序：可比的有货报价按价格升序 → 被标记的 → 无货 → 可能已失效（`is_fresh=false`）。不存在、下线或「其他商品」→ `404`。
+
 ### 登录与会话
 
 浏览器只和公开站交互：公开站 `/auth/google` → 本组接口 → 写 httpOnly Cookie `t52_session`。
@@ -174,6 +214,11 @@ Google / SCC 不可达 → `502`；Google 或 SCC 凭据未配置 → `503`。
 | `GET /api/admin/sources/check-all` | 批量检查状态：`running` 为 `{ started_at, total, done }` 或 `null`；`last` 为上一批汇总 `{ started_at, finished_at, checked, created, reconfirmed, failed }` 或 `null` |
 | `POST /api/admin/sources/{id}/check` | 立即检查一次，同步返回 `{ source_id, status, created, reconfirmed, error }`，`status` 为 `failed` / `unchanged` / `extracted`；含 LLM 调用，可能耗时数十秒 |
 
+| `GET /api/admin/shop-sources?collector_kind=&state=ok\|failed\|unchecked&q=&page=&page_size=` | 卡网店铺列表，按报价数倒序 |
+| `POST /api/admin/shop-sources` | 登记店铺 `{ entry_url, collector_kind, name, enabled }`；同一店铺地址只能登记一次（`409`）；多商户平台（`shopApi`）填具体商户的 `/shop/<token>` |
+| `PUT /api/admin/shop-sources/{id}` | 编辑店铺 |
+| `POST /api/admin/shop-sources/{id}/sync` | 立即采集一个店铺，同步返回 `{ source_id, status, offers, created, gone, error }` |
+
 发布、驳回、下线会记录操作人（`reviewed_by_id`）和时间（`reviewed_at`）。
 
 活动详情和列表另有存活检查字段：`liveness_checked_at`、`liveness_issue`（下线信号描述，或自动结束的原因）、`liveness_fail_count`（连续次数）；以及采集字段：`origin`（`manual` 人工录入 / `collector` 自动采集）、`extract_confidence`（LLM 置信度 0–1，人工录入为 `null`）、`extract_note`（抽取依据的原文）。
@@ -201,7 +246,15 @@ Google / SCC 不可达 → `502`；Google 或 SCC 凭据未配置 → `503`。
 - 匹配到已发布活动且置信度 ≥ 0.85 时只刷新 `confirmed_at`，不改任何字段；匹配到已驳回的活动不会重新提出。
 - 抓取 / 抽取失败只记在来源上（`last_error`、`fail_count`），不动已有活动。
 
+| 卡网店铺（`data/seed/shop_sources.yaml` / 后台登记） | `uv run python -m app.cli.collect shops` | worker 每 3 小时（2/5/8/…/23 点 47 分） | 15 种店铺系统各一个采集插件（`app/collectors/shops/`），只读公开商品列表；见下方规则 |
 | 活动存活检查（已发布活动的官方出处） | `uv run python -m app.cli.collect liveness` | worker 每天 3 点 27 分 | 见下方规则 |
+
+卡网采集规则（`shops/sync.py`）：
+- 店铺按店铺地址唯一：单店铺系统 = 域名首页；ShopApi 多商户平台必须是具体商户的 `/shop/<token>`，只有域名时记为失败并提示补地址。
+- 报价按（店铺, 链接 + 标题哈希）upsert，每次用 `shops/classify` 的规则把标题归到标准商品（`data/seed/shop_products.yaml`）；后台人工指定的（`match_method=manual`）不覆盖。
+- 采集成功但这次没出现的报价标为无货，不删除；一个商品都没采到按失败处理；失败只记在店铺上（`last_error`、`fail_count`），报价不动。
+- ShopApi 价格取平台结算接口的实付金额（含支付手续费），取不到时退回标价。
+- 不绕过风控页、验证页和加密页面；请求如实标明身份（`52tokens-collector`）。
 
 活动存活检查规则（`deals/liveness.py`，误判比晚几天下沉代价大）：
 - 截止时间已过：直接标记已结束（`status=expired`）。

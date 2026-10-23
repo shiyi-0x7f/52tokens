@@ -10,7 +10,7 @@ from pathlib import Path
 import pytest
 
 BACKEND = Path(__file__).resolve().parents[1]
-EXPECTED = {"users", "platforms", "deals", "deal_sources", "outbound_clicks"}
+EXPECTED = {"users", "platforms", "deals", "deal_sources", "outbound_clicks", "shop_offers"}
 
 
 @pytest.mark.parametrize("module", ["app.workers.settings", "app.cli.collect", "app.main"])
