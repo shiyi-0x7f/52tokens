@@ -76,14 +76,15 @@ class DealWatchService:
         reports = []
         sources = await self.repo.list_enabled()
         for done, source in enumerate(sources, start=1):
+            source_id = source.id  # 出错后会话失效，不能再读对象属性
             try:
                 reports.append(await self.check(source))
             except Exception as exc:
-                # 单个来源出意外不影响其他来源；完整堆栈进日志
-                logger.exception("检查监测来源出错 source={}", source.id)
-                await self.repo.rollback()  # 会话可能已失效，回滚后才能继续检查下一个
+                # 单个来源出意外不影响其他来源；回滚后才能继续检查下一个，完整堆栈进日志
+                await self.repo.rollback()
+                logger.exception("检查监测来源出错 source={}", source_id)
                 reports.append(
-                    CheckReport(source_id=source.id, status="failed", error=f"意外错误：{exc}")
+                    CheckReport(source_id=source_id, status="failed", error=f"意外错误：{exc}")
                 )
             if on_progress is not None:
                 await on_progress(done, len(sources))
