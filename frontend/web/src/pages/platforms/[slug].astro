@@ -1,0 +1,129 @@
+---
+import DealRow from "../../components/DealRow.astro";
+import EmptyState from "../../components/EmptyState.astro";
+import JsonLd from "../../components/JsonLd.astro";
+import BaseLayout from "../../layouts/BaseLayout.astro";
+import { internalGet, isNotFound } from "../../lib/api";
+import { CATEGORY_LABELS, DEAL_TYPE_LABELS } from "../../lib/labels";
+import { loadOr } from "../../lib/load";
+import type { Deal, DealType, Platform } from "../../lib/types";
+
+const slug = Astro.params.slug ?? "";
+let platform: Platform;
+try {
+  platform = await internalGet<Platform>(`/platforms/${encodeURIComponent(slug)}`);
+} catch (err) {
+  if (isNotFound(err)) return Astro.rewrite("/404");
+  throw err;
+}
+
+// 已结束的也取：页面保留它们（下沉展示），保住搜索权重
+const [deals, ok] = await loadOr<Deal[]>([], () =>
+  internalGet<Deal[]>("/deals", { platform: platform.slug, include_expired: true, limit: 100 }),
+);
+const active = deals.filter((d) => !d.is_expired);
+const expired = deals.filter((d) => d.is_expired);
+
+// 标题里列出进行中活动的类型，对准「Trae 签到」「百炼 免费额度」这类搜索词
+const types = [...new Set(active.map((d) => d.deal_type))] as DealType[];
+const typeText = types.map((t) => DEAL_TYPE_LABELS[t]).join("、");
+const title = typeText
+  ? `${platform.name}${typeText}活动汇总 · 52tokens`
+  : `${platform.name}优惠活动 · 52tokens`;
+const description = active.length
+  ? `${platform.name}进行中的 ${active.length} 个活动：${active
+      .slice(0, 3)
+      .map((d) => `${d.title}（${d.reward_text}）`)
+      .join("；")}。每条附官方出处和最近核实时间。`
+  : `${platform.name}的签到积分、免费额度、注册赠送等活动汇总，官网核实后更新。`;
+const pageUrl = new URL(`/platforms/${platform.slug}`, Astro.site).href;
+const rssHref = `/platforms/${platform.slug}/rss.xml`;
+---
+
+<BaseLayout
+  title={title}
+  description={description}
+  noindex={ok && deals.length === 0}
+  rss={{ title: `${platform.name} 优惠活动`, href: rssHref }}
+>
+  <JsonLd
+    slot="head"
+    data={{
+      "@context": "https://schema.org",
+      "@type": "BreadcrumbList",
+      itemListElement: [
+        {
+          "@type": "ListItem",
+          position: 1,
+          name: "平台",
+          item: new URL("/platforms", Astro.site).href,
+        },
+        { "@type": "ListItem", position: 2, name: platform.name, item: pageUrl },
+      ],
+    }}
+  />
+
+  <nav class="mb-3 text-xs text-mute" aria-label="面包屑">
+    <a href="/platforms" class="no-underline">
+      平台
+    </a>{" "}
+    / {platform.name}
+  </nav>
+
+  <header class="mb-5 rounded-(--radius-card) bg-card p-6">
+    <p class="text-sm text-mute">{CATEGORY_LABELS[platform.category]}</p>
+    <h1 class="mt-1 text-2xl font-black">{platform.name} 优惠活动</h1>
+    {platform.description && <p class="mt-2 text-sm text-sub">{platform.description}</p>}
+    <p class="mt-3 flex flex-wrap gap-4 text-sm">
+      <a href={platform.website_url} rel="nofollow noopener" target="_blank" class="text-hot">
+        官网
+      </a>
+      <a href={rssHref} class="text-mute">
+        RSS 订阅
+      </a>
+    </p>
+  </header>
+
+  {!ok ? (
+    <EmptyState title="活动暂时加载失败" hint="请稍后刷新页面。" />
+  ) : (
+    <>
+      <section aria-labelledby="active-title">
+        <h2 id="active-title" class="mb-3 font-black">
+          进行中
+          <span class="ml-2 font-mono text-sm font-normal text-mute">{active.length}</span>
+        </h2>
+        {active.length === 0 ? (
+          <EmptyState
+            title={`${platform.name} 暂无进行中的活动`}
+            hint="我们会定时检查官网，发现新活动核实后上线。"
+          >
+            <a href="/deals" class="mt-4 inline-block text-sm font-bold text-hot">
+              看看其他平台的活动 →
+            </a>
+          </EmptyState>
+        ) : (
+          <div class="rounded-(--radius-card) bg-card py-1">
+            {active.map((deal) => (
+              <DealRow deal={deal} />
+            ))}
+          </div>
+        )}
+      </section>
+
+      {expired.length > 0 && (
+        <section class="mt-6" aria-labelledby="expired-title">
+          <h2 id="expired-title" class="mb-3 font-black text-sub">
+            已结束
+            <span class="ml-2 font-mono text-sm font-normal text-mute">{expired.length}</span>
+          </h2>
+          <div class="rounded-(--radius-card) bg-card py-1">
+            {expired.map((deal) => (
+              <DealRow deal={deal} />
+            ))}
+          </div>
+        </section>
+      )}
+    </>
+  )}
+</BaseLayout>

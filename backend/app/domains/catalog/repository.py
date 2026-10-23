@@ -27,6 +27,11 @@ class CatalogRepository:
             stmt = stmt.where(Platform.category == category)
         return (await self.session.scalars(stmt.order_by(Platform.name))).all()
 
+    async def get_public_platform(self, slug: str) -> Platform | None:
+        return await self.session.scalar(
+            select(Platform).where(Platform.slug == slug, Platform.status == PublishStatus.ACTIVE)
+        )
+
     async def list_models_with_prices(self) -> Sequence[AIModel]:
         stmt = (
             select(AIModel)

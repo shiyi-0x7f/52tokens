@@ -54,6 +54,10 @@
 ] }
 ```
 
+### `GET /internal/v1/platforms/{slug}`
+
+单个平台，字段同上；不存在或未发布 → `404`。公开站平台活动页 `/platforms/{slug}` 使用。
+
 ### `GET /internal/v1/models`
 
 只返回至少有一条已核实价格的模型。`min_output_price_cny` / `min_output_price_usd` 分别是该币种**付费价**里最低的输出价（免费渠道不计入，另见 `has_free`），币种之间不换算；没有该币种价格时为 `null`。

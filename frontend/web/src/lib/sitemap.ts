@@ -1,16 +1,9 @@
+import { escapeXml } from "./xml";
+
 export interface SitemapEntry {
   loc: string;
   /** ISO 时间；只在有真实更新时间时提供，不伪造 */
   lastmod?: string;
-}
-
-function escapeXml(value: string): string {
-  return value
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;")
-    .replace(/'/g, "&apos;");
 }
 
 export function buildSitemap(entries: SitemapEntry[]): string {

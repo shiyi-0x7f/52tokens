@@ -10,8 +10,10 @@ interface Props {
   description: string;
   /** 页面不希望被搜索引擎收录时设为 true（如 404） */
   noindex?: boolean;
+  /** 页面对应的 RSS 订阅，供阅读器自动发现 */
+  rss?: { title: string; href: string } | undefined;
 }
-const { title, description, noindex = false } = Astro.props;
+const { title, description, noindex = false, rss } = Astro.props;
 const canonical = new URL(Astro.url.pathname, Astro.site ?? Astro.url).href;
 
 const user = Astro.locals.user;
@@ -53,6 +55,7 @@ const current = (href: string) =>
     <meta property="og:type" content="website" />
     <meta property="og:url" content={canonical} />
     <meta property="og:site_name" content="52tokens" />
+    {rss && <link rel="alternate" type="application/rss+xml" title={rss.title} href={rss.href} />}
     <!-- 站内导航不再整页刷新：后台取新页面的 HTML 后淡入替换（不下发 JSON） -->
     <ClientRouter fallback="animate" />
     <slot name="head" />

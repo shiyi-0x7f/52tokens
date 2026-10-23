@@ -17,6 +17,11 @@ async def list_platforms(
     return ok(await service.list_platforms(category))
 
 
+@router.get("/platforms/{slug}")
+async def get_platform(slug: str, service: CatalogServiceDep) -> ApiResponse[PlatformOut]:
+    return ok(await service.get_platform(slug))
+
+
 @router.get("/models")
 async def list_models(service: CatalogServiceDep) -> ApiResponse[list[ModelSummary]]:
     return ok(await service.list_models())

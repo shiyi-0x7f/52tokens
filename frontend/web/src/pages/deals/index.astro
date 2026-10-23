@@ -39,6 +39,7 @@ const href = (t: DealType | undefined, expired = includeExpired) => {
 <BaseLayout
   title={type ? `AI ${label}活动汇总 · 52tokens` : "AI 签到积分与优惠活动汇总 · 52tokens"}
   description="AI 工具每日签到积分、大模型 API 注册赠送、免费额度、学生优惠与限时折扣，每条标注出处与最近确认时间。"
+  rss={{ title: "52tokens · AI 羊毛活动", href: "/deals/rss.xml" }}
 >
   <header class="mb-4">
     <h1 class="text-2xl font-black">{type ? `${label}活动` : "签到 & 活动"}</h1>
@@ -52,6 +53,9 @@ const href = (t: DealType | undefined, expired = includeExpired) => {
     )}
     <p class="mt-1 text-sm text-mute">
       只收录活动信息、不代签到；签到类活动多数只能在客户端内完成。
+      <a href="/deals/rss.xml" class="ml-1 text-mute">
+        RSS 订阅
+      </a>
     </p>
   </header>
 

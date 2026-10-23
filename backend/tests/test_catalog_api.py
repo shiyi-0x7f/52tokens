@@ -108,5 +108,20 @@ async def test_platforms_filter_by_category(
     assert [p["slug"] for p in coding] == ["trae"]
 
 
+async def test_platform_detail_only_when_published(
+    db_session: AsyncSession, db_client: httpx.AsyncClient
+) -> None:
+    await f.platform(db_session, "trae", name="Trae")
+    await f.platform(db_session, "draftco", status=PublishStatus.DRAFT)
+    await db_session.commit()
+
+    trae = (await db_client.get("/internal/v1/platforms/trae", headers=AUTH)).json()["data"]
+    assert trae["name"] == "Trae"
+    assert trae["website_url"] == "https://trae.example.com"
+    for slug in ("draftco", "missing"):
+        resp = await db_client.get(f"/internal/v1/platforms/{slug}", headers=AUTH)
+        assert resp.status_code == 404
+
+
 async def test_catalog_requires_internal_token(db_client: httpx.AsyncClient) -> None:
     assert (await db_client.get("/internal/v1/models")).status_code == 401

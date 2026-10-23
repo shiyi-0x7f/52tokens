@@ -13,10 +13,20 @@ export const GET: APIRoute = async ({ site }) => {
     // 已结束的活动页面保留，同样进 sitemap
     internalGet<Deal[]>("/deals", { include_expired: true, limit: 100 }),
   ]);
+  // 平台页只收有活动的平台（没有活动的平台页是 noindex），lastmod 取其活动最近的核实时间
+  const platformLastmod = new Map<string, string>();
+  for (const d of deals) {
+    const prev = platformLastmod.get(d.platform.slug);
+    if (!prev || d.confirmed_at > prev) platformLastmod.set(d.platform.slug, d.confirmed_at);
+  }
   const entries: SitemapEntry[] = [
     ...STATIC_PATHS.map((path) => ({ loc: new URL(path, base).href })),
     ...models.map((m) => ({ loc: new URL(`/models/${m.slug}`, base).href })),
     ...deals.map((d) => ({ loc: new URL(`/deals/${d.slug}`, base).href, lastmod: d.confirmed_at })),
+    ...[...platformLastmod].map(([slug, lastmod]) => ({
+      loc: new URL(`/platforms/${slug}`, base).href,
+      lastmod,
+    })),
   ];
   return new Response(buildSitemap(entries), {
     headers: {
