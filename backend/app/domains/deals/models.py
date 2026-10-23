@@ -61,5 +61,9 @@ class Deal(TimestampMixin, Base):
     status: Mapped[DealStatus] = mapped_column(
         str_enum(DealStatus), default=DealStatus.PENDING, index=True
     )
+    # 审核留痕：最近一次发布 / 驳回 / 下线的操作人和时间
+    reviewed_by_id: Mapped[int | None] = mapped_column(ForeignKey("users.id", ondelete="SET NULL"))
+    reviewed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    reject_reason: Mapped[str] = mapped_column(String(200), default="", server_default="")
 
     platform: Mapped[Platform] = relationship()

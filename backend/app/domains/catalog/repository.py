@@ -36,6 +36,61 @@ class CatalogRepository:
         )
         return (await self.session.scalars(stmt)).all()
 
+    # ---------- 后台：不过滤发布状态 ----------
+
+    async def list_all_platforms(self) -> Sequence[Platform]:
+        return (await self.session.scalars(select(Platform).order_by(Platform.name))).all()
+
+    async def get_platform(self, platform_id: int) -> Platform | None:
+        return await self.session.get(Platform, platform_id)
+
+    async def get_model_by_slug(self, slug: str) -> AIModel | None:
+        return await self.session.scalar(select(AIModel).where(AIModel.slug == slug))
+
+    async def get_price(self, price_id: int) -> ModelPrice | None:
+        return await self.session.scalar(
+            select(ModelPrice)
+            .where(ModelPrice.id == price_id)
+            .options(selectinload(ModelPrice.platform), selectinload(ModelPrice.model))
+        )
+
+    async def get_price_for(self, platform_id: int, model_id: int) -> ModelPrice | None:
+        return await self.session.scalar(
+            select(ModelPrice).where(
+                ModelPrice.platform_id == platform_id, ModelPrice.model_id == model_id
+            )
+        )
+
+    async def list_prices(
+        self, *, platform_id: int | None, q: str | None, offset: int, limit: int
+    ) -> tuple[Sequence[ModelPrice], int]:
+        stmt = (
+            select(ModelPrice)
+            .join(ModelPrice.model)
+            .options(selectinload(ModelPrice.platform), selectinload(ModelPrice.model))
+        )
+        if platform_id is not None:
+            stmt = stmt.where(ModelPrice.platform_id == platform_id)
+        if q:
+            like = f"%{q}%"
+            stmt = stmt.where(AIModel.name.ilike(like) | AIModel.slug.ilike(like))
+        total = await self.session.scalar(select(func.count()).select_from(stmt.subquery()))
+        rows = await self.session.scalars(
+            stmt.order_by(ModelPrice.updated_at.desc(), ModelPrice.id.desc())
+            .offset(offset)
+            .limit(limit)
+        )
+        return rows.all(), int(total or 0)
+
+    def add(self, obj: AIModel | ModelPrice) -> None:
+        self.session.add(obj)
+
+    async def flush(self) -> None:
+        await self.session.flush()
+
+    async def commit(self) -> None:
+        await self.session.commit()
+
     async def get_platform_id(self, slug: str) -> int | None:
         return await self.session.scalar(select(Platform.id).where(Platform.slug == slug))
 

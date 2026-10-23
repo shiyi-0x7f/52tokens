@@ -1,3 +1,4 @@
+import { Button, Result, Typography } from "antd";
 import { Component, type ErrorInfo, type ReactNode } from "react";
 
 interface State {
@@ -23,19 +24,25 @@ export class ErrorBoundary extends Component<{ children: ReactNode }, State> {
     if (!error) return this.props.children;
     const text = import.meta.env.DEV ? stack || error.message : error.message;
     return (
-      <div role="alert" className="m-6 rounded-xl border border-hot bg-card p-5">
-        <div className="mb-3 flex items-center gap-3">
-          <strong className="text-hot">页面出错了</strong>
-          <button
-            type="button"
-            className="ml-auto min-h-9 rounded-lg bg-ink px-3 text-sm text-white"
-            onClick={() => void navigator.clipboard.writeText(text)}
-          >
+      <Result
+        status="error"
+        title="页面出错了"
+        subTitle={error.message}
+        extra={[
+          <Button key="copy" onClick={() => void navigator.clipboard.writeText(text)}>
             复制错误
-          </button>
-        </div>
-        <pre className="overflow-auto font-mono text-xs whitespace-pre-wrap">{text}</pre>
-      </div>
+          </Button>,
+          <Button key="reload" type="primary" onClick={() => window.location.reload()}>
+            刷新页面
+          </Button>,
+        ]}
+      >
+        {import.meta.env.DEV && (
+          <Typography.Paragraph>
+            <pre style={{ whiteSpace: "pre-wrap", fontSize: 12 }}>{stack}</pre>
+          </Typography.Paragraph>
+        )}
+      </Result>
     );
   }
 }

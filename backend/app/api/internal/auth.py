@@ -4,7 +4,7 @@ from typing import Annotated
 
 from fastapi import APIRouter, Header
 
-from app.api.deps import AuthServiceDep
+from app.api.deps import AuthServiceDep, SessionServiceDep
 from app.core.errors import AppError
 from app.core.response import ApiResponse, ok
 from app.domains.accounts.schemas import (
@@ -68,11 +68,15 @@ async def email_login(body: EmailLoginIn, service: AuthServiceDep) -> ApiRespons
 
 
 @router.get("/session")
-async def get_session(service: AuthServiceDep, token: SessionHeader = None) -> ApiResponse[UserOut]:
-    return ok(await service.get_session_user(_require(token)))
+async def get_session(
+    sessions: SessionServiceDep, token: SessionHeader = None
+) -> ApiResponse[UserOut]:
+    return ok(await sessions.get_user(_require(token)))
 
 
 @router.delete("/session")
-async def delete_session(service: AuthServiceDep, token: SessionHeader = None) -> ApiResponse[None]:
-    await service.logout(_require(token))
+async def delete_session(
+    sessions: SessionServiceDep, token: SessionHeader = None
+) -> ApiResponse[None]:
+    await sessions.close(_require(token))
     return ok(None)
