@@ -58,9 +58,16 @@ export interface Deal {
   confirmed_at: string | null;
   reviewed_at: string | null;
   reject_reason: string;
+  origin: DealOrigin;
+  /** 采集时 LLM 给的置信度（0–1），人工录入为 null */
+  extract_confidence: string | null;
+  /** 采集时抽取依据的原文 */
+  extract_note: string;
   created_at: string;
   updated_at: string;
 }
+
+export type DealOrigin = "manual" | "collector";
 
 export interface DealInput {
   platform_id: number;
@@ -77,6 +84,35 @@ export interface DealInput {
   source_url: string;
   aff_url?: string | null;
   in_app_only: boolean;
+}
+
+export interface Source {
+  id: number;
+  platform: { id: number; slug: string; name: string };
+  url: string;
+  label: string;
+  enabled: boolean;
+  checked_at: string | null;
+  /** 上次正文变化并完成抽取的时间 */
+  changed_at: string | null;
+  last_error: string;
+  fail_count: number;
+  created_at: string;
+}
+
+export interface SourceInput {
+  platform_id: number;
+  url: string;
+  label: string;
+  enabled: boolean;
+}
+
+export interface CheckReport {
+  source_id: number;
+  status: "failed" | "unchanged" | "extracted";
+  created: number;
+  reconfirmed: number;
+  error: string;
 }
 
 export type Currency = "CNY" | "USD";

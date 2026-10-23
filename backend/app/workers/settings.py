@@ -6,14 +6,12 @@ import httpx
 from arq import cron
 from arq.connections import RedisSettings
 
+from app.collectors.base import USER_AGENT
 from app.core.config import get_settings
 from app.core.logging import setup_logging
-from app.workers.tasks import run_collector, sync_openrouter
+from app.workers.tasks import run_collector, sync_openrouter, watch_deal_sources
 
 _settings = get_settings()
-
-# 采集请求如实标明身份，不伪装浏览器
-USER_AGENT = "52tokens-collector/0.1"
 
 
 def new_http_client() -> httpx.AsyncClient:
@@ -34,10 +32,12 @@ async def shutdown(ctx: dict[str, Any]) -> None:
 
 
 class WorkerSettings:
-    functions: ClassVar[list[Any]] = [run_collector, sync_openrouter]
-    # 每 6 小时同步一次 OpenRouter 价格（错开整点）
+    functions: ClassVar[list[Any]] = [run_collector, sync_openrouter, watch_deal_sources]
+    # 每 6 小时同步一次 OpenRouter 价格（错开整点）；活动来源每 6 小时检查一次（会调用 LLM，
+    # 启动时不跑）
     cron_jobs: ClassVar[list[Any]] = [
-        cron(sync_openrouter, hour={0, 6, 12, 18}, minute=7, run_at_startup=True)
+        cron(sync_openrouter, hour={0, 6, 12, 18}, minute=7, run_at_startup=True),
+        cron(watch_deal_sources, hour={1, 7, 13, 19}, minute=17),
     ]
     on_startup = startup
     on_shutdown = shutdown

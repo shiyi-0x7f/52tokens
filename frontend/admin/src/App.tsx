@@ -7,6 +7,7 @@ import { ApiError } from "./api/client";
 import { AdminLayout } from "./layout/AdminLayout";
 import { DealsPage } from "./pages/DealsPage";
 import { PricesPage } from "./pages/PricesPage";
+import { SourcesPage } from "./pages/SourcesPage";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -29,6 +30,7 @@ const router = createBrowserRouter(
         { index: true, element: <Navigate to="/deals" replace /> },
         { path: "deals", element: <DealsPage /> },
         { path: "prices", element: <PricesPage /> },
+        { path: "sources", element: <SourcesPage /> },
         { path: "*", element: <Navigate to="/deals" replace /> },
       ],
     },

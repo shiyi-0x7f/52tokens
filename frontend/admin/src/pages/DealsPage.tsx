@@ -98,7 +98,18 @@ export function DealsPage() {
       key: "title",
       render: (_, d) => (
         <Space orientation="vertical" size={0}>
-          <Typography.Text strong>{d.title}</Typography.Text>
+          <Space size={4}>
+            <Typography.Text strong>{d.title}</Typography.Text>
+            {d.origin === "collector" && (
+              <Tooltip title={d.extract_note ? `原文：${d.extract_note}` : "自动采集"}>
+                <Tag color="purple">
+                  采集
+                  {d.extract_confidence !== null &&
+                    ` ${Math.round(Number(d.extract_confidence) * 100)}%`}
+                </Tag>
+              </Tooltip>
+            )}
+          </Space>
           <Typography.Text type="secondary" style={{ fontSize: 12 }}>
             {d.reward_text} · {d.slug}
           </Typography.Text>

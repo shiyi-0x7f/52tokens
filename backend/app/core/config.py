@@ -44,6 +44,11 @@ class Settings(BaseSettings):
     # Cloudflare Turnstile 服务端密钥（默认值是官方测试 key，始终通过）
     turnstile_secret_key: SecretStr = SecretStr("1x0000000000000000000000000000000AA")
 
+    # LLM（硅基流动，OpenAI 兼容）：活动采集从网页正文抽取结构化字段；未配置 key 时跳过抽取
+    siliconflow_base_url: str = "https://api.siliconflow.cn/v1"
+    siliconflow_api_key: SecretStr = SecretStr("")
+    llm_extract_model: str = "Qwen/Qwen3-30B-A3B"
+
     session_ttl_days: int = 30
     # 公开站写入的会话 Cookie 名；后台 SPA 与公开站同域，后台接口直接读它
     session_cookie_name: str = "t52_session"

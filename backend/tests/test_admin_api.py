@@ -1,56 +1,15 @@
 """后台接口：鉴权（会话 + 管理员 + CSRF 头）、活动审核流程、价格手工录入。"""
 
-from collections.abc import AsyncIterator
 from datetime import UTC, datetime, timedelta
 from typing import Any
 
 import httpx
-import pytest
-from fastapi import FastAPI
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.api.deps import ADMIN_CSRF_HEADER, ADMIN_CSRF_VALUE
-from app.core.kv import get_store
-from app.domains.accounts.repository import UserRepository
-from app.domains.accounts.sessions import session_key
 from tests import factories as f
-from tests.conftest import AUTH
+from tests.conftest import AUTH, CSRF
+from tests.conftest import login as _login
 from tests.fakes import MemoryStore
-
-CSRF = {ADMIN_CSRF_HEADER: ADMIN_CSRF_VALUE}
-
-
-@pytest.fixture
-def store(app: FastAPI) -> MemoryStore:
-    store = MemoryStore()
-    app.dependency_overrides[get_store] = lambda: store
-    return store
-
-
-async def _login(
-    session: AsyncSession, store: MemoryStore, client: httpx.AsyncClient, *, admin: bool
-) -> int:
-    user = await UserRepository(session).upsert_from_scc(
-        scc_user_id=900 + int(admin),
-        nickname="管理员" if admin else "普通用户",
-        email=None,
-        avatar_url=None,
-        auth_provider="google",
-        is_admin=admin,
-        now=datetime.now(UTC),
-    )
-    token = f"token-{user.id}"
-    await store.set(session_key(token), str(user.id), 3600)
-    client.cookies.set("t52_session", token)
-    return user.id
-
-
-@pytest.fixture
-async def admin(
-    db_session: AsyncSession, db_client: httpx.AsyncClient, store: MemoryStore
-) -> AsyncIterator[httpx.AsyncClient]:
-    await _login(db_session, store, db_client, admin=True)
-    yield db_client
 
 
 def _deal_body(platform_id: int, **over: Any) -> dict[str, Any]:

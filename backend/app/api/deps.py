@@ -6,6 +6,7 @@ import httpx
 from fastapi import Depends, Request
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.collectors.page_watch import PageWatchCollector
 from app.core.config import Settings, get_settings
 from app.core.errors import AppError
 from app.core.kv import KeyValueStore, get_store
@@ -20,8 +21,12 @@ from app.domains.catalog.service import CatalogService
 from app.domains.deals.admin import DealAdminService
 from app.domains.deals.repository import DealRepository
 from app.domains.deals.service import DealService
+from app.domains.deals.source_repository import DealSourceRepository
+from app.domains.deals.sources_admin import SourceAdminService
+from app.domains.deals.watch import DealWatchService
 from app.domains.outbound.repository import OutboundRepository
 from app.domains.outbound.service import OutboundService
+from app.integrations.llm import llm_from_settings
 from app.integrations.scc import SccClient
 
 SessionDep = Annotated[AsyncSession, Depends(get_session)]
@@ -120,9 +125,18 @@ def get_deal_admin_service(session: SessionDep) -> DealAdminService:
     return DealAdminService(DealRepository(session))
 
 
+def get_source_admin_service(
+    session: SessionDep, settings: SettingsDep, http: HttpDep
+) -> SourceAdminService:
+    repo = DealSourceRepository(session)
+    watch = DealWatchService(repo, PageWatchCollector(http), llm_from_settings(http, settings))
+    return SourceAdminService(repo, watch)
+
+
 def get_price_admin_service(session: SessionDep) -> PriceAdminService:
     return PriceAdminService(CatalogRepository(session))
 
 
 DealAdminServiceDep = Annotated[DealAdminService, Depends(get_deal_admin_service)]
 PriceAdminServiceDep = Annotated[PriceAdminService, Depends(get_price_admin_service)]
+SourceAdminServiceDep = Annotated[SourceAdminService, Depends(get_source_admin_service)]

@@ -12,6 +12,9 @@ from typing import Any, ClassVar
 import httpx
 from pydantic import BaseModel, Field
 
+# 采集请求如实标明身份，不伪装浏览器
+USER_AGENT = "52tokens-collector/0.1"
+
 
 class SourceConfig(BaseModel):
     """一个采集来源：例如某平台的定价页、活动页或公开接口。"""
