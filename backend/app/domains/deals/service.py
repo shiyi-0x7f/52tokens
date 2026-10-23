@@ -1,6 +1,7 @@
 """活动域业务规则：过期判定、推广链接标注。"""
 
 from datetime import UTC, datetime
+from urllib.parse import urlsplit
 
 from app.core.errors import AppError
 from app.domains.catalog.schemas import PlatformRef
@@ -34,6 +35,7 @@ def to_out(deal: Deal, now: datetime) -> DealOut:
         description=deal.description,
         steps=list(deal.steps),
         is_promoted=deal.aff_url is not None,
+        link_host=(urlsplit(deal.aff_url or deal.source_url).hostname or "").removeprefix("www."),
         source_url=deal.source_url,
         source_quote=deal.source_quote,
         source_locate_url=locate_url(deal.source_url, deal.source_quote),

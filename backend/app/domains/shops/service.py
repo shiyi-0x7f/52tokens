@@ -123,7 +123,7 @@ class ShopService:
                         price=o.price,
                         stock=o.stock,
                         in_stock=o.in_stock,
-                        url=o.url,
+                        token=o.external_id,
                         shop=o.source.host,
                         tags=list(o.tags),
                         flags=flags.get(o.id, []),

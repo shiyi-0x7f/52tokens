@@ -33,6 +33,7 @@ function deal(slug: string, platform: string, over: Partial<Deal> = {}): Deal {
     description: "",
     steps: [],
     is_promoted: false,
+    link_host: "x.example.com",
     source_url: "https://x.example.com",
     source_quote: "",
     source_locate_url: "https://x.example.com",

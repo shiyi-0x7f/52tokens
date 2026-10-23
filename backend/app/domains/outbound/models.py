@@ -11,6 +11,7 @@ from app.db.base import Base, str_enum
 
 class OutboundTarget(StrEnum):
     DEAL = "deal"
+    SHOP_OFFER = "shop_offer"
 
 
 class OutboundClick(Base):

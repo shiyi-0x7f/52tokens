@@ -66,7 +66,9 @@ def get_shop_service(session: SessionDep) -> ShopService:
 
 
 def get_outbound_service(session: SessionDep) -> OutboundService:
-    return OutboundService(DealRepository(session), OutboundRepository(session))
+    return OutboundService(
+        DealRepository(session), ShopRepository(session), OutboundRepository(session)
+    )
 
 
 def get_session_service(

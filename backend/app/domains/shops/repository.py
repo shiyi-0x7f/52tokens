@@ -101,6 +101,23 @@ class ShopRepository:
         )
         return (await self.session.scalars(stmt)).all()
 
+    async def get_public_offer(self, external_id: str) -> ShopOffer | None:
+        """比价页上展示的报价：店铺启用、报价未隐藏、归到了对外展示的商品。"""
+        stmt = (
+            select(ShopOffer)
+            .join(ShopOffer.source)
+            .join(ShopOffer.product)
+            .where(
+                ShopOffer.external_id == external_id,
+                ShopOffer.hidden.is_(False),
+                ShopSource.enabled.is_(True),
+                ShopProduct.status == PublishStatus.ACTIVE,
+            )
+            .options(selectinload(ShopOffer.source))
+            .limit(1)
+        )
+        return await self.session.scalar(stmt)
+
     def add(self, obj: ShopOffer) -> None:
         self.session.add(obj)
 

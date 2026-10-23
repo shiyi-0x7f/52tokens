@@ -117,6 +117,11 @@ const hasQuote = deal.source_quote !== "";
           href={dealGoUrl(deal.slug)}
           rel={deal.is_promoted ? "sponsored nofollow noopener" : "nofollow noopener"}
           target="_blank"
+          data-leave="deal"
+          data-leave-host={deal.link_host}
+          data-leave-label={deal.platform.name}
+          data-leave-title={deal.title}
+          data-leave-promoted={deal.is_promoted ? "1" : undefined}
           class="inline-flex min-h-11 items-center rounded-[10px] bg-hot px-5 font-bold text-white no-underline"
         >
           去 {deal.platform.name} 参与

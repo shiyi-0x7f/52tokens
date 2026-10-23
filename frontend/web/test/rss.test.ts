@@ -19,6 +19,7 @@ const deal: Deal = {
   description: "打开客户端签到",
   steps: ["打开客户端", "点签到"],
   is_promoted: true,
+  link_host: "trae.ai",
   source_url: "https://www.trae.ai/events",
   source_quote: "每日签到",
   source_locate_url: "https://www.trae.ai/events#:~:text=%E6%AF%8F%E6%97%A5%E7%AD%BE%E5%88%B0",

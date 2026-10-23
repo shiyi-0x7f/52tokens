@@ -4,6 +4,7 @@ import ShopDisclaimer from "../../components/ShopDisclaimer.astro";
 import BaseLayout from "../../layouts/BaseLayout.astro";
 import { internalGet, isNotFound } from "../../lib/api";
 import { formatPrice, formatRelative } from "../../lib/format";
+import { offerGoUrl } from "../../lib/outbound";
 import type { ShopProductDetail } from "../../lib/types";
 
 const slug = Astro.params.slug ?? "";
@@ -121,10 +122,14 @@ const description = lowest
                 </td>
                 <td class="px-4 py-3 text-xs whitespace-nowrap">
                   <a
-                    href={o.url}
-                    rel="nofollow noopener noreferrer"
+                    href={offerGoUrl(o.token)}
+                    rel="nofollow noopener"
                     target="_blank"
                     class="text-sub"
+                    data-leave="shop"
+                    data-leave-host={o.shop}
+                    data-leave-label={`第三方店铺 ${o.shop}`}
+                    data-leave-title={`${o.title} · ${formatPrice(o.price, "CNY")}`}
                   >
                     {o.shop} ↗
                   </a>
