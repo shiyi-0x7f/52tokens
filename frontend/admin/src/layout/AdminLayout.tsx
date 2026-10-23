@@ -1,4 +1,4 @@
-import { DollarOutlined, GiftOutlined, RadarChartOutlined } from "@ant-design/icons";
+import { DollarOutlined, GiftOutlined, RadarChartOutlined, ShopOutlined } from "@ant-design/icons";
 import { Avatar, Button, Layout, Menu, Result, Space, Spin, Typography } from "antd";
 import { NavLink, Outlet, useLocation } from "react-router";
 
@@ -17,6 +17,7 @@ const MENU = [
     icon: <RadarChartOutlined />,
     label: <NavLink to="/sources">监测来源</NavLink>,
   },
+  { key: "/shops", icon: <ShopOutlined />, label: <NavLink to="/shops">卡网店铺</NavLink> },
 ];
 
 function AuthGate({ status }: { status: number }) {

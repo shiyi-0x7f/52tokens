@@ -117,6 +117,28 @@
 
 活动不存在或不可见 → `404`，不记录点击。公开站收到后 `302` 跳转（`Cache-Control: no-store`、`X-Robots-Tag: noindex, nofollow`），`/go/` 在 robots.txt 中禁止抓取。
 
+### `GET /internal/v1/shop-products`
+
+卡网比价商品列表（不含「其他商品」和下线的商品；没有报价的商品不出现）。外层**不出现商家名**：
+
+```json
+{ "slug": "chatgpt-plus", "name": "ChatGPT Plus 试用订阅", "platform": "ChatGPT", "product_type": "订阅/会员",
+  "spec": "…", "min_price": "90.00", "in_stock_shops": 15, "offer_count": 49 }
+```
+
+`min_price` / `in_stock_shops` 只算**可比**的报价：近 48 小时采集到、有货、不是拼车 / 多人共享、不是异常低价（同商品有 3 条以上可比报价时，低于中位数 30% 的视为占位价）。
+
+### `GET /internal/v1/shop-products/{slug}`
+
+字段同上，另有 `summary` 和 `offers`（最多 100 条）：
+
+```json
+{ "title": "店铺原标题", "price": "90.00", "stock": 12, "in_stock": true, "url": "https://…", "shop": "店铺域名",
+  "tags": ["自动发货"], "flags": [], "last_seen_at": "…", "is_fresh": true }
+```
+
+`flags` 为「拼车」或「价格待核实」的照常展示，但不计入最低价。排序：可比的有货报价按价格升序 → 被标记的 → 无货 → 可能已失效（`is_fresh=false`）。不存在、下线或「其他商品」→ `404`。
+
 ### 登录与会话
 
 浏览器只和公开站交互：公开站 `/auth/google` → 本组接口 → 写 httpOnly Cookie `t52_session`。
@@ -173,6 +195,11 @@ Google / SCC 不可达 → `502`；Google 或 SCC 凭据未配置 → `503`。
 | `POST /api/admin/sources/check-all` | 全部检查：后台逐个检查所有启用的来源，立即返回 `{ running, last }`；已有一批在跑（含 worker 定时检查）时 `409` |
 | `GET /api/admin/sources/check-all` | 批量检查状态：`running` 为 `{ started_at, total, done }` 或 `null`；`last` 为上一批汇总 `{ started_at, finished_at, checked, created, reconfirmed, failed }` 或 `null` |
 | `POST /api/admin/sources/{id}/check` | 立即检查一次，同步返回 `{ source_id, status, created, reconfirmed, error }`，`status` 为 `failed` / `unchanged` / `extracted`；含 LLM 调用，可能耗时数十秒 |
+
+| `GET /api/admin/shop-sources?collector_kind=&state=ok\|failed\|unchecked&q=&page=&page_size=` | 卡网店铺列表，按报价数倒序 |
+| `POST /api/admin/shop-sources` | 登记店铺 `{ entry_url, collector_kind, name, enabled }`；同一店铺地址只能登记一次（`409`）；多商户平台（`shopApi`）填具体商户的 `/shop/<token>` |
+| `PUT /api/admin/shop-sources/{id}` | 编辑店铺 |
+| `POST /api/admin/shop-sources/{id}/sync` | 立即采集一个店铺，同步返回 `{ source_id, status, offers, created, gone, error }` |
 
 发布、驳回、下线会记录操作人（`reviewed_by_id`）和时间（`reviewed_at`）。
 

@@ -1,4 +1,23 @@
-import type { DealCycle, DealStatus, DealType } from "./types";
+import type { DealCycle, DealStatus, DealType, ShopCollectorKind } from "./types";
+
+/** 店铺系统类型（决定采集方式） */
+export const SHOP_KIND_LABELS: Record<ShopCollectorKind, string> = {
+  kami: "Kami",
+  dujiao: "独角数卡",
+  shopApi: "ShopApi（多商户）",
+  xiaoheiwan: "小黑万",
+  opensoraHtml: "OpenSora 页面",
+  makerichHtml: "Makerich 页面",
+  beibeiHtml: "贝贝页面",
+  ikunloveApi: "IkunLove 接口",
+  getgptApi: "GetGPT 接口",
+  publicProductsApi: "公开商品接口",
+  shopUserProductsApi: "Shop User 接口",
+  unicornHtml: "Unicorn 页面",
+  mooncakeCatalog: "Mooncake 目录",
+  blackcatWholesale: "BlackCat 批发",
+  genericHtml: "通用页面解析",
+};
 
 export const DEAL_TYPE_LABELS: Record<DealType, string> = {
   checkin_points: "签到",
