@@ -32,6 +32,7 @@ from app.domains.catalog.models import (
     PublishStatus,
 )
 from app.domains.deals.models import Deal, DealCycle, DealSource, DealStatus, DealType
+from app.domains.shops.models import ShopCollectorKind, ShopProduct, ShopSource
 
 DEFAULT_SEED_DIR = REPO_ROOT / "data" / "seed"
 
@@ -100,6 +101,26 @@ class SourceSeed(_Strict):
     enabled: bool = True
 
 
+class ShopProductSeed(_Strict):
+    slug: str
+    name: str
+    platform: str
+    product_type: str
+    spec: str = ""
+    summary: str = ""
+    aliases: list[str] = []
+    sort_order: int = 0
+    status: PublishStatus = PublishStatus.ACTIVE
+
+
+class ShopSourceSeed(_Strict):
+    host: str
+    base_url: str
+    collector_kind: ShopCollectorKind
+    name: str = ""
+    enabled: bool = True
+
+
 def _load(seed_dir: Path, name: str) -> list[dict[str, Any]]:
     path = seed_dir / f"{name}.yaml"
     if not path.exists():
@@ -131,6 +152,8 @@ async def seed(session: AsyncSession, seed_dir: Path = DEFAULT_SEED_DIR) -> dict
     prices = [PriceSeed.model_validate(r) for r in _load(seed_dir, "prices")]
     deals = [DealSeed.model_validate(r) for r in _load(seed_dir, "deals")]
     sources = [SourceSeed.model_validate(r) for r in _load(seed_dir, "deal_sources")]
+    shop_products = [ShopProductSeed.model_validate(r) for r in _load(seed_dir, "shop_products")]
+    shop_sources = [ShopSourceSeed.model_validate(r) for r in _load(seed_dir, "shop_sources")]
 
     await _upsert(session, Platform, [p.model_dump() for p in platforms], ["slug"])
     await _upsert(session, AIModel, [m.model_dump() for m in models], ["slug"])
@@ -165,6 +188,10 @@ async def seed(session: AsyncSession, seed_dir: Path = DEFAULT_SEED_DIR) -> dict
         source_rows.append(row)
     await _upsert(session, DealSource, source_rows, ["url"])
 
+    # 卡网：商品按 slug、店铺按域名 upsert；店铺的采集状态不在种子里，不会被覆盖
+    await _upsert(session, ShopProduct, [p.model_dump() for p in shop_products], ["slug"])
+    await _upsert(session, ShopSource, [s.model_dump() for s in shop_sources], ["host"])
+
     await session.commit()
     return {
         "platforms": len(platforms),
@@ -172,6 +199,8 @@ async def seed(session: AsyncSession, seed_dir: Path = DEFAULT_SEED_DIR) -> dict
         "prices": len(prices),
         "deals": len(deals),
         "deal_sources": len(sources),
+        "shop_products": len(shop_products),
+        "shop_sources": len(shop_sources),
     }
 
 
