@@ -117,8 +117,12 @@ class ShopSourceSeed(_Strict):
     host: str
     base_url: str
     collector_kind: ShopCollectorKind
+    entry_url: str = ""  # 留空 = base_url（单店铺系统）
     name: str = ""
     enabled: bool = True
+
+    def row(self) -> dict[str, Any]:
+        return self.model_dump() | {"entry_url": self.entry_url or self.base_url}
 
 
 def _load(seed_dir: Path, name: str) -> list[dict[str, Any]]:
@@ -188,9 +192,9 @@ async def seed(session: AsyncSession, seed_dir: Path = DEFAULT_SEED_DIR) -> dict
         source_rows.append(row)
     await _upsert(session, DealSource, source_rows, ["url"])
 
-    # 卡网：商品按 slug、店铺按域名 upsert；店铺的采集状态不在种子里，不会被覆盖
+    # 卡网：商品按 slug、店铺按店铺地址 upsert；店铺的采集状态不在种子里，不会被覆盖
     await _upsert(session, ShopProduct, [p.model_dump() for p in shop_products], ["slug"])
-    await _upsert(session, ShopSource, [s.model_dump() for s in shop_sources], ["host"])
+    await _upsert(session, ShopSource, [s.row() for s in shop_sources], ["entry_url"])
 
     await session.commit()
     return {

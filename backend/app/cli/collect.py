@@ -1,4 +1,4 @@
-"""手动触发采集并入库：uv run python -m app.cli.collect openrouter|deals|liveness"""
+"""手动触发采集并入库：uv run python -m app.cli.collect openrouter|deals|liveness|shops"""
 
 import asyncio
 import sys
@@ -10,12 +10,18 @@ from loguru import logger
 from app.core.config import get_settings
 from app.core.logging import setup_logging
 from app.workers.settings import new_http_client
-from app.workers.tasks import check_deal_liveness, sync_openrouter, watch_deal_sources
+from app.workers.tasks import (
+    check_deal_liveness,
+    sync_openrouter,
+    sync_shops,
+    watch_deal_sources,
+)
 
 JOBS: dict[str, Callable[[dict[str, Any]], Awaitable[dict[str, Any]]]] = {
     "openrouter": sync_openrouter,
     "deals": watch_deal_sources,
     "liveness": check_deal_liveness,
+    "shops": sync_shops,
 }
 
 

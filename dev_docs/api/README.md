@@ -201,7 +201,15 @@ Google / SCC 不可达 → `502`；Google 或 SCC 凭据未配置 → `503`。
 - 匹配到已发布活动且置信度 ≥ 0.85 时只刷新 `confirmed_at`，不改任何字段；匹配到已驳回的活动不会重新提出。
 - 抓取 / 抽取失败只记在来源上（`last_error`、`fail_count`），不动已有活动。
 
+| 卡网店铺（`data/seed/shop_sources.yaml` / 后台登记） | `uv run python -m app.cli.collect shops` | worker 每 3 小时（2/5/8/…/23 点 47 分） | 15 种店铺系统各一个采集插件（`app/collectors/shops/`），只读公开商品列表；见下方规则 |
 | 活动存活检查（已发布活动的官方出处） | `uv run python -m app.cli.collect liveness` | worker 每天 3 点 27 分 | 见下方规则 |
+
+卡网采集规则（`shops/sync.py`）：
+- 店铺按店铺地址唯一：单店铺系统 = 域名首页；ShopApi 多商户平台必须是具体商户的 `/shop/<token>`，只有域名时记为失败并提示补地址。
+- 报价按（店铺, 链接 + 标题哈希）upsert，每次用 `shops/classify` 的规则把标题归到标准商品（`data/seed/shop_products.yaml`）；后台人工指定的（`match_method=manual`）不覆盖。
+- 采集成功但这次没出现的报价标为无货，不删除；一个商品都没采到按失败处理；失败只记在店铺上（`last_error`、`fail_count`），报价不动。
+- ShopApi 价格取平台结算接口的实付金额（含支付手续费），取不到时退回标价。
+- 不绕过风控页、验证页和加密页面；请求如实标明身份（`52tokens-collector`）。
 
 活动存活检查规则（`deals/liveness.py`，误判比晚几天下沉代价大）：
 - 截止时间已过：直接标记已结束（`status=expired`）。

@@ -66,12 +66,17 @@ class ShopProduct(TimestampMixin, Base):
 
 
 class ShopSource(TimestampMixin, Base):
-    """一个卡网店铺（按域名唯一）。"""
+    """一个卡网店铺，按店铺地址唯一。
+
+    多数店铺系统一个域名就是一家店（entry_url = base_url）；ShopApi 这类多商户平台同一域名下
+    有很多商户，entry_url 是具体商户的 /shop/<token> 地址。
+    """
 
     __tablename__ = "shop_sources"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
-    host: Mapped[str] = mapped_column(String(120), unique=True)
+    host: Mapped[str] = mapped_column(String(120), index=True)
+    entry_url: Mapped[str] = mapped_column(String(300), unique=True)
     name: Mapped[str] = mapped_column(String(80), default="", server_default="")
     base_url: Mapped[str] = mapped_column(String(300))
     collector_kind: Mapped[ShopCollectorKind] = mapped_column(str_enum(ShopCollectorKind))
@@ -100,6 +105,8 @@ class ShopOffer(TimestampMixin, Base):
     currency: Mapped[str] = mapped_column(String(8), default="CNY", server_default="CNY")
     stock: Mapped[int | None] = mapped_column(Integer)  # None = 店铺没公开库存
     in_stock: Mapped[bool] = mapped_column(Boolean, default=True, server_default="true")
+    # 店铺给的分类名、「自动发货」等标签：归类时作辅助信息
+    tags: Mapped[list[str]] = mapped_column(ARRAY(String(60)), default=list, server_default="{}")
     product_id: Mapped[int | None] = mapped_column(
         ForeignKey("shop_products.id", ondelete="SET NULL"), index=True
     )
