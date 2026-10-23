@@ -103,6 +103,9 @@ class DealAdminOut(BaseModel):
     origin: DealOrigin
     extract_confidence: Decimal | None
     extract_note: str
+    liveness_checked_at: datetime | None
+    liveness_issue: str
+    liveness_fail_count: int
     created_at: datetime
     updated_at: datetime
 
@@ -204,6 +207,7 @@ class DealAdminService:
         deal.reject_reason = reason
         if status == DealStatus.ACTIVE:
             deal.confirmed_at = now
+            self._clear_liveness(deal)
         await self.repo.commit()
         return await self._out(deal.id)
 
@@ -229,5 +233,12 @@ class DealAdminService:
         if deal.status != DealStatus.ACTIVE:
             raise AppError("BAD_REQUEST", "只有已发布的活动可以重新核实")
         deal.confirmed_at = datetime.now(UTC)
+        self._clear_liveness(deal)
         await self.repo.commit()
         return await self._out(deal_id)
+
+    @staticmethod
+    def _clear_liveness(deal: Deal) -> None:
+        """人工核实过：清掉存活检查的「疑似下线」状态。"""
+        deal.liveness_issue = ""
+        deal.liveness_fail_count = 0

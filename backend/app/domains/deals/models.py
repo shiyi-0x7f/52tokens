@@ -105,5 +105,9 @@ class Deal(TimestampMixin, Base):
     )
     extract_confidence: Mapped[Decimal | None] = mapped_column(Numeric(3, 2))
     extract_note: Mapped[str] = mapped_column(String(300), default="", server_default="")
+    # 存活检查：定时回访官网，连续多次发现下线信号才自动标记结束（见 deals/liveness.py）
+    liveness_checked_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    liveness_issue: Mapped[str] = mapped_column(String(200), default="", server_default="")
+    liveness_fail_count: Mapped[int] = mapped_column(Integer, default=0, server_default="0")
 
     platform: Mapped[Platform] = relationship()

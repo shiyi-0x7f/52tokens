@@ -12,9 +12,12 @@ from app.collectors.page_watch import PageWatchCollector
 from app.collectors.registry import get_collector_class
 from app.core.config import get_settings
 from app.core.kv import get_store
+from app.db import models as _registered_models  # noqa: F401  注册全部模型，外键才能解析
 from app.db.session import get_sessionmaker
 from app.domains.catalog.ingest import CatalogIngestService
 from app.domains.catalog.repository import CatalogRepository
+from app.domains.deals.liveness import DealLivenessService
+from app.domains.deals.repository import DealRepository
 from app.domains.deals.source_repository import DealSourceRepository
 from app.domains.deals.watch import DealWatchService
 from app.domains.deals.watch_batch import BatchCheckService, BatchSummary
@@ -55,6 +58,13 @@ async def run_watch_batch(
         llm = llm_from_settings(http, get_settings())
         watch = DealWatchService(DealSourceRepository(session), PageWatchCollector(http), llm)
         return await batch.run(watch)
+
+
+async def check_deal_liveness(ctx: dict[str, Any]) -> dict[str, Any]:
+    """回访已发布活动的官方出处，连续发现下线信号才标记结束。"""
+    async with get_sessionmaker()() as session:
+        report = await DealLivenessService(DealRepository(session), ctx["http"]).check_all()
+    return report.model_dump() | {"errors": []}
 
 
 async def watch_deal_sources(ctx: dict[str, Any]) -> dict[str, Any]:
