@@ -1,0 +1,187 @@
+---
+import DealRow from "../../components/DealRow.astro";
+import EmptyState from "../../components/EmptyState.astro";
+import JsonLd from "../../components/JsonLd.astro";
+import BaseLayout from "../../layouts/BaseLayout.astro";
+import { internalGet, isNotFound } from "../../lib/api";
+import { formatContext, formatPrice, formatRelative } from "../../lib/format";
+import { FREE_DEAL_TYPES, buildFreeGuide } from "../../lib/free";
+import { loadOr } from "../../lib/load";
+import type { Deal, ModelDetail } from "../../lib/types";
+
+const slug = Astro.params.slug ?? "";
+let model: ModelDetail;
+try {
+  model = await internalGet<ModelDetail>(`/models/${encodeURIComponent(slug)}`);
+} catch (err) {
+  if (isNotFound(err)) return Astro.rewrite("/404");
+  throw err;
+}
+
+// 各类免费活动分别取，再按「提供这个模型的平台」过滤
+const results = await Promise.all(
+  FREE_DEAL_TYPES.map((t) =>
+    loadOr<Deal[]>([], () => internalGet<Deal[]>("/deals", { deal_type: t, limit: 100 })),
+  ),
+);
+const dealsOk = results.every(([, ok]) => ok);
+const guide = buildFreeGuide(
+  model,
+  results.flatMap(([deals]) => deals),
+);
+const pageUrl = new URL(`/free/${model.slug}`, Astro.site).href;
+const freeNames = guide.freePrices.map((p) => p.platform.name);
+const description =
+  guide.freePrices.length > 0
+    ? `${model.name} 可以在 ${freeNames.join("、")} 免费调用；另附 ${guide.deals.length} 个可用的免费额度和注册赠送，以及免费用完后最便宜的付费价。`
+    : `${model.name} 的免费额度、新用户赠送和最便宜的付费渠道汇总，每条标注出处与最近核实时间。`;
+---
+
+<BaseLayout
+  title={`${model.name} 免费 API 与免费额度 · 52tokens`}
+  description={description}
+  noindex={dealsOk && !guide.indexable}
+>
+  <JsonLd
+    slot="head"
+    data={{
+      "@context": "https://schema.org",
+      "@type": "BreadcrumbList",
+      itemListElement: [
+        {
+          "@type": "ListItem",
+          position: 1,
+          name: "免费额度",
+          item: new URL("/free", Astro.site).href,
+        },
+        { "@type": "ListItem", position: 2, name: model.name, item: pageUrl },
+      ],
+    }}
+  />
+  <JsonLd
+    slot="head"
+    data={{
+      "@context": "https://schema.org",
+      "@type": "FAQPage",
+      mainEntity: guide.faq.map((f) => ({
+        "@type": "Question",
+        name: f.q,
+        acceptedAnswer: { "@type": "Answer", text: f.a },
+      })),
+    }}
+  />
+
+  <nav class="mb-3 text-xs text-mute" aria-label="面包屑">
+    <a href="/free" class="no-underline">
+      免费额度
+    </a>{" "}
+    / {model.name}
+  </nav>
+
+  <header class="mb-5">
+    <h1 class="text-2xl font-black">{model.name} 免费 API 与免费额度</h1>
+    <p class="mt-1 text-sm text-sub">
+      {guide.faq[0]?.a}
+      {model.context_window !== null && ` 上下文 ${formatContext(model.context_window)}。`}
+    </p>
+    <p class="mt-2 text-sm">
+      <a href={`/models/${model.slug}`} class="text-hot">
+        看 {model.name} 全部平台价格 →
+      </a>
+    </p>
+  </header>
+
+  <section class="mb-6" aria-labelledby="free-title">
+    <h2 id="free-title" class="mb-3 font-black">
+      直接免费的渠道
+    </h2>
+    {guide.freePrices.length === 0 ? (
+      <p class="rounded-(--radius-card) bg-card px-4 py-3 text-sm text-sub">
+        目前没有长期免费调用 {model.name} 的渠道。
+      </p>
+    ) : (
+      <ul class="rounded-(--radius-card) bg-card">
+        {guide.freePrices.map((p) => (
+          <li class="flex flex-wrap items-center gap-x-3 gap-y-1 border-b border-line px-4 py-3 text-sm last:border-b-0">
+            <a href={`/platforms/${p.platform.slug}`} class="font-bold no-underline">
+              {p.platform.name}
+            </a>
+            <span class="font-bold text-good">免费</span>
+            <span class="text-sub">{p.free_note}</span>
+            <a
+              href={p.source_url}
+              rel="nofollow noopener"
+              target="_blank"
+              class="ml-auto text-xs text-mute"
+            >
+              {formatRelative(p.confirmed_at)}核实 · 出处
+            </a>
+          </li>
+        ))}
+      </ul>
+    )}
+    <p class="mt-2 text-xs text-mute">
+      免费层通常有请求频率和用量上限，部分平台的免费层数据可能被用于训练，使用前请看原站条款。
+    </p>
+  </section>
+
+  <section class="mb-6" aria-labelledby="deals-title">
+    <h2 id="deals-title" class="mb-3 font-black">
+      可用来调用 {model.name} 的免费额度与赠送
+    </h2>
+    {!dealsOk ? (
+      <EmptyState title="活动暂时加载失败" hint="请稍后刷新页面。" />
+    ) : guide.deals.length === 0 ? (
+      <p class="rounded-(--radius-card) bg-card px-4 py-3 text-sm text-sub">
+        提供 {model.name} 的平台暂时没有进行中的免费额度或注册赠送。
+      </p>
+    ) : (
+      <>
+        <div class="rounded-(--radius-card) bg-card py-1">
+          {guide.deals.map((deal) => (
+            <DealRow deal={deal} />
+          ))}
+        </div>
+        <p class="mt-2 text-xs text-mute">
+          这些是提供 {model.name} 的平台上的活动，额度是否能用在这个模型上以活动说明为准。
+        </p>
+      </>
+    )}
+  </section>
+
+  {guide.cheapestPaid.length > 0 && (
+    <section class="mb-6" aria-labelledby="paid-title">
+      <h2 id="paid-title" class="mb-3 font-black">
+        免费用完后，最便宜的付费渠道
+      </h2>
+      <ul class="rounded-(--radius-card) bg-card">
+        {guide.cheapestPaid.map((p) => (
+          <li class="flex items-center gap-3 border-b border-line px-4 py-3 text-sm last:border-b-0">
+            <a href={`/platforms/${p.platform.slug}`} class="font-medium no-underline">
+              {p.platform.name}
+            </a>
+            <span class="ml-auto font-mono text-xs text-sub">
+              输入 {formatPrice(p.input_price, p.currency)}
+            </span>
+            <span class="font-mono font-bold">输出 {formatPrice(p.output_price, p.currency)}</span>
+          </li>
+        ))}
+      </ul>
+      <p class="mt-2 text-xs text-mute">单位：每百万 tokens，按原币种展示，未换算。</p>
+    </section>
+  )}
+
+  <section aria-labelledby="faq-title">
+    <h2 id="faq-title" class="mb-3 font-black">
+      常见问题
+    </h2>
+    <dl class="rounded-(--radius-card) bg-card">
+      {guide.faq.map((f) => (
+        <div class="border-b border-line px-4 py-3 last:border-b-0">
+          <dt class="text-sm font-bold">{f.q}</dt>
+          <dd class="mt-1 text-sm leading-relaxed text-sub">{f.a}</dd>
+        </div>
+      ))}
+    </dl>
+  </section>
+</BaseLayout>

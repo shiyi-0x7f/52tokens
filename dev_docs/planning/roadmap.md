@@ -65,7 +65,7 @@ LLM 只负责"从文本里抽结构化字段 + 给置信度"，**发布必须过
 | --- | --- | --- |
 | `/models/{model}` | "DeepSeek V3 API 价格""Claude Sonnet 价格" | 官方 API |
 | `/models/{a}-vs-{b}` | "DeepSeek vs Qwen API 价格对比" | 官方 API |
-| `/free/{model-or-platform}` | "XX API 免费额度""免费 Claude API" | 优惠 + 官方 API |
+| `/free/{model}`（已实现；平台维度由 `/platforms/{platform}` 承担） | "XX API 免费额度""免费 Claude API" | 优惠 + 官方 API：免费渠道 + 提供该模型的平台的免费额度 / 注册赠送 / 试用 + 最便宜付费价 + 按数据生成的 FAQ；都没有时 noindex |
 | `/platforms/{platform}`（已实现，附 `/platforms/{platform}/rss.xml`） | "XX 签到""XX 优惠码""XX 新用户送" | 优惠；原计划 `/deals/{platform}` 与活动详情 `/deals/{slug}` 冲突，改用平台路径 |
 | `/deals/{platform}/{slug}` | 单个活动长尾词 | 优惠 |
 | `/official-prices/{plan}/{region}` | "ChatGPT Plus 土耳其价格" | 官方订阅 |

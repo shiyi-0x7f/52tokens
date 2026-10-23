@@ -22,6 +22,10 @@ export const GET: APIRoute = async ({ site }) => {
   const entries: SitemapEntry[] = [
     ...STATIC_PATHS.map((path) => ({ loc: new URL(path, base).href })),
     ...models.map((m) => ({ loc: new URL(`/models/${m.slug}`, base).href })),
+    // 免费页只收有免费渠道的模型；其余模型的免费页可能是 noindex
+    ...models
+      .filter((m) => m.has_free)
+      .map((m) => ({ loc: new URL(`/free/${m.slug}`, base).href })),
     ...deals.map((d) => ({ loc: new URL(`/deals/${d.slug}`, base).href, lastmod: d.confirmed_at })),
     ...[...platformLastmod].map(([slug, lastmod]) => ({
       loc: new URL(`/platforms/${slug}`, base).href,
