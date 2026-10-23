@@ -45,6 +45,22 @@ async def test_without_affiliate_link_goes_to_source(
     assert data == {"url": "https://trae.example.com/events", "is_promoted": False}
 
 
+async def test_source_link_scrolls_to_quote(
+    db_session: AsyncSession, db_client: httpx.AsyncClient
+) -> None:
+    p = await f.platform(db_session, "trae")
+    await f.deal(
+        db_session, p, "quoted", source_url="https://trae.example.com/e", source_quote="签到"
+    )
+    await f.deal(db_session, p, "aff", aff_url="https://aff.example.com/x", source_quote="签到")
+    await db_session.commit()
+
+    quoted = (await _click(db_client, "quoted")).json()["data"]
+    assert quoted["url"] == "https://trae.example.com/e#:~:text=%E7%AD%BE%E5%88%B0"
+    # 推广链接不加定位片段
+    assert (await _click(db_client, "aff")).json()["data"]["url"] == "https://aff.example.com/x"
+
+
 async def test_hidden_deal_is_not_found_and_not_recorded(
     db_session: AsyncSession, db_client: httpx.AsyncClient
 ) -> None:

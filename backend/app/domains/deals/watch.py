@@ -28,6 +28,7 @@ from app.domains.deals.extraction import (
     Extraction,
     build_user_prompt,
 )
+from app.domains.deals.links import normalize_space, quote_in_text
 from app.domains.deals.models import Deal, DealOrigin, DealSource, DealStatus
 from app.domains.deals.source_repository import DealSourceRepository
 from app.integrations.llm import LlmError
@@ -122,7 +123,9 @@ class DealWatchService:
         except LlmError as exc:
             return await self._fail(source, str(exc))
 
-        created, reconfirmed = self._apply(source, extraction.deals, existing, now)
+        created, reconfirmed = self._apply(
+            source, extraction.deals, existing, now, page_text=snapshot.text
+        )
         source.content_hash = snapshot.content_hash
         source.changed_at = now
         source.last_error = ""
@@ -146,6 +149,8 @@ class DealWatchService:
         items: list[ExtractedDeal],
         existing: Sequence[Deal],
         now: datetime,
+        *,
+        page_text: str,
     ) -> tuple[int, int]:
         by_slug = {d.slug: d for d in existing}
         titles = {_norm(d.title) for d in existing}
@@ -165,12 +170,16 @@ class DealWatchService:
             if _norm(item.title) in titles:
                 continue
             titles.add(_norm(item.title))
-            self.repo.add(self._new_deal(source, item, ends_at))
+            self.repo.add(self._new_deal(source, item, ends_at, page_text))
             created += 1
         return created, reconfirmed
 
     @staticmethod
-    def _new_deal(source: DealSource, item: ExtractedDeal, ends_at: datetime | None) -> Deal:
+    def _new_deal(
+        source: DealSource, item: ExtractedDeal, ends_at: datetime | None, page_text: str
+    ) -> Deal:
+        # LLM 给的原文核对过确实在页面上才对外展示（否则定位链接会落空）；依据照旧留给审核
+        quote = item.evidence if quote_in_text(item.evidence, page_text) else ""
         return Deal(
             slug=new_deal_slug(source.platform.slug, item.deal_type),
             platform_id=source.platform_id,
@@ -181,7 +190,9 @@ class DealWatchService:
             cycle=item.cycle,
             ends_at=ends_at,
             description=item.description.strip(),
+            steps=item.steps,
             source_url=source.url,
+            source_quote=normalize_space(quote),
             in_app_only=item.in_app_only,
             status=DealStatus.PENDING,
             origin=DealOrigin.COLLECTOR,

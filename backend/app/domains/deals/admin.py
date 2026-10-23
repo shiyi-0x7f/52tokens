@@ -49,7 +49,9 @@ class DealIn(BaseModel):
     starts_at: datetime | None = None
     ends_at: datetime | None = None
     description: str = Field(default="", max_length=2000)
+    steps: list[str] = Field(default_factory=list, max_length=8)
     source_url: HttpUrl
+    source_quote: str = Field(default="", max_length=300)
     aff_url: HttpUrl | None = None
     in_app_only: bool = False
 
@@ -59,6 +61,14 @@ class DealIn(BaseModel):
         items = [v.strip() for v in value if v.strip()]
         if any(len(v) > 40 for v in items):
             raise ValueError("每项门槛不超过 40 个字")
+        return items
+
+    @field_validator("steps")
+    @classmethod
+    def _clean_steps(cls, value: list[str]) -> list[str]:
+        items = [v.strip() for v in value if v.strip()]
+        if any(len(v) > 100 for v in items):
+            raise ValueError("每个步骤不超过 100 个字")
         return items
 
 
@@ -81,7 +91,9 @@ class DealAdminOut(BaseModel):
     starts_at: datetime | None
     ends_at: datetime | None
     description: str
+    steps: list[str]
     source_url: str
+    source_quote: str
     aff_url: str | None
     in_app_only: bool
     status: DealStatus
@@ -152,7 +164,9 @@ class DealAdminService:
         deal.starts_at = data.starts_at
         deal.ends_at = data.ends_at
         deal.description = data.description.strip()
+        deal.steps = data.steps
         deal.source_url = str(data.source_url)
+        deal.source_quote = data.source_quote.strip()
         deal.aff_url = str(data.aff_url) if data.aff_url else None
         deal.in_app_only = data.in_app_only
 

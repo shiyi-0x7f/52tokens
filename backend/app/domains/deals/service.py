@@ -4,6 +4,7 @@ from datetime import UTC, datetime
 
 from app.core.errors import AppError
 from app.domains.catalog.schemas import PlatformRef
+from app.domains.deals.links import locate_url
 from app.domains.deals.models import Deal, DealStatus, DealType
 from app.domains.deals.repository import DealRepository
 from app.domains.deals.schemas import DealOut
@@ -31,8 +32,11 @@ def to_out(deal: Deal, now: datetime) -> DealOut:
         starts_at=deal.starts_at,
         ends_at=deal.ends_at,
         description=deal.description,
+        steps=list(deal.steps),
         is_promoted=deal.aff_url is not None,
         source_url=deal.source_url,
+        source_quote=deal.source_quote,
+        source_locate_url=locate_url(deal.source_url, deal.source_quote),
         in_app_only=deal.in_app_only,
         confirmed_at=deal.confirmed_at,
         is_expired=is_expired(deal, now),

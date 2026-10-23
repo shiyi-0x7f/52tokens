@@ -1,6 +1,7 @@
 ---
 import JsonLd from "../../components/JsonLd.astro";
 import PromotedLabel from "../../components/PromotedLabel.astro";
+import RelatedDeals from "../../components/RelatedDeals.astro";
 import BaseLayout from "../../layouts/BaseLayout.astro";
 import { internalGet, isNotFound } from "../../lib/api";
 import { formatDate, formatRelative } from "../../lib/format";
@@ -21,11 +22,16 @@ try {
 const typeLabel = DEAL_TYPE_LABELS[deal.deal_type];
 const title = `${deal.platform.name}${typeLabel}：${deal.title}`;
 
-// 已结束的活动页面保留（保住搜索权重），引导到同平台进行中的活动
-const [sameplatform] = await loadOr<Deal[]>([], () =>
-  internalGet<Deal[]>("/deals", { platform: deal.platform.slug, limit: 6 }),
-);
-const related = sameplatform.filter((d) => d.slug !== deal.slug);
+// 已结束的活动页面保留（保住搜索权重），引导到同平台进行中的活动；再补其他平台的同类活动
+const [[samePlatform], [sameType]] = await Promise.all([
+  loadOr<Deal[]>([], () =>
+    internalGet<Deal[]>("/deals", { platform: deal.platform.slug, limit: 6 }),
+  ),
+  loadOr<Deal[]>([], () => internalGet<Deal[]>("/deals", { deal_type: deal.deal_type, limit: 12 })),
+]);
+const related = samePlatform.filter((d) => d.slug !== deal.slug).slice(0, 5);
+const similar = sameType.filter((d) => d.platform.slug !== deal.platform.slug).slice(0, 5);
+const hasQuote = deal.source_quote !== "";
 ---
 
 <BaseLayout
@@ -103,9 +109,6 @@ const related = sameplatform.filter((d) => d.slug !== deal.slug);
     {deal.description && (
       <p class="mt-5 text-sm leading-relaxed whitespace-pre-line text-sub">{deal.description}</p>
     )}
-    {deal.in_app_only && (
-      <p class="mt-4 text-sm text-sub">这个活动需要在 {deal.platform.name} 客户端内完成。</p>
-    )}
 
     {!deal.is_expired && (
       <p class="mt-6">
@@ -122,30 +125,60 @@ const related = sameplatform.filter((d) => d.slug !== deal.slug);
     )}
   </article>
 
-  {related.length > 0 && (
-    <section class="mt-6">
-      <h2 class="mb-3 flex items-center font-black">
-        {deal.platform.name} 的其他活动
-        <a
-          href={`/platforms/${deal.platform.slug}`}
-          class="ml-auto text-xs font-normal text-mute no-underline"
-        >
-          全部 →
-        </a>
-      </h2>
-      <ul class="rounded-(--radius-card) bg-card">
-        {related.map((d) => (
-          <li class="border-b border-line last:border-b-0">
-            <a
-              href={`/deals/${d.slug}`}
-              class="flex justify-between px-4 py-3 no-underline hover:bg-hover"
-            >
-              <span>{d.title}</span>
-              <span class="font-mono font-bold">{d.reward_text}</span>
-            </a>
+  <section class="mt-6 rounded-(--radius-card) bg-card p-6" aria-labelledby="howto-title">
+    <h2 id="howto-title" class="font-black">
+      怎么参与
+    </h2>
+    {deal.steps.length > 0 ? (
+      <ol class="mt-3 space-y-2 text-sm">
+        {deal.steps.map((step, i) => (
+          <li class="flex gap-3">
+            <span class="grid size-6 shrink-0 place-items-center rounded-full bg-hot font-mono text-xs font-bold text-white">
+              {i + 1}
+            </span>
+            <span class="pt-0.5 leading-relaxed">{step}</span>
           </li>
         ))}
-      </ul>
-    </section>
-  )}
+      </ol>
+    ) : (
+      <p class="mt-3 text-sm leading-relaxed text-sub">
+        打开 {deal.platform.name} 的官方页面，按页面说明参与。
+        {hasQuote && "下方附有官网原文，可以直接定位到活动所在的位置。"}
+      </p>
+    )}
+    {deal.in_app_only && (
+      <p class="mt-3 text-sm text-sub">
+        这个活动需要在 {deal.platform.name} 客户端或 App 内完成，网页上可能看不到入口。
+      </p>
+    )}
+
+    {hasQuote && (
+      <figure class="mt-5">
+        <figcaption class="mb-2 text-xs text-mute">官网原文</figcaption>
+        <blockquote class="border-l-4 border-hot bg-bg px-4 py-3 text-sm leading-relaxed">
+          {deal.source_quote}
+        </blockquote>
+      </figure>
+    )}
+    <p class="mt-4 flex flex-wrap items-center gap-x-4 gap-y-1 text-sm">
+      <a href={deal.source_locate_url} rel="nofollow noopener" target="_blank" class="text-hot">
+        {hasQuote ? "在官网中定位这段话 ↗" : "打开官方页面 ↗"}
+      </a>
+      {hasQuote && (
+        <span class="text-xs text-mute">Chrome、Edge、Safari 打开后会自动滚动到这段话并高亮</span>
+      )}
+    </p>
+  </section>
+
+  <RelatedDeals
+    title={`${deal.platform.name} 的其他活动`}
+    deals={related}
+    moreHref={`/platforms/${deal.platform.slug}`}
+  />
+  <RelatedDeals
+    title={`其他平台的${typeLabel}活动`}
+    deals={similar}
+    moreHref={`/deals?type=${deal.deal_type}`}
+    showPlatform
+  />
 </BaseLayout>

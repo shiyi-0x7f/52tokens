@@ -32,7 +32,10 @@ interface FormValues {
   starts_at?: Dayjs | null;
   ends_at?: Dayjs | null;
   description?: string;
+  /** 每行一个步骤 */
+  steps_text?: string;
   source_url: string;
+  source_quote?: string;
   aff_url?: string;
   in_app_only: boolean;
 }
@@ -54,7 +57,9 @@ function toValues(deal: Deal | null): Partial<FormValues> {
     starts_at: deal.starts_at ? dayjs(deal.starts_at) : null,
     ends_at: deal.ends_at ? dayjs(deal.ends_at) : null,
     description: deal.description,
+    steps_text: deal.steps.join("\n"),
     source_url: deal.source_url,
+    source_quote: deal.source_quote,
     aff_url: deal.aff_url ?? "",
     in_app_only: deal.in_app_only,
   };
@@ -73,7 +78,12 @@ function toInput(values: FormValues): DealInput {
     starts_at: values.starts_at ? values.starts_at.toISOString() : null,
     ends_at: values.ends_at ? values.ends_at.toISOString() : null,
     description: values.description ?? "",
+    steps: (values.steps_text ?? "")
+      .split("\n")
+      .map((s) => s.trim())
+      .filter(Boolean),
     source_url: values.source_url.trim(),
+    source_quote: values.source_quote?.trim() ?? "",
     aff_url: values.aff_url?.trim() || null,
     in_app_only: values.in_app_only,
   };
@@ -198,6 +208,36 @@ export function DealFormDrawer({ open, deal, onClose }: Props) {
           rules={[{ required: true, type: "url", message: "请填写活动所在的官网链接" }]}
         >
           <Input placeholder="https://" />
+        </Form.Item>
+        <Form.Item
+          name="source_quote"
+          label="官网原文"
+          rules={[{ max: 300 }]}
+          extra="从官方页面逐字复制一句话（别改写）。页面会生成定位链接，用户打开官网后自动滚到这句话并高亮"
+        >
+          <Input.TextArea rows={2} maxLength={300} showCount placeholder="可留空" />
+        </Form.Item>
+        <Form.Item
+          name="steps_text"
+          label="参与步骤"
+          extra="每行一步，按先后顺序，最多 8 步；例如：登录控制台 → 进入费用中心 → 领取资源包"
+          rules={[
+            {
+              validator: (_, value?: string) => {
+                const lines = (value ?? "").split("\n").filter((s) => s.trim());
+                if (lines.length > 8) return Promise.reject(new Error("最多 8 步"));
+                if (lines.some((s) => s.trim().length > 100)) {
+                  return Promise.reject(new Error("每步不超过 100 字"));
+                }
+                return Promise.resolve();
+              },
+            },
+          ]}
+        >
+          <Input.TextArea
+            rows={4}
+            placeholder={"打开 Trae 客户端\n点击右上角头像\n点「每日签到」"}
+          />
         </Form.Item>
         <Form.Item
           name="aff_url"

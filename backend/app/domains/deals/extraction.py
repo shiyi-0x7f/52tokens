@@ -21,11 +21,13 @@ SYSTEM_PROMPT = f"""你是 AI 平台优惠活动信息抽取器。
 - cycle：{" / ".join(c.value for c in DealCycle)} 之一（一次性 / 每日 / 每月 / 长期）
 - requirements：参与门槛列表，如「需实名」「需绑定信用卡」，每项不超过 15 字，没有就给空列表
 - ends_at：正文写明的截止日期，格式 YYYY-MM-DD，没写就是 null，不要猜
-- description：一两句话说明怎么参与，不超过 150 字
+- description：一两句话说明这个活动是什么、适合谁，不超过 150 字
+- steps：参与步骤，按先后顺序，每步不超过 40 字，如「登录控制台」「进入费用中心 → 领取资源包」；
+  只写正文里能看出来的步骤，看不出来就给空列表
 - in_app_only：只能在 App 或客户端内参与时为 true
 - matches_existing：如果就是已收录活动中的某一条（同一项福利，即使措辞不同），填它的 slug，否则 null
 - confidence：0 到 1，表示这条信息在正文中有多明确、多确定是当前有效的活动
-- evidence：支撑这条活动的正文原句，不超过 120 字
+- evidence：从正文中**逐字复制**支撑这条活动的一句话（不改写、不拼接、不加省略号），不超过 120 字
 
 规则：
 - 只依据正文，不要用自己的知识补充或推测数字；正文没写的数字不要编
@@ -45,6 +47,7 @@ class ExtractedDeal(BaseModel):
     requirements: list[str] = Field(default_factory=list)
     ends_at: date | None = None
     description: str = Field(default="", max_length=2000)
+    steps: list[str] = Field(default_factory=list)
     in_app_only: bool = False
     matches_existing: str | None = None
     confidence: float = Field(ge=0, le=1)
@@ -54,6 +57,11 @@ class ExtractedDeal(BaseModel):
     @classmethod
     def _clean_requirements(cls, value: list[str]) -> list[str]:
         return [v.strip()[:40] for v in value if v.strip()][:8]
+
+    @field_validator("steps")
+    @classmethod
+    def _clean_steps(cls, value: list[str]) -> list[str]:
+        return [v.strip()[:100] for v in value if v.strip()][:8]
 
     @field_validator("evidence")
     @classmethod

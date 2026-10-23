@@ -1,0 +1,42 @@
+---
+import type { Deal } from "../lib/types";
+
+interface Props {
+  title: string;
+  deals: Deal[];
+  /** 「全部 →」链接，可选 */
+  moreHref?: string | undefined;
+  /** 每行是否带平台名（跨平台列表需要） */
+  showPlatform?: boolean;
+}
+const { title, deals, moreHref, showPlatform = false } = Astro.props;
+---
+
+{deals.length > 0 && (
+  <section class="mt-6">
+    <h2 class="mb-3 flex items-center font-black">
+      {title}
+      {moreHref && (
+        <a href={moreHref} class="ml-auto text-xs font-normal text-mute no-underline">
+          全部 →
+        </a>
+      )}
+    </h2>
+    <ul class="rounded-(--radius-card) bg-card">
+      {deals.map((d) => (
+        <li class="border-b border-line last:border-b-0">
+          <a
+            href={`/deals/${d.slug}`}
+            class="flex justify-between gap-3 px-4 py-3 no-underline hover:bg-hover"
+          >
+            <span class="min-w-0">
+              {showPlatform && <span class="text-mute">{d.platform.name} · </span>}
+              {d.title}
+            </span>
+            <span class="font-mono font-bold whitespace-nowrap">{d.reward_text}</span>
+          </a>
+        </li>
+      ))}
+    </ul>
+  </section>
+)}

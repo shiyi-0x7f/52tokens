@@ -51,7 +51,9 @@ export interface Deal {
   starts_at: string | null;
   ends_at: string | null;
   description: string;
+  steps: string[];
   source_url: string;
+  source_quote: string;
   aff_url: string | null;
   in_app_only: boolean;
   status: DealStatus;
@@ -81,7 +83,9 @@ export interface DealInput {
   starts_at?: string | null;
   ends_at?: string | null;
   description: string;
+  steps: string[];
   source_url: string;
+  source_quote: string;
   aff_url?: string | null;
   in_app_only: boolean;
 }
