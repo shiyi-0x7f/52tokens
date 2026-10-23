@@ -5,6 +5,7 @@ os.environ["APP_ENV"] = "test"
 os.environ["INTERNAL_API_TOKEN"] = "test-internal-token"
 
 from collections.abc import AsyncIterator
+from datetime import UTC, datetime
 
 import httpx
 import pytest
@@ -18,14 +19,20 @@ from sqlalchemy.ext.asyncio import (
 )
 from sqlalchemy.pool import NullPool
 
+from app.api.deps import ADMIN_CSRF_HEADER, ADMIN_CSRF_VALUE
 from app.core.config import REPO_ROOT
+from app.core.kv import get_store
 from app.db import models as _registered_models  # noqa: F401  注册全部模型
 from app.db.base import Base
 from app.db.session import get_session
+from app.domains.accounts.repository import UserRepository
+from app.domains.accounts.sessions import session_key
 from app.main import create_app
+from tests.fakes import MemoryStore
 
 INTERNAL_TOKEN = "test-internal-token"
 AUTH = {"X-Internal-Token": INTERNAL_TOKEN}
+CSRF = {ADMIN_CSRF_HEADER: ADMIN_CSRF_VALUE}
 
 
 def _test_database_url() -> str:
@@ -83,3 +90,40 @@ async def db_client(app: FastAPI, db_engine: AsyncEngine) -> AsyncIterator[httpx
     app.dependency_overrides[get_session] = override
     async for c in _client_for(app):
         yield c
+
+
+# ---------- 后台会话 ----------
+
+
+@pytest.fixture
+def store(app: FastAPI) -> MemoryStore:
+    store = MemoryStore()
+    app.dependency_overrides[get_store] = lambda: store
+    return store
+
+
+async def login(
+    session: AsyncSession, store: MemoryStore, client: httpx.AsyncClient, *, admin: bool
+) -> int:
+    user = await UserRepository(session).upsert_from_scc(
+        scc_user_id=900 + int(admin),
+        nickname="管理员" if admin else "普通用户",
+        email=None,
+        avatar_url=None,
+        auth_provider="google",
+        is_admin=admin,
+        now=datetime.now(UTC),
+    )
+    token = f"token-{user.id}"
+    await store.set(session_key(token), str(user.id), 3600)
+    client.cookies.set("t52_session", token)
+    return user.id
+
+
+@pytest.fixture
+async def admin(
+    db_session: AsyncSession, db_client: httpx.AsyncClient, store: MemoryStore
+) -> AsyncIterator[httpx.AsyncClient]:
+    """已登录管理员的接口客户端（写请求另需带 CSRF 头）。"""
+    await login(db_session, store, db_client, admin=True)
+    yield db_client

@@ -20,6 +20,12 @@ class MemoryStore:
     async def set(self, key: str, value: str, ttl_seconds: int) -> None:
         self.data[key] = value
 
+    async def set_if_absent(self, key: str, value: str, ttl_seconds: int) -> bool:
+        if key in self.data:
+            return False
+        self.data[key] = value
+        return True
+
     async def get(self, key: str) -> str | None:
         return self.data.get(key)
 

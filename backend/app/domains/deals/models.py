@@ -36,6 +36,33 @@ class DealStatus(StrEnum):
     REJECTED = "rejected"
 
 
+class DealOrigin(StrEnum):
+    MANUAL = "manual"  # 后台人工录入
+    COLLECTOR = "collector"  # 页面监测 + LLM 抽取
+
+
+class DealSource(TimestampMixin, Base):
+    """监测来源：某平台要盯的一个官方页面（活动页、免费额度文档、公告等）。"""
+
+    __tablename__ = "deal_sources"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    platform_id: Mapped[int] = mapped_column(
+        ForeignKey("platforms.id", ondelete="CASCADE"), index=True
+    )
+    url: Mapped[str] = mapped_column(String(500), unique=True)
+    label: Mapped[str] = mapped_column(String(60), default="", server_default="")
+    enabled: Mapped[bool] = mapped_column(Boolean, default=True, server_default="true")
+    # 上次成功抽取时的正文 hash：正文没变就不再调用 LLM
+    content_hash: Mapped[str | None] = mapped_column(String(64))
+    checked_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    changed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    last_error: Mapped[str] = mapped_column(String(300), default="", server_default="")
+    fail_count: Mapped[int] = mapped_column(Integer, default=0, server_default="0")
+
+    platform: Mapped[Platform] = relationship()
+
+
 class Deal(TimestampMixin, Base):
     __tablename__ = "deals"
 
@@ -65,5 +92,14 @@ class Deal(TimestampMixin, Base):
     reviewed_by_id: Mapped[int | None] = mapped_column(ForeignKey("users.id", ondelete="SET NULL"))
     reviewed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     reject_reason: Mapped[str] = mapped_column(String(200), default="", server_default="")
+    # 采集来源：采集到的活动记录来源页、LLM 置信度和原文依据，供审核时对照
+    origin: Mapped[DealOrigin] = mapped_column(
+        str_enum(DealOrigin), default=DealOrigin.MANUAL, server_default=DealOrigin.MANUAL.value
+    )
+    source_id: Mapped[int | None] = mapped_column(
+        ForeignKey("deal_sources.id", ondelete="SET NULL"), index=True
+    )
+    extract_confidence: Mapped[Decimal | None] = mapped_column(Numeric(3, 2))
+    extract_note: Mapped[str] = mapped_column(String(300), default="", server_default="")
 
     platform: Mapped[Platform] = relationship()

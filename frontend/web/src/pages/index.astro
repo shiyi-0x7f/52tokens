@@ -9,8 +9,11 @@ import { CATEGORY_LABELS, CATEGORY_ORDER, DEAL_TYPE_LABELS } from "../lib/labels
 import { loadOr } from "../lib/load";
 import type { Currency, Deal, DealType, ModelSummary, Platform } from "../lib/types";
 
+// 首页热榜只放前几条，完整列表在 /deals
+const HOT_LIST_SIZE = 10;
+
 const [[deals, dealsOk], [models], [platforms]] = await Promise.all([
-  loadOr<Deal[]>([], () => internalGet<Deal[]>("/deals", { limit: 20 })),
+  loadOr<Deal[]>([], () => internalGet<Deal[]>("/deals", { limit: HOT_LIST_SIZE })),
   loadOr<ModelSummary[]>([], () => internalGet<ModelSummary[]>("/models")),
   loadOr<Platform[]>([], () => internalGet<Platform[]>("/platforms")),
 ]);
@@ -91,6 +94,12 @@ const platformCounts = CATEGORY_ORDER.map((c) => ({
           {deals.map((deal, i) => (
             <DealRow deal={deal} rank={deal.is_expired ? undefined : i + 1} />
           ))}
+          <a
+            href="/deals"
+            class="block px-4 py-3 text-center text-sm font-bold text-hot no-underline hover:bg-hover"
+          >
+            查看全部活动 →
+          </a>
         </div>
       )}
       <p class="mt-2 text-xs text-mute">

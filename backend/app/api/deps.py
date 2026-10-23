@@ -4,12 +4,13 @@ from typing import Annotated, cast
 
 import httpx
 from fastapi import Depends, Request
-from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
+from app.collectors.page_watch import PageWatchCollector
 from app.core.config import Settings, get_settings
 from app.core.errors import AppError
 from app.core.kv import KeyValueStore, get_store
-from app.db.session import get_session
+from app.db.session import get_session, get_sessionmaker
 from app.domains.accounts.repository import UserRepository
 from app.domains.accounts.schemas import UserOut
 from app.domains.accounts.service import AuthService
@@ -20,8 +21,13 @@ from app.domains.catalog.service import CatalogService
 from app.domains.deals.admin import DealAdminService
 from app.domains.deals.repository import DealRepository
 from app.domains.deals.service import DealService
+from app.domains.deals.source_repository import DealSourceRepository
+from app.domains.deals.sources_admin import SourceAdminService
+from app.domains.deals.watch import DealWatchService
+from app.domains.deals.watch_batch import BatchCheckService
 from app.domains.outbound.repository import OutboundRepository
 from app.domains.outbound.service import OutboundService
+from app.integrations.llm import llm_from_settings
 from app.integrations.scc import SccClient
 
 SessionDep = Annotated[AsyncSession, Depends(get_session)]
@@ -120,9 +126,27 @@ def get_deal_admin_service(session: SessionDep) -> DealAdminService:
     return DealAdminService(DealRepository(session))
 
 
+def get_source_admin_service(
+    session: SessionDep, settings: SettingsDep, http: HttpDep
+) -> SourceAdminService:
+    repo = DealSourceRepository(session)
+    watch = DealWatchService(repo, PageWatchCollector(http), llm_from_settings(http, settings))
+    return SourceAdminService(repo, watch)
+
+
 def get_price_admin_service(session: SessionDep) -> PriceAdminService:
     return PriceAdminService(CatalogRepository(session))
 
 
 DealAdminServiceDep = Annotated[DealAdminService, Depends(get_deal_admin_service)]
 PriceAdminServiceDep = Annotated[PriceAdminService, Depends(get_price_admin_service)]
+SourceAdminServiceDep = Annotated[SourceAdminService, Depends(get_source_admin_service)]
+
+
+def get_batch_check_service(store: StoreDep) -> BatchCheckService:
+    return BatchCheckService(store)
+
+
+BatchCheckServiceDep = Annotated[BatchCheckService, Depends(get_batch_check_service)]
+# 后台任务在请求结束后才执行，不能用请求的会话，要自己开
+SessionMakerDep = Annotated[async_sessionmaker[AsyncSession], Depends(get_sessionmaker)]

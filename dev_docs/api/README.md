@@ -156,7 +156,17 @@ Google / SCC 不可达 → `502`；Google 或 SCC 凭据未配置 → `503`。
 | `POST /api/admin/prices` | 按（平台, 模型）新建或更新价格；保存即视为已核实并发布；模型不存在时需填 `model_name` 和 `family` |
 | `POST /api/admin/prices/{id}/hide` / `show` | 隐藏 / 恢复价格 |
 
+| `GET /api/admin/sources?platform_id=&page=&page_size=` | 活动监测来源列表 |
+| `POST /api/admin/sources` | 添加来源 `{ platform_id, url, label, enabled }`；同一 URL 只能登记一次（`409`） |
+| `PUT /api/admin/sources/{id}` | 编辑来源；改了 URL 或平台会清空正文 hash，下次检查重新抽取 |
+| `DELETE /api/admin/sources/{id}` | 删除来源；由它采集到的活动保留（`source_id` 置空） |
+| `POST /api/admin/sources/check-all` | 全部检查：后台逐个检查所有启用的来源，立即返回 `{ running, last }`；已有一批在跑（含 worker 定时检查）时 `409` |
+| `GET /api/admin/sources/check-all` | 批量检查状态：`running` 为 `{ started_at, total, done }` 或 `null`；`last` 为上一批汇总 `{ started_at, finished_at, checked, created, reconfirmed, failed }` 或 `null` |
+| `POST /api/admin/sources/{id}/check` | 立即检查一次，同步返回 `{ source_id, status, created, reconfirmed, error }`，`status` 为 `failed` / `unchanged` / `extracted`；含 LLM 调用，可能耗时数十秒 |
+
 发布、驳回、下线会记录操作人（`reviewed_by_id`）和时间（`reviewed_at`）。
+
+活动详情和列表另有采集字段：`origin`（`manual` 人工录入 / `collector` 自动采集）、`extract_confidence`（LLM 置信度 0–1，人工录入为 `null`）、`extract_note`（抽取依据的原文）。
 
 ## 数据来源
 
@@ -164,12 +174,21 @@ Google / SCC 不可达 → `502`；Google 或 SCC 凭据未配置 → `503`。
 
 首批数据以 YAML 写在 `data/seed/`，`cd backend && uv run python -m app.cli.seed` 幂等导入（按 slug upsert）。
 价格和活动必须带 `confirmed_at` 并设为 `active` 才会对外展示。
+活动监测来源在 `data/seed/deal_sources.yaml`，按 URL upsert，只覆盖平台、备注和启用状态，不覆盖检查状态。
 
 ### 自动采集
 
 | 来源 | 命令 | 定时 | 说明 |
 | --- | --- | --- | --- |
 | OpenRouter 公开模型列表 | `uv run python -m app.cli.collect openrouter` | worker 每 6 小时（0/6/12/18 点 07 分），启动时先跑一次 | 只收白名单厂商的纯文本模型；跳过 `:batch` 批处理计价、`~` 别名、动态计价；`:free` 版与付费版合并 |
+
+| 活动监测来源（后台「监测来源」登记的官方页面） | `uv run python -m app.cli.collect deals` | worker 每 6 小时（1/7/13/19 点 17 分），启动时不跑 | 只抓静态 HTML，trafilatura 提取正文；正文 hash 没变不调用 LLM；需配置 `SILICONFLOW_API_KEY`，未配置时记为检查失败并保留待抽取状态 |
+
+活动采集规则：
+- LLM（`LLM_EXTRACT_MODEL`）只依据正文抽取活动字段、置信度和原文依据，并判断是否是该平台已收录的某条活动。
+- 新活动一律进「待审核」（`origin=collector`），置信度低于 0.3 的丢弃，截止日期已过的丢弃，与已收录活动标题相同（忽略空格大小写）的跳过。
+- 匹配到已发布活动且置信度 ≥ 0.85 时只刷新 `confirmed_at`，不改任何字段；匹配到已驳回的活动不会重新提出。
+- 抓取 / 抽取失败只记在来源上（`last_error`、`fail_count`），不动已有活动。
 
 入库规则：模型按 slug、价格按（平台, 模型）upsert，`confirmed_at` 记为本次采集时间。已有模型的发布状态、系列、简介不覆盖（可能被人工调整过）；采集失败或某模型不在列表里时**不删除、不下架**，新鲜度由 `confirmed_at` 体现。
 

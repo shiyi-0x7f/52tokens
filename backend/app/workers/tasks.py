@@ -1,16 +1,24 @@
-"""worker 任务。CLI（app.cli.collect）和定时任务调用的是同一组函数。"""
+"""worker 任务。CLI（app.cli.collect）、定时任务和后台「全部检查」调用的是同一组函数。"""
 
 from typing import Any
 
 import httpx
 from loguru import logger
+from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
 from app.collectors.base import SourceConfig
 from app.collectors.openrouter import MODELS_URL, OpenRouterModelsCollector
+from app.collectors.page_watch import PageWatchCollector
 from app.collectors.registry import get_collector_class
+from app.core.config import get_settings
+from app.core.kv import get_store
 from app.db.session import get_sessionmaker
 from app.domains.catalog.ingest import CatalogIngestService
 from app.domains.catalog.repository import CatalogRepository
+from app.domains.deals.source_repository import DealSourceRepository
+from app.domains.deals.watch import DealWatchService
+from app.domains.deals.watch_batch import BatchCheckService, BatchSummary
+from app.integrations.llm import llm_from_settings
 
 
 async def run_collector(ctx: dict[str, Any], kind: str, source: dict[str, Any]) -> dict[str, Any]:
@@ -37,3 +45,24 @@ async def sync_openrouter(ctx: dict[str, Any]) -> dict[str, Any]:
         service = CatalogIngestService(CatalogRepository(session))
         count = await service.ingest_openrouter(result.items, result.fetched_at)
     return {"ingested": count, "errors": []}
+
+
+async def run_watch_batch(
+    sessions: async_sessionmaker[AsyncSession], http: httpx.AsyncClient, batch: BatchCheckService
+) -> BatchSummary:
+    """已抢到批量检查锁后执行一批（定时任务和后台「全部检查」共用），自己开数据库会话。"""
+    async with sessions() as session:
+        llm = llm_from_settings(http, get_settings())
+        watch = DealWatchService(DealSourceRepository(session), PageWatchCollector(http), llm)
+        return await batch.run(watch)
+
+
+async def watch_deal_sources(ctx: dict[str, Any]) -> dict[str, Any]:
+    """检查所有启用的活动监测来源，正文有变化才调用 LLM 抽取。已有一批在跑时跳过。"""
+    batch = BatchCheckService(get_store())
+    if not await batch.acquire():
+        logger.info("已有一批活动来源检查在进行，本次跳过")
+        return {"skipped": True, "errors": []}
+    summary = await run_watch_batch(get_sessionmaker(), ctx["http"], batch)
+    # 单个来源的失败原因记在来源上（后台可见），这里只给汇总
+    return summary.model_dump(mode="json") | {"errors": []}

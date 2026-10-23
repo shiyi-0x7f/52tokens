@@ -14,7 +14,7 @@ from app.domains.catalog.models import (
     PlatformCategory,
     PublishStatus,
 )
-from app.domains.deals.models import Deal, DealCycle, DealStatus, DealType
+from app.domains.deals.models import Deal, DealCycle, DealSource, DealStatus, DealType
 
 NOW = datetime.now(UTC)
 
@@ -74,6 +74,18 @@ async def deal(session: AsyncSession, plat: Platform, slug: str, **kw: Any) -> D
         source_url=kw.pop("source_url", f"{plat.website_url}/events"),
         confirmed_at=kw.pop("confirmed_at", NOW),
         status=kw.pop("status", DealStatus.ACTIVE),
+        **kw,
+    )
+    session.add(obj)
+    await session.flush()
+    return obj
+
+
+async def deal_source(session: AsyncSession, plat: Platform, **kw: Any) -> DealSource:
+    obj = DealSource(
+        platform_id=plat.id,
+        url=kw.pop("url", f"{plat.website_url}/events"),
+        label=kw.pop("label", "活动页"),
         **kw,
     )
     session.add(obj)

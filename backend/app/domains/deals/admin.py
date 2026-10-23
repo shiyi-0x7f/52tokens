@@ -16,10 +16,15 @@ from pydantic import BaseModel, ConfigDict, Field, HttpUrl, field_validator
 from app.core.errors import AppError
 from app.domains.catalog.models import Platform
 from app.domains.common import Page, PageQuery
-from app.domains.deals.models import Deal, DealCycle, DealStatus, DealType
+from app.domains.deals.models import Deal, DealCycle, DealOrigin, DealStatus, DealType
 from app.domains.deals.repository import DealRepository
 
 SLUG_PATTERN = r"^[a-z0-9][a-z0-9-]{1,118}[a-z0-9]$"
+
+
+def new_deal_slug(platform_slug: str, deal_type: DealType) -> str:
+    """自动生成的 slug：平台 + 类型 + 随机后缀。"""
+    return f"{platform_slug}-{deal_type.value.replace('_', '-')}-{secrets.token_hex(3)}"
 
 
 class PlatformBrief(BaseModel):
@@ -83,6 +88,9 @@ class DealAdminOut(BaseModel):
     confirmed_at: datetime | None
     reviewed_at: datetime | None
     reject_reason: str
+    origin: DealOrigin
+    extract_confidence: Decimal | None
+    extract_note: str
     created_at: datetime
     updated_at: datetime
 
@@ -150,8 +158,7 @@ class DealAdminService:
 
     async def create(self, data: DealIn) -> DealAdminOut:
         platform = await self._platform(data.platform_id)
-        kind = data.deal_type.value.replace("_", "-")
-        slug = data.slug or f"{platform.slug}-{kind}-{secrets.token_hex(3)}"
+        slug = data.slug or new_deal_slug(platform.slug, data.deal_type)
         if await self.repo.slug_taken(slug):
             raise AppError("CONFLICT", "slug 已被占用")
         deal = Deal(slug=slug, status=DealStatus.PENDING)

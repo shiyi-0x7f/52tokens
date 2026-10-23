@@ -1,7 +1,20 @@
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
 import { api } from "./client";
-import type { Deal, DealInput, DealStatus, Me, Page, Platform, Price, PriceInput } from "./types";
+import type {
+  BatchStatus,
+  CheckReport,
+  Deal,
+  DealInput,
+  DealStatus,
+  Me,
+  Page,
+  Platform,
+  Price,
+  PriceInput,
+  Source,
+  SourceInput,
+} from "./types";
 
 export interface DealQuery {
   status?: DealStatus | undefined;
@@ -92,6 +105,67 @@ export function useSavePrice() {
   return useMutation({
     mutationFn: (input: PriceInput) => api<Price>("POST", "/prices", { body: input }),
     onSuccess: () => client.invalidateQueries({ queryKey: ["prices"] }),
+  });
+}
+
+export interface SourceQuery {
+  platform_id?: number | undefined;
+  page: number;
+  page_size: number;
+}
+
+export const useSources = (query: SourceQuery) =>
+  useQuery({
+    queryKey: ["sources", query],
+    queryFn: () => api<Page<Source>>("GET", "/sources", { params: { ...query } }),
+    placeholderData: keepPreviousData,
+  });
+
+export function useSaveSource() {
+  const client = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, input }: { id?: number | undefined; input: SourceInput }) =>
+      id === undefined
+        ? api<Source>("POST", "/sources", { body: input })
+        : api<Source>("PUT", `/sources/${id}`, { body: input }),
+    onSuccess: () => client.invalidateQueries({ queryKey: ["sources"] }),
+  });
+}
+
+export function useDeleteSource() {
+  const client = useQueryClient();
+  return useMutation({
+    mutationFn: (id: number) => api<null>("DELETE", `/sources/${id}`),
+    onSuccess: () => client.invalidateQueries({ queryKey: ["sources"] }),
+  });
+}
+
+/** 立即检查：可能新增待审核活动，活动列表一并刷新 */
+export function useCheckSource() {
+  const client = useQueryClient();
+  return useMutation({
+    mutationFn: (id: number) => api<CheckReport>("POST", `/sources/${id}/check`),
+    onSettled: () =>
+      Promise.all([
+        client.invalidateQueries({ queryKey: ["sources"] }),
+        client.invalidateQueries({ queryKey: ["deals"] }),
+      ]),
+  });
+}
+
+/** 批量检查状态：跑的时候每 2 秒刷新一次进度，跑完停止轮询 */
+export const useBatchStatus = () =>
+  useQuery({
+    queryKey: ["sources", "check-all"],
+    queryFn: () => api<BatchStatus>("GET", "/sources/check-all"),
+    refetchInterval: (query) => (query.state.data?.running ? 2000 : false),
+  });
+
+export function useStartBatch() {
+  const client = useQueryClient();
+  return useMutation({
+    mutationFn: () => api<BatchStatus>("POST", "/sources/check-all"),
+    onSuccess: (status) => client.setQueryData(["sources", "check-all"], status),
   });
 }
 

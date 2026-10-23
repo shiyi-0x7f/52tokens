@@ -1,4 +1,4 @@
-import { DollarOutlined, GiftOutlined } from "@ant-design/icons";
+import { DollarOutlined, GiftOutlined, RadarChartOutlined } from "@ant-design/icons";
 import { Avatar, Button, Layout, Menu, Result, Space, Spin, Typography } from "antd";
 import { NavLink, Outlet, useLocation } from "react-router";
 
@@ -12,6 +12,11 @@ const LOGIN_URL = WEB_ORIGIN ? `${WEB_ORIGIN}/login` : "/login?next=%2Fadmin%2F"
 const MENU = [
   { key: "/deals", icon: <GiftOutlined />, label: <NavLink to="/deals">活动审核</NavLink> },
   { key: "/prices", icon: <DollarOutlined />, label: <NavLink to="/prices">价格录入</NavLink> },
+  {
+    key: "/sources",
+    icon: <RadarChartOutlined />,
+    label: <NavLink to="/sources">监测来源</NavLink>,
+  },
 ];
 
 function AuthGate({ status }: { status: number }) {
