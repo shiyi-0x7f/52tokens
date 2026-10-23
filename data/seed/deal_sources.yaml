@@ -1,0 +1,93 @@
+# 活动监测来源：每个平台要盯的官方页面（worker 每 6 小时检查，正文变化才交给 LLM 抽取）。
+# 2026-10-23 逐个用采集器实抓过：都是能拿到正文的静态页；标「未验证」的是本机网络连不上
+# （ReadError），生产服务器在海外，以后台「监测来源」页的检查结果为准。
+# 前端渲染、拿不到正文的暂未收录：魔搭 ModelScope、CodeBuddy、通义灵码、讯飞星火（需要 Playwright）。
+# GitHub Models 官方文档写明已于 2026-07-30 停服，不再监测。
+# 导入：cd backend && uv run python -m app.cli.seed（按 URL upsert，不覆盖检查状态）
+
+# ---- 国内大模型 API ----
+- platform: bailian
+  url: https://help.aliyun.com/zh/model-studio/new-free-quota
+  label: 新人免费额度文档
+- platform: bailian
+  url: https://www.aliyun.com/product/bailian
+  label: 产品页（限时折扣）
+- platform: volcengine-ark
+  url: https://www.volcengine.com/docs/82379/1399514
+  label: 免费推理额度文档
+- platform: volcengine-ark
+  url: https://www.volcengine.com/docs/82379/1544106
+  label: 模型价格文档
+- platform: zhipu
+  url: https://docs.bigmodel.cn/cn/guide/models/free/glm-4.7-flash
+  label: 免费模型 GLM-4.7-Flash
+- platform: moonshot
+  url: https://platform.moonshot.cn/docs/pricing/chat
+  label: 模型定价
+- platform: deepseek
+  url: https://api-docs.deepseek.com/zh-cn/quick_start/pricing
+  label: 模型与价格（含错峰优惠）
+- platform: siliconflow
+  url: https://siliconflow.cn/pricing
+  label: 模型价格中心
+- platform: tencent-hunyuan
+  url: https://cloud.tencent.com/document/product/1729/97731
+  label: 计费与免费额度文档
+- platform: baidu-qianfan
+  url: https://cloud.baidu.com/doc/qianfan-docs/s/Jm8r1826a
+  label: 价格文档
+- platform: minimax
+  url: https://platform.minimaxi.com/document/Price
+  label: 价格页
+- platform: stepfun
+  url: https://platform.stepfun.com/docs/zh/pricing/details
+  label: 计费详情
+
+# ---- 海外大模型 API ----
+- platform: google-ai-studio
+  url: https://ai.google.dev/gemini-api/docs/rate-limits
+  label: 免费层速率限制（未验证）
+- platform: openrouter
+  url: https://openrouter.ai/docs/api-reference/limits
+  label: 免费模型限额
+- platform: groq
+  url: https://console.groq.com/docs/rate-limits
+  label: 免费层速率限制
+- platform: mistral
+  url: https://mistral.ai/pricing
+  label: 价格页（未验证）
+- platform: cerebras
+  url: https://www.cerebras.ai/pricing
+  label: 价格页
+- platform: cloudflare-workers-ai
+  url: https://developers.cloudflare.com/workers-ai/platform/pricing/
+  label: 价格与每日免费额度
+- platform: cohere
+  url: https://docs.cohere.com/docs/rate-limits
+  label: 试用 Key 限额
+- platform: huggingface
+  url: https://huggingface.co/docs/inference-providers/pricing
+  label: Inference Providers 价格（未验证）
+
+# ---- AI 编程工具 ----
+- platform: trae
+  url: https://www.trae.ai/pricing
+  label: 国际版价格
+- platform: trae
+  url: https://www.trae.cn/pricing
+  label: 国内版价格与积分
+- platform: qoder
+  url: https://docs.qoder.com/zh/account/pricing
+  label: 方案与 Credits 文档
+- platform: cursor
+  url: https://cursor.com/pricing
+  label: 价格页
+- platform: github-copilot
+  url: https://docs.github.com/en/copilot/get-started/plans
+  label: 方案说明（含免费 / 学生）
+- platform: kiro
+  url: https://kiro.dev/pricing/
+  label: 价格页
+- platform: windsurf
+  url: https://windsurf.com/pricing
+  label: 价格页

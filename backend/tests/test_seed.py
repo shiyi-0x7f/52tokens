@@ -8,7 +8,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.cli.seed import DEFAULT_SEED_DIR, seed
 from app.domains.catalog.models import ModelPrice, Platform, PublishStatus
-from app.domains.deals.models import Deal
+from app.domains.deals.models import Deal, DealSource
 
 PLATFORMS = """
 - slug: bailian
@@ -58,7 +58,7 @@ async def _count(session: AsyncSession, model: type) -> int:
 async def test_seed_is_idempotent_and_updates(tmp_path: Path, db_session: AsyncSession) -> None:
     seed_dir = _write(tmp_path, platforms=PLATFORMS, models=MODELS, prices=PRICES, deals=DEALS)
     first = await seed(db_session, seed_dir)
-    assert first == {"platforms": 1, "models": 1, "prices": 1, "deals": 1}
+    assert first == {"platforms": 1, "models": 1, "prices": 1, "deals": 1, "deal_sources": 0}
 
     await seed(db_session, seed_dir)
     assert await _count(db_session, Platform) == 1
@@ -78,6 +78,34 @@ async def test_deal_without_status_stays_pending(tmp_path: Path, db_session: Asy
     assert deal is not None
     assert deal.status == "pending"
     assert deal.confirmed_at is None
+
+
+SOURCES = """
+- platform: bailian
+  url: https://help.aliyun.com/zh/model-studio/new-free-quota
+  label: 新人免费额度文档
+"""
+
+
+async def test_sources_upsert_by_url_keeps_check_state(
+    tmp_path: Path, db_session: AsyncSession
+) -> None:
+    seed_dir = _write(tmp_path, platforms=PLATFORMS, deal_sources=SOURCES)
+    await seed(db_session, seed_dir)
+    source = await db_session.scalar(select(DealSource))
+    assert source is not None
+    assert source.enabled is True
+    source.content_hash = "abc"
+    await db_session.commit()
+
+    _write(tmp_path, deal_sources=SOURCES.replace("新人免费额度文档", "免费额度"))
+    await seed(db_session, seed_dir)
+    db_session.expire_all()
+    assert await _count(db_session, DealSource) == 1
+    source = await db_session.scalar(select(DealSource))
+    assert source is not None
+    assert source.label == "免费额度"
+    assert source.content_hash == "abc"
 
 
 async def test_unknown_reference_is_rejected(tmp_path: Path, db_session: AsyncSession) -> None:

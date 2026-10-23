@@ -1,4 +1,4 @@
-"""把 data/seed/*.yaml 幂等导入数据库（按 slug upsert，重复执行结果不变）。
+"""把 data/seed/*.yaml 幂等导入数据库（按 slug / URL upsert，重复执行结果不变）。
 
 用法：uv run python -m app.cli.seed [种子目录]
 
@@ -31,7 +31,7 @@ from app.domains.catalog.models import (
     PlatformCategory,
     PublishStatus,
 )
-from app.domains.deals.models import Deal, DealCycle, DealStatus, DealType
+from app.domains.deals.models import Deal, DealCycle, DealSource, DealStatus, DealType
 
 DEFAULT_SEED_DIR = REPO_ROOT / "data" / "seed"
 
@@ -91,6 +91,13 @@ class DealSeed(_Strict):
     status: DealStatus = DealStatus.PENDING
 
 
+class SourceSeed(_Strict):
+    platform: str
+    url: str
+    label: str = ""
+    enabled: bool = True
+
+
 def _load(seed_dir: Path, name: str) -> list[dict[str, Any]]:
     path = seed_dir / f"{name}.yaml"
     if not path.exists():
@@ -121,6 +128,7 @@ async def seed(session: AsyncSession, seed_dir: Path = DEFAULT_SEED_DIR) -> dict
     models = [ModelSeed.model_validate(r) for r in _load(seed_dir, "models")]
     prices = [PriceSeed.model_validate(r) for r in _load(seed_dir, "prices")]
     deals = [DealSeed.model_validate(r) for r in _load(seed_dir, "deals")]
+    sources = [SourceSeed.model_validate(r) for r in _load(seed_dir, "deal_sources")]
 
     await _upsert(session, Platform, [p.model_dump() for p in platforms], ["slug"])
     await _upsert(session, AIModel, [m.model_dump() for m in models], ["slug"])
@@ -147,12 +155,21 @@ async def seed(session: AsyncSession, seed_dir: Path = DEFAULT_SEED_DIR) -> dict
         deal_rows.append(row)
     await _upsert(session, Deal, deal_rows, ["slug"])
 
+    # 监测来源按 URL upsert；检查状态（正文 hash、上次检查、错误）不在种子里，不会被覆盖
+    source_rows = []
+    for s in sources:
+        row = s.model_dump(exclude={"platform"})
+        row["platform_id"] = ref(platform_ids, s.platform, "平台")
+        source_rows.append(row)
+    await _upsert(session, DealSource, source_rows, ["url"])
+
     await session.commit()
     return {
         "platforms": len(platforms),
         "models": len(models),
         "prices": len(prices),
         "deals": len(deals),
+        "deal_sources": len(sources),
     }
 
 

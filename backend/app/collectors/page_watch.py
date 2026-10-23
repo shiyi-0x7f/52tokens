@@ -48,7 +48,8 @@ class PageWatchCollector(Collector[PageSnapshot]):
             )
             resp.raise_for_status()
         except httpx.HTTPError as exc:
-            result.errors.append(f"抓取失败：{exc}")
+            # 超时等异常的文本是空的，带上类型名才看得出原因
+            result.errors.append(f"抓取失败：{type(exc).__name__} {exc}".rstrip())
             return result
         text = extract_text(resp.text)
         if len(text) < MIN_TEXT_LENGTH:

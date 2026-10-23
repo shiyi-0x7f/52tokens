@@ -172,6 +172,7 @@ Google / SCC 不可达 → `502`；Google 或 SCC 凭据未配置 → `503`。
 
 首批数据以 YAML 写在 `data/seed/`，`cd backend && uv run python -m app.cli.seed` 幂等导入（按 slug upsert）。
 价格和活动必须带 `confirmed_at` 并设为 `active` 才会对外展示。
+活动监测来源在 `data/seed/deal_sources.yaml`，按 URL upsert，只覆盖平台、备注和启用状态，不覆盖检查状态。
 
 ### 自动采集
 
