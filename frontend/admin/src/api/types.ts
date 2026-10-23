@@ -65,6 +65,10 @@ export interface Deal {
   extract_confidence: string | null;
   /** 采集时抽取依据的原文 */
   extract_note: string;
+  /** 存活检查：最近一次回访官网的时间、发现的下线信号与连续次数 */
+  liveness_checked_at: string | null;
+  liveness_issue: string;
+  liveness_fail_count: number;
   created_at: string;
   updated_at: string;
 }

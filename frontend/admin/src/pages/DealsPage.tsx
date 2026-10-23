@@ -129,11 +129,26 @@ export function DealsPage() {
       width: 110,
       render: (s: DealStatus, d) => {
         const tag = <Tag color={DEAL_STATUS[s].color}>{DEAL_STATUS[s].label}</Tag>;
-        return s === "rejected" && d.reject_reason ? (
-          <Tooltip title={`驳回原因：${d.reject_reason}`}>{tag}</Tooltip>
-        ) : (
-          tag
-        );
+        if (s === "rejected" && d.reject_reason) {
+          return <Tooltip title={`驳回原因：${d.reject_reason}`}>{tag}</Tooltip>;
+        }
+        if (s === "expired" && d.liveness_issue) {
+          return <Tooltip title={`自动标记结束：${d.liveness_issue}`}>{tag}</Tooltip>;
+        }
+        if (s === "active" && d.liveness_issue) {
+          // 存活检查发现下线信号，连续 3 次会自动结束；人工「重新核实」可清除
+          return (
+            <Space size={2} wrap>
+              {tag}
+              <Tooltip
+                title={`${d.liveness_issue}；连续 3 次会自动标记结束，确认还在就点「重新核实」`}
+              >
+                <Tag color="orange">疑似下线 {d.liveness_fail_count}/3</Tag>
+              </Tooltip>
+            </Space>
+          );
+        }
+        return tag;
       },
     },
     {

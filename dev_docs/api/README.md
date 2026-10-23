@@ -176,7 +176,7 @@ Google / SCC 不可达 → `502`；Google 或 SCC 凭据未配置 → `503`。
 
 发布、驳回、下线会记录操作人（`reviewed_by_id`）和时间（`reviewed_at`）。
 
-活动详情和列表另有采集字段：`origin`（`manual` 人工录入 / `collector` 自动采集）、`extract_confidence`（LLM 置信度 0–1，人工录入为 `null`）、`extract_note`（抽取依据的原文）。
+活动详情和列表另有存活检查字段：`liveness_checked_at`、`liveness_issue`（下线信号描述，或自动结束的原因）、`liveness_fail_count`（连续次数）；以及采集字段：`origin`（`manual` 人工录入 / `collector` 自动采集）、`extract_confidence`（LLM 置信度 0–1，人工录入为 `null`）、`extract_note`（抽取依据的原文）。
 
 ## 数据来源
 
@@ -200,6 +200,15 @@ Google / SCC 不可达 → `502`；Google 或 SCC 凭据未配置 → `503`。
 - 新活动一律进「待审核」（`origin=collector`），置信度低于 0.3 的丢弃，截止日期已过的丢弃，与已收录活动标题相同（忽略空格大小写）的跳过。
 - 匹配到已发布活动且置信度 ≥ 0.85 时只刷新 `confirmed_at`，不改任何字段；匹配到已驳回的活动不会重新提出。
 - 抓取 / 抽取失败只记在来源上（`last_error`、`fail_count`），不动已有活动。
+
+| 活动存活检查（已发布活动的官方出处） | `uv run python -m app.cli.collect liveness` | worker 每天 3 点 27 分 | 见下方规则 |
+
+活动存活检查规则（`deals/liveness.py`，误判比晚几天下沉代价大）：
+- 截止时间已过：直接标记已结束（`status=expired`）。
+- 页面 404 / 410，或存的 `source_quote` 已不在页面正文里：记为「疑似下线」（`liveness_issue`、`liveness_fail_count`），**连续 3 次**才自动标记已结束。
+- 网络错误、超时、5xx、403、正文过短（验证页 / 前端渲染壳）：不下结论，不累计。
+- 页面正常且原文还在：清除疑似状态并刷新 `confirmed_at`；没有原文的活动只确认页面可打开，不刷新核实时间。
+- 后台「发布」「重新核实」会清除疑似状态。自动结束的操作人为空（系统），原因写在 `liveness_issue`。
 
 入库规则：模型按 slug、价格按（平台, 模型）upsert，`confirmed_at` 记为本次采集时间。已有模型的发布状态、系列、简介不覆盖（可能被人工调整过）；采集失败或某模型不在列表里时**不删除、不下架**，新鲜度由 `confirmed_at` 体现。
 

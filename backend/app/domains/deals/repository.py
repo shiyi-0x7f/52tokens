@@ -53,6 +53,15 @@ class DealRepository:
     async def get_public(self, slug: str) -> Deal | None:
         return await self.session.scalar(self._public().where(Deal.slug == slug))
 
+    async def list_for_liveness(self) -> Sequence[Deal]:
+        """已发布的活动，最久没检查的排前面。"""
+        stmt = (
+            select(Deal)
+            .where(Deal.status == DealStatus.ACTIVE)
+            .order_by(Deal.liveness_checked_at.asc().nulls_first(), Deal.id)
+        )
+        return (await self.session.scalars(stmt)).all()
+
     # ---------- 后台：不过滤可见性 ----------
 
     async def get(self, deal_id: int) -> Deal | None:
@@ -98,3 +107,6 @@ class DealRepository:
 
     async def commit(self) -> None:
         await self.session.commit()
+
+    async def rollback(self) -> None:
+        await self.session.rollback()
