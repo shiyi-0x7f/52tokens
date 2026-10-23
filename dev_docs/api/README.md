@@ -89,9 +89,15 @@
 { "slug": "trae-daily-checkin", "title": "...", "deal_type": "checkin_points",
   "platform": { "slug": "trae", "name": "Trae" }, "reward_text": "+200 积分/天", "est_value_cny": null,
   "requirements": ["需登录"], "cycle": "daily", "starts_at": null, "ends_at": null, "description": "",
+  "steps": ["打开 Trae 客户端", "点右上角头像", "点「每日签到」"],
   "is_promoted": false, "source_url": "https://...",
+  "source_quote": "每日签到可获得 200 积分", "source_locate_url": "https://...#:~:text=...",
   "in_app_only": true, "confirmed_at": "...", "is_expired": false }
 ```
+
+- `steps`：参与步骤，按顺序，可能为空。
+- `source_quote`：官网原文摘录，逐字出现在官方页面上（采集时核对过；后台人工填写时由审核把关），没有时为空串。
+- `source_locate_url`：`source_url` 加上浏览器文本片段 `#:~:text=`，打开后自动滚到原文并高亮（Chrome / Edge / Safari）；没有原文或出处链接本身带 `#` 时同 `source_url`。没有推广链接时，出站跳转也落地到这个地址。
 
 `is_promoted=true` 表示该活动有推广链接，「去参与」入口**必须**标注「推广」。推广链接本身不随活动数据下发，入口统一指向公开站 `/go/deal/{slug}`，由下面的出站接口给出落地地址。
 
@@ -190,6 +196,7 @@ Google / SCC 不可达 → `502`；Google 或 SCC 凭据未配置 → `503`。
 
 活动采集规则：
 - LLM（`LLM_EXTRACT_MODEL`）只依据正文抽取活动字段、置信度和原文依据，并判断是否是该平台已收录的某条活动。
+- LLM 同时抽取参与步骤 `steps` 和依据原文；原文去掉空白后确实出现在页面正文里，才写入对外展示的 `source_quote`，否则只留在审核用的 `extract_note`。
 - 新活动一律进「待审核」（`origin=collector`），置信度低于 0.3 的丢弃，截止日期已过的丢弃，与已收录活动标题相同（忽略空格大小写）的跳过。
 - 匹配到已发布活动且置信度 ≥ 0.85 时只刷新 `confirmed_at`，不改任何字段；匹配到已驳回的活动不会重新提出。
 - 抓取 / 抽取失败只记在来源上（`last_error`、`fail_count`），不动已有活动。

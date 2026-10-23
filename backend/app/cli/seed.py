@@ -84,7 +84,9 @@ class DealSeed(_Strict):
     starts_at: datetime | None = None
     ends_at: datetime | None = None
     description: str = ""
+    steps: list[str] = []
     source_url: str
+    source_quote: str = ""
     aff_url: str | None = None
     in_app_only: bool = False
     confirmed_at: datetime | None = None

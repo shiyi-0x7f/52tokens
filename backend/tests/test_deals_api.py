@@ -64,6 +64,24 @@ async def test_affiliate_link_is_flagged(
     assert "https://aff.example.com/x" not in str(promoted)
 
 
+async def test_detail_includes_steps_and_locate_url(
+    db_session: AsyncSession, db_client: httpx.AsyncClient
+) -> None:
+    p = await f.platform(db_session, "trae")
+    await f.deal(db_session, p, "guided", steps=["打开客户端", "点签到"], source_quote="每日签到")
+    await f.deal(db_session, p, "bare")
+    await db_session.commit()
+
+    guided = (await db_client.get("/internal/v1/deals/guided", headers=AUTH)).json()["data"]
+    assert guided["steps"] == ["打开客户端", "点签到"]
+    assert guided["source_quote"] == "每日签到"
+    assert guided["source_locate_url"].startswith(guided["source_url"] + "#:~:text=")
+
+    bare = (await db_client.get("/internal/v1/deals/bare", headers=AUTH)).json()["data"]
+    assert bare["steps"] == []
+    assert bare["source_locate_url"] == bare["source_url"]
+
+
 async def test_filters_by_type_and_platform(
     db_session: AsyncSession, db_client: httpx.AsyncClient
 ) -> None:

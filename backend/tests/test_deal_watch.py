@@ -117,6 +117,24 @@ async def test_new_deals_go_to_review_queue(db_session: AsyncSession) -> None:
     assert "平台：Bailian" in llm.prompts[0]
 
 
+async def test_steps_kept_and_quote_only_when_on_page(db_session: AsyncSession) -> None:
+    src = await _setup(db_session)
+    llm = FakeLlm(
+        [
+            _item(
+                "新人送 tokens", evidence="新用户注册送 100 万 tokens", steps=[" 注册 ", "", "领取"]
+            ),
+            _item("编造原文的活动", evidence="新用户注册送 1000 万 tokens"),
+        ]
+    )
+    await _service(db_session, llm).check(src)
+    real, made_up = await _deals(db_session)
+    assert real.steps == ["注册", "领取"]
+    assert real.source_quote == "新用户注册送 100 万 tokens"
+    assert made_up.source_quote == ""
+    assert made_up.extract_note == "新用户注册送 1000 万 tokens"  # 依据仍留给审核
+
+
 async def test_unchanged_page_skips_llm(db_session: AsyncSession) -> None:
     src = await _setup(db_session, content_hash=content_hash(PAGE_TEXT), fail_count=2)
     llm = FakeLlm([_item("x 活动")])

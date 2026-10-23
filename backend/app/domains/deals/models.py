@@ -81,7 +81,11 @@ class Deal(TimestampMixin, Base):
     starts_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     ends_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), index=True)
     description: Mapped[str] = mapped_column(Text, default="")
+    # 参与步骤（按顺序）：用户跳到官网后照着做
+    steps: Mapped[list[str]] = mapped_column(ARRAY(String(100)), default=list, server_default="{}")
     source_url: Mapped[str] = mapped_column(String(500))
+    # 官网原文摘录：必须逐字出现在官方页面上，页面据此生成「在官网中定位」的文本片段链接
+    source_quote: Mapped[str] = mapped_column(String(300), default="", server_default="")
     aff_url: Mapped[str | None] = mapped_column(String(500))  # 有值即推广链接，页面必须标注
     in_app_only: Mapped[bool] = mapped_column(Boolean, default=False)  # 只能在客户端里查看
     confirmed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), index=True)

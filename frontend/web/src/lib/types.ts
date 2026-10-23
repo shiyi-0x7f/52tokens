@@ -72,8 +72,14 @@ export interface Deal {
   starts_at: string | null;
   ends_at: string | null;
   description: string;
+  /** 参与步骤，按顺序 */
+  steps: string[];
   is_promoted: boolean;
   source_url: string;
+  /** 官网原文摘录（逐字出现在官方页面上），没有时为空串 */
+  source_quote: string;
+  /** 带 #:~:text= 文本片段的官网链接，打开后滚到原文；没有原文时同 source_url */
+  source_locate_url: string;
   in_app_only: boolean;
   confirmed_at: string;
   is_expired: boolean;
