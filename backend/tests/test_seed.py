@@ -116,8 +116,8 @@ async def test_unknown_reference_is_rejected(tmp_path: Path, db_session: AsyncSe
 async def test_repository_seed_files_are_valid(db_session: AsyncSession) -> None:
     counts = await seed(db_session, DEFAULT_SEED_DIR)
     assert counts["platforms"] > 0
-    # 仓库种子里的平台只放核实过的名称和官网，可以直接发布
+    # 仓库种子里的平台只放核实过的名称和官网，要么发布，要么明确下线（如已停服），不留草稿
     drafts = await db_session.scalar(
-        select(func.count()).select_from(Platform).where(Platform.status != PublishStatus.ACTIVE)
+        select(func.count()).select_from(Platform).where(Platform.status == PublishStatus.DRAFT)
     )
     assert drafts == 0
