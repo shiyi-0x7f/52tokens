@@ -76,7 +76,7 @@ LLM 只负责"从文本里抽结构化字段 + 给置信度"，**发布必须过
 - Astro SSR + 页面缓存（Cloudflare / nginx 加 Redis），后端数据变更后主动清除对应页面缓存，保证"更新时间"真实
 - 每页 meta 加 JSON-LD：`Product`/`Offer`（价格页）、`Event`/`Offer` 带 `validThrough`（活动）、`FAQPage`、`BreadcrumbList`
 - 分片 sitemap index（按模块）+ `lastmod` 真实值；Google Search Console + Bing Webmaster + IndexNow 主动推送（不备案，百度只做基础提交、不作为主战场）
-- 动态 OG 图（satori + resvg）：每个模型/活动自动生成带价格的分享图，同时服务 SEO 和社交传播
+- 动态 OG 图（satori + resvg，已实现 `/og/default.png`、`/og/deals|models|platforms/{slug}.png`）：每个模型/活动/平台自动生成带价格的分享图，同时服务 SEO 和社交传播。中文字体用 Noto Sans SC Bold 的 GB2312 子集（见 `frontend/web/src/assets/fonts/README.md`）；`@resvg/resvg-js` 是原生模块，部署镜像里必须在目标系统上 `pnpm install`，不能拷贝本机的 node_modules
 - 价格历史图（只有积累了时间序列才有，竞品难抄的内容护城河）
 - Core Web Vitals：列表页首屏服务端渲染、图片优化、无布局偏移
 - 内链：模型页 ↔ 免费额度页 ↔ 活动页 ↔ 指南页 互相链接；过期活动页指向同平台进行中的活动

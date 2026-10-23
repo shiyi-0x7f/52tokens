@@ -12,8 +12,11 @@ interface Props {
   noindex?: boolean;
   /** 页面对应的 RSS 订阅，供阅读器自动发现 */
   rss?: { title: string; href: string } | undefined;
+  /** 分享图路径（/og/*），不传用站点默认图 */
+  ogImage?: string | undefined;
 }
-const { title, description, noindex = false, rss } = Astro.props;
+const { title, description, noindex = false, rss, ogImage = "/og/default.png" } = Astro.props;
+const ogImageUrl = new URL(ogImage, Astro.site ?? Astro.url).href;
 const canonical = new URL(Astro.url.pathname, Astro.site ?? Astro.url).href;
 
 const user = Astro.locals.user;
@@ -55,6 +58,11 @@ const current = (href: string) =>
     <meta property="og:type" content="website" />
     <meta property="og:url" content={canonical} />
     <meta property="og:site_name" content="52tokens" />
+    <meta property="og:image" content={ogImageUrl} />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:image" content={ogImageUrl} />
     {rss && <link rel="alternate" type="application/rss+xml" title={rss.title} href={rss.href} />}
     <!-- 站内导航不再整页刷新：后台取新页面的 HTML 后淡入替换（不下发 JSON） -->
     <ClientRouter fallback="animate" />

@@ -35,6 +35,7 @@ const hasQuote = deal.source_quote !== "";
 ---
 
 <BaseLayout
+  ogImage={`/og/deals/${deal.slug}.png?v=${Date.parse(deal.confirmed_at) / 1000}`}
   title={`${title} · 52tokens`}
   description={`${deal.platform.name} ${typeLabel}：${deal.reward_text}。${CYCLE_LABELS[deal.cycle]}，${formatRelative(deal.confirmed_at)}核实，附官方出处。`}
 >

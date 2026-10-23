@@ -41,6 +41,7 @@ const rssHref = `/platforms/${platform.slug}/rss.xml`;
 ---
 
 <BaseLayout
+  ogImage={`/og/platforms/${platform.slug}.png`}
   title={title}
   description={description}
   noindex={ok && deals.length === 0}
