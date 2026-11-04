@@ -149,6 +149,47 @@ async def test_shop_api_requires_merchant_url() -> None:
     assert "/shop/<token>" in errors[0]
 
 
+async def test_shop_goods_api_resolves_alias_to_shop_no() -> None:
+    def handler(request: httpx.Request) -> httpx.Response:
+        body = json.loads(request.content or b"{}")
+        if request.url.path == "/shopApi/shop/detail":
+            assert body == {"shop_no": "ALIAS"}
+            return httpx.Response(200, json={"code": 1, "data": {"shop_no": "S100"}})
+        if request.url.path == "/shopApi/goods/list":
+            assert body["shop_no"] == "S100"
+            goods = [
+                {
+                    "goods_no": "G1",
+                    "name": "Plus 月卡",
+                    "price": 125,
+                    "stock_available_quantity": 3,
+                },
+                {"goods_no": "G2", "name": "Gemini 成品号", "price": "15.99"},
+                {"goods_no": "G3", "name": "已售罄", "price": 1, "stock_available_quantity": 0},
+                {"name": "没有编号", "price": 1},
+            ]
+            return httpx.Response(200, json={"code": 1, "data": {"list": goods}})
+        return httpx.Response(404)
+
+    items, errors = await _collect("shopGoodsApi", "https://www.mall.test/shop/ALIAS", handler)
+    assert errors == []
+    assert [(i.title, str(i.price), i.stock, i.in_stock) for i in items] == [
+        ("Plus 月卡", "125.00", 3, True),
+        ("Gemini 成品号", "15.99", None, True),
+        ("已售罄", "1.00", 0, False),
+    ]
+    assert items[0].url == "https://www.mall.test/goods/G1"
+
+
+async def test_shop_goods_api_missing_shop_is_error() -> None:
+    routes = {"/shopApi/shop/detail": {"code": 0, "msg": "店铺不存在", "data": None}}
+    items, errors = await _collect("shopGoodsApi", "https://www.mall.test/shop/X", _routes(routes))
+    assert items == []
+    assert "店铺信息不可用" in errors[0]
+    _, errors = await _collect("shopGoodsApi", "https://www.mall.test", _routes({}))
+    assert "/shop/<店铺编号>" in errors[0]
+
+
 async def test_getgpt_fixed_products() -> None:
     def handler(request: httpx.Request) -> httpx.Response:
         assert request.url.host == "gpt.how2cs.cn"

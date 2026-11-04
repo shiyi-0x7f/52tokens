@@ -4,7 +4,8 @@ import type { DealCycle, DealStatus, DealType, ShopCollectorKind } from "./types
 export const SHOP_KIND_LABELS: Record<ShopCollectorKind, string> = {
   kami: "Kami",
   dujiao: "独角数卡",
-  shopApi: "ShopApi（多商户）",
+  shopApi: "ShopApi（多商户，如链动小铺）",
+  shopGoodsApi: "ShopGoodsApi（多商户，如 16688）",
   xiaoheiwan: "小黑万",
   opensoraHtml: "OpenSora 页面",
   makerichHtml: "Makerich 页面",
