@@ -16,7 +16,7 @@ from statistics import median
 from app.core.errors import AppError
 from app.domains.shops.models import ShopOffer, ShopProduct
 from app.domains.shops.repository import ShopRepository
-from app.domains.shops.sanitize import public_text
+from app.domains.shops.sanitize import public_text, shop_alias
 from app.domains.shops.schemas import ShopOfferOut, ShopProductDetail, ShopProductSummary
 
 FRESH_HOURS = 48
@@ -126,8 +126,8 @@ class ShopService:
                         stock=o.stock,
                         in_stock=o.in_stock,
                         token=o.external_id,
-                        shop=o.source.host,
-                        tags=list(o.tags),
+                        shop=shop_alias(o.source.host),
+                        tags=[t for t in (public_text(t) for t in o.tags) if t],
                         flags=flags.get(o.id, []),
                         last_seen_at=o.last_seen_at,
                         is_fresh=_is_fresh(o, now),

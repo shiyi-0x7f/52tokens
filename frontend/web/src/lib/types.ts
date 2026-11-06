@@ -128,6 +128,7 @@ export interface ShopOffer {
   /** 跳转标识：链接到 /go/offer/{token}（页内弹窗提示后再去店铺），店铺链接不下发 */
   token: string;
   /** 店铺域名 */
+  /** 店铺代号（如「店铺 7F3A」），不含域名 */
   shop: string;
   tags: string[];
   /** 「拼车」「价格待核实」：照常展示，但不参与有货最低价 */

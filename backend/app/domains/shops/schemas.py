@@ -26,7 +26,7 @@ class ShopOfferOut(BaseModel):
     in_stock: bool
     # 跳转标识：页面链接到 /go/offer/{token}，经过渡页提示后再去店铺；店铺链接本身不下发
     token: str
-    shop: str  # 店铺域名
+    shop: str  # 店铺代号（如「店铺 7F3A」），不含域名；对外页面不出现店铺网址
     tags: list[str]
     # 「拼车」「价格待核实」：照常展示，但不参与有货最低价
     flags: list[str]
