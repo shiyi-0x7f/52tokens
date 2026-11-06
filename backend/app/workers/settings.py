@@ -12,6 +12,7 @@ from app.core.logging import setup_logging
 from app.workers.tasks import (
     check_deal_liveness,
     run_collector,
+    snapshot_price_history,
     sync_openrouter,
     sync_shops,
     watch_deal_sources,
@@ -44,6 +45,7 @@ class WorkerSettings:
         watch_deal_sources,
         check_deal_liveness,
         sync_shops,
+        snapshot_price_history,
     ]
     # 每 6 小时同步一次 OpenRouter 价格（错开整点）；活动来源每 6 小时检查一次（会调用 LLM，
     # 启动时不跑）
@@ -54,6 +56,9 @@ class WorkerSettings:
         cron(check_deal_liveness, hour={3}, minute=27),
         # 卡网店铺每 3 小时同步一次（价格和库存变化快）
         cron(sync_shops, hour={2, 5, 8, 11, 14, 17, 20, 23}, minute=47),
+        # 价格历史：跟在卡网同步之后，每 6 小时记一次；同一天覆盖，启动时也记一次，
+        # 避免 worker 停过一段时间漏掉当天
+        cron(snapshot_price_history, hour={3, 9, 15, 21}, minute=57, run_at_startup=True),
     ]
     on_startup = startup
     on_shutdown = shutdown

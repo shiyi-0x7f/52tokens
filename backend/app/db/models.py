@@ -3,6 +3,7 @@
 from app.domains.accounts import models as accounts_models
 from app.domains.catalog import models as catalog_models
 from app.domains.deals import models as deals_models
+from app.domains.history import models as history_models
 from app.domains.official import models as official_models
 from app.domains.outbound import models as outbound_models
 from app.domains.shops import models as shops_models
@@ -11,6 +12,7 @@ __all__ = [
     "accounts_models",
     "catalog_models",
     "deals_models",
+    "history_models",
     "official_models",
     "outbound_models",
     "shops_models",
