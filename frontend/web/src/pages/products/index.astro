@@ -1,5 +1,6 @@
 ---
-import BrandMark from "../../components/BrandMark.astro";
+import CategoryBanner from "../../components/CategoryBanner.astro";
+import CategoryTabs, { type CategoryTab } from "../../components/CategoryTabs.astro";
 import EmptyState from "../../components/EmptyState.astro";
 import ShopDisclaimer from "../../components/ShopDisclaimer.astro";
 import TypeChip from "../../components/TypeChip.astro";
@@ -15,7 +16,7 @@ const [products, ok] = await loadOr<ShopProductSummary[]>([], () =>
   internalGet<ShopProductSummary[]>("/shop-products"),
 );
 // 平台分组的固定顺序；不在列表里的排最后
-const PLATFORM_ORDER = ["ChatGPT", "Claude", "Gemini", "Grok", "邮箱", "接码", "其他"];
+const PLATFORM_ORDER = ["ChatGPT", "Claude", "Gemini", "Grok", "其他"];
 const rank = (p: string) => {
   const i = PLATFORM_ORDER.indexOf(p);
   return i < 0 ? PLATFORM_ORDER.length : i;
@@ -23,6 +24,23 @@ const rank = (p: string) => {
 const groups = [...new Set(products.map((p) => p.platform))]
   .sort((a, b) => rank(a) - rank(b))
   .map((platform) => ({ platform, items: products.filter((p) => p.platform === platform) }));
+// 所有大类都渲染进页面，只显示当前的（网址参数 ?platform=，无效时取第一个）；
+// 点击切换在页面内完成，见 CategoryTabs
+const requested = Astro.url.searchParams.get("platform");
+const active = groups.find((g) => g.platform === requested) ?? groups[0] ?? null;
+const tabs: CategoryTab[] = groups.map((g, i) => ({
+  key: g.platform,
+  label: g.platform,
+  href: i === 0 ? "/products" : `/products?${new URLSearchParams({ platform: g.platform })}`,
+  count: g.items.length,
+}));
+const stats = (items: ShopProductSummary[]) => {
+  const prices = items.flatMap((p) => (p.min_price ? [Number(p.min_price)] : []));
+  return {
+    lowest: prices.length > 0 ? Math.min(...prices) : null,
+    inStock: items.filter((p) => p.in_stock_shops > 0).length,
+  };
+};
 ---
 
 <BaseLayout
@@ -31,14 +49,12 @@ const groups = [...new Set(products.map((p) => p.platform))]
 >
   <header class="mb-4">
     <h1 class="text-2xl font-black">卡网比价</h1>
-    <p class="mt-1 text-sm text-mute">
-      定时汇总各卡网店铺的公开报价，按商品比较有货最低价。想走官方渠道，先看
+    <p class="mt-1 flex flex-wrap gap-x-3 text-sm">
       <a href="/models" class="text-hot">
-        模型 API 价格
-      </a>{" "}
-      和
+        模型 API 价格 →
+      </a>
       <a href="/official-prices" class="text-hot">
-        官方订阅地区价
+        官方订阅地区价 →
       </a>
     </p>
   </header>
@@ -50,53 +66,69 @@ const groups = [...new Set(products.map((p) => p.platform))]
   ) : products.length === 0 ? (
     <EmptyState title="报价采集中" hint="店铺报价采集后会在这里列出。" />
   ) : (
-    groups.map((g) => (
-      <section class="mt-7">
-        <h2 class="mb-3 flex items-center gap-2 font-black">
-          <BrandMark name={g.platform} size="sm" />
-          {g.platform}
-          <span class="font-mono text-sm font-normal text-mute">{g.items.length}</span>
-        </h2>
-        <ul class="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-          {g.items.map((p) => (
-            <li>
-              <a
-                href={`/products/${p.slug}`}
-                class="press flex h-full flex-col overflow-hidden rounded-(--radius-card) bg-card no-underline hover:shadow-md"
-              >
-                <span class="h-1" style={`background:${brandOf(p.platform).color}`} />
-                <span class="flex flex-1 flex-col p-4">
-                  <span class="flex items-start justify-between gap-2">
-                    <span class="font-bold">{p.name}</span>
-                    <TypeChip label={p.product_type} tone={shopTypeTone(p.product_type)} />
-                  </span>
-                  {p.spec && <span class="mt-1 block text-xs text-mute">{p.spec}</span>}
-                  <span class="mt-auto flex items-baseline justify-between gap-2 pt-3">
-                    {p.min_price ? (
-                      <span class="font-mono text-xl font-bold text-hot">
-                        {formatPrice(p.min_price, "CNY")}
-                        <span class="ml-0.5 text-xs font-normal text-mute">起</span>
-                      </span>
-                    ) : (
-                      <span class="text-sm text-mute">暂无有货报价</span>
-                    )}
-                    <span
-                      class:list={[
-                        "rounded-full px-2 py-0.5 text-xs font-bold",
-                        p.in_stock_shops > 0
-                          ? "bg-tone-green-bg text-tone-green"
-                          : "bg-chip text-mute",
-                      ]}
-                    >
-                      {p.in_stock_shops} 家有货
-                    </span>
-                  </span>
+    <div class="mt-6" data-category-root>
+      <CategoryTabs tabs={tabs} activeKey={active?.platform ?? null} label="商品大类" />
+      {groups.map((g, gi) => {
+        const { lowest, inStock } = stats(g.items);
+        return (
+          <section
+            data-category-panel={g.platform}
+            hidden={g !== active}
+            aria-labelledby={`group-title-${gi}`}
+          >
+            <CategoryBanner name={g.platform} titleId={`group-title-${gi}`}>
+              <span>{g.items.length} 个商品</span>
+              <span>{inStock} 个有货</span>
+              {lowest !== null && (
+                <span>
+                  最低{" "}
+                  <b class="font-mono text-base text-hot">{formatPrice(String(lowest), "CNY")}</b>{" "}
+                  起
                 </span>
-              </a>
-            </li>
-          ))}
-        </ul>
-      </section>
-    ))
+              )}
+            </CategoryBanner>
+            <ul class="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+              {g.items.map((p) => (
+                <li>
+                  <a
+                    href={`/products/${p.slug}`}
+                    class="press flex h-full flex-col overflow-hidden rounded-(--radius-card) bg-card no-underline hover:-translate-y-0.5 hover:shadow-md"
+                  >
+                    <span class="h-1" style={`background:${brandOf(p.platform).color}`} />
+                    <span class="flex flex-1 flex-col p-4">
+                      <span class="flex items-start justify-between gap-2">
+                        <span class="font-bold">{p.name}</span>
+                        <TypeChip label={p.product_type} tone={shopTypeTone(p.product_type)} />
+                      </span>
+                      {p.spec && <span class="mt-1 block text-xs text-mute">{p.spec}</span>}
+                      <span class="mt-auto flex items-baseline justify-between gap-2 pt-3">
+                        {p.min_price ? (
+                          <span class="font-mono text-xl font-bold text-hot">
+                            {formatPrice(p.min_price, "CNY")}
+                            <span class="ml-0.5 text-xs font-normal text-mute">起</span>
+                          </span>
+                        ) : (
+                          <span class="text-sm text-mute">暂无有货报价</span>
+                        )}
+                        <span
+                          class:list={[
+                            "rounded-full px-2 py-0.5 text-xs font-bold",
+                            p.in_stock_shops > 0
+                              ? "bg-tone-green-bg text-tone-green"
+                              : "bg-chip text-mute",
+                          ]}
+                        >
+                          {p.in_stock_shops} 家有货
+                        </span>
+                      </span>
+                    </span>
+                  </a>
+                </li>
+              ))}
+            </ul>
+          </section>
+        );
+      })}
+    </div>
   )}
 </BaseLayout>

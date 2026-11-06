@@ -18,7 +18,6 @@ export const DEFAULT_CARD: OgCard = {
   eyebrow: "52tokens",
   title: "AI 羊毛热榜",
   highlight: "免费额度 · 签到积分 · 模型价格",
-  note: "每条标注出处与最近确认时间",
   tags: [],
 };
 

@@ -68,8 +68,6 @@ const BRANDS: Record<string, Brand> = {
   windsurf: { color: "#00a98f", mark: "Ws" },
   "tongyi-lingma": QWEN,
   // 卡网平台分组
-  邮箱: { color: "#64748b", mark: "@" },
-  接码: { color: "#0ea5e9", mark: "码" },
   其他: { color: "#71717a", mark: "…" },
 };
 

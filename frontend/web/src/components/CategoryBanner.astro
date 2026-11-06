@@ -1,0 +1,42 @@
+---
+/** 当前大类的横幅：品牌色淡底 + 大号品牌标识 + 标题，摘要（价格、数量等）放默认插槽 */
+import { brandOf } from "../lib/brand";
+import BrandMark from "./BrandMark.astro";
+
+interface Props {
+  name: string;
+  brandKeys?: string[];
+  /** 给 h2 的 id，供 section 的 aria-labelledby 引用 */
+  titleId: string;
+}
+const { name, brandKeys = [], titleId } = Astro.props;
+const brand = brandOf(name, ...brandKeys);
+---
+
+<div
+  class="category-banner mb-4 flex items-center gap-4 overflow-hidden rounded-(--radius-card) p-4 sm:p-5"
+  style={`--brand:${brand.color}`}
+>
+  <BrandMark name={name} keys={brandKeys} size="lg" class="shadow-sm" />
+  <div class="min-w-0">
+    <h2 id={titleId} class="text-lg leading-tight font-black">
+      {name}
+    </h2>
+    <p class="mt-1 flex flex-wrap items-baseline gap-x-3 gap-y-1 text-sm text-sub">
+      <slot />
+    </p>
+  </div>
+</div>
+
+<style>
+  .category-banner {
+    background:
+      radial-gradient(
+        120% 140% at 0% 0%,
+        color-mix(in srgb, var(--brand) 16%, transparent),
+        transparent 60%
+      ),
+      var(--color-card);
+    box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--brand) 14%, var(--color-line));
+  }
+</style>

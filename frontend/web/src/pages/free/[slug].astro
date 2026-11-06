@@ -34,7 +34,7 @@ const freeNames = guide.freePrices.map((p) => p.platform.name);
 const description =
   guide.freePrices.length > 0
     ? `${model.name} 可以在 ${freeNames.join("、")} 免费调用；另附 ${guide.deals.length} 个可用的免费额度和注册赠送，以及免费用完后最便宜的付费价。`
-    : `${model.name} 的免费额度、新用户赠送和最便宜的付费渠道汇总，每条标注出处与最近核实时间。`;
+    : `${model.name} 的免费额度、新用户赠送和最便宜的付费渠道。`;
 ---
 
 <BaseLayout
