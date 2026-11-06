@@ -87,6 +87,26 @@ async def test_list_and_lowest_in_stock_price(
     assert "a.test" not in str(plus_row)  # 外层不出现商家
 
 
+async def test_sensitive_words_are_replaced_in_public_text(
+    db_session: AsyncSession, db_client: httpx.AsyncClient
+) -> None:
+    plus = await _product(
+        db_session, "chatgpt-plus", spec="已/未接码", summary="购买前核对接码状态"
+    )
+    a = await _source(db_session, "a.test")
+    await _offer(db_session, a, plus, "60", title="GPT Plus 成品号 未接码 质保首登")
+    await db_session.commit()
+
+    item = (await db_client.get("/internal/v1/shop-products", headers=AUTH)).json()["data"][0]
+    assert item["spec"] == "已/未手机验证"
+    detail = (await db_client.get("/internal/v1/shop-products/chatgpt-plus", headers=AUTH)).json()[
+        "data"
+    ]
+    assert detail["summary"] == "购买前核对手机验证状态"
+    assert detail["offers"][0]["title"] == "GPT Plus 成品号 未手机验证 质保首登"
+    assert "接码" not in str(detail)
+
+
 async def test_detail_orders_offers(db_session: AsyncSession, db_client: httpx.AsyncClient) -> None:
     plus = await _product(db_session, "chatgpt-plus", summary="说明")
     a = await _source(db_session, "a.test")

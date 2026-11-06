@@ -29,15 +29,12 @@ export const DEAL_TYPE_TONES: Record<DealType, Tone> = {
   event: "slate",
 };
 
-/** 卡网商品类型（标准商品的 product_type） */
+/** 卡网对外展示的商品类型（标准商品的 product_type；接码、邮箱、虚拟卡等已不展示） */
 const SHOP_TYPE_TONES: Record<string, Tone> = {
   "订阅/会员": "violet",
   成品账号: "blue",
-  "邮箱/账号": "sky",
   辅助服务: "slate",
   API额度: "teal",
-  "接码/验证": "orange",
-  虚拟卡: "rose",
   工具账号: "indigo",
   礼品卡: "amber",
 };

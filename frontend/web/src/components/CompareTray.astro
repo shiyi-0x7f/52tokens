@@ -1,8 +1,8 @@
 ---
 /**
- * 对比栏：固定在页面底部，显示已选模型；切换厂商 Tab 时选择保留在网址里。
- * 对比栏和每个标签都有固定的过渡名（transition:name）：勾选变化时对比栏原地变形、
- * 标签逐个淡入淡出，而不是整块重新出现。
+ * 对比栏：固定在页面底部，显示已选模型；选择记在网址的 cmp 参数里，切换厂商 Tab 时保留。
+ * 服务端按网址渲染初始状态（没选时 hidden）；有 JS 时由 scripts/compare-select.ts 在页面内更新，
+ * 勾选变化不走整页导航。链接本身都是可用的网址，没有 JS 时照常跳转。
  */
 import {
   MAX_COMPARE,
@@ -20,57 +20,69 @@ const { state, names } = Astro.props;
 const cmp = state.cmp ?? [];
 ---
 
-{cmp.length > 0 && (
-  <aside
-    aria-label="模型对比栏"
-    transition:name="compare-tray"
-    class="sticky bottom-3 z-10 mt-6 flex flex-wrap items-center gap-2 rounded-(--radius-card) border border-line bg-card px-4 py-3 shadow-lg"
-  >
-    <span class="text-sm font-bold">
-      对比 {cmp.length}/{MAX_COMPARE}
-    </span>
-    <ul class="flex flex-wrap gap-2">
-      {cmp.map((slug) => (
-        <li
-          transition:name={`compare-chip-${slug}`}
-          class="inline-flex items-center gap-1 rounded-full bg-chip py-1 pr-1 pl-3 text-sm"
-        >
-          {names.get(slug) ?? slug}
-          <a
-            href={modelsUrl({ ...state, cmp: toggleCompare(cmp, slug) })}
-            rel="nofollow"
-            data-keep-scroll
-            data-astro-history="replace"
-            aria-label={`移除 ${names.get(slug) ?? slug}`}
-            class="press inline-grid size-7 place-items-center rounded-full text-mute no-underline hover:bg-line hover:text-ink"
-          >
-            ✕
-          </a>
-        </li>
-      ))}
-    </ul>
-    <span class="ml-auto flex items-center gap-3">
-      <a
-        href={modelsUrl({ ...state, cmp: [] })}
-        rel="nofollow"
-        data-keep-scroll
-        data-astro-history="replace"
-        class="press text-sm text-mute hover:text-ink"
+<aside
+  aria-label="模型对比栏"
+  data-compare-tray
+  hidden={cmp.length === 0}
+  class="compare-tray sticky bottom-3 z-10 mt-6 flex flex-wrap items-center gap-2 rounded-(--radius-card) border border-line bg-card px-4 py-3 shadow-lg"
+>
+  <span class="text-sm font-bold">
+    对比 <span data-cmp-count>{cmp.length}</span>/{MAX_COMPARE}
+  </span>
+  <ul class="flex flex-wrap gap-2" data-cmp-chips>
+    {cmp.map((slug) => (
+      <li
+        data-cmp-chip={slug}
+        data-name={names.get(slug) ?? slug}
+        class="cmp-chip inline-flex items-center gap-1 rounded-full bg-chip py-1 pr-1 pl-3 text-sm"
       >
-        清空
-      </a>
-      {cmp.length >= 2 ? (
+        {names.get(slug) ?? slug}
         <a
-          href={compareUrl(cmp)}
+          href={modelsUrl({ ...state, cmp: toggleCompare(cmp, slug) })}
           rel="nofollow"
-          data-pending-text="正在打开对比…"
-          class="press inline-flex min-h-10 items-center rounded-[10px] bg-ink px-4 text-sm font-bold text-white no-underline"
+          data-keep-scroll
+          data-astro-history="replace"
+          data-cmp-toggle={slug}
+          aria-label={`移除 ${names.get(slug) ?? slug}`}
+          class="press inline-grid size-7 place-items-center rounded-full text-mute no-underline hover:bg-line hover:text-ink"
         >
-          开始对比
+          ✕
         </a>
-      ) : (
-        <span class="text-sm text-mute">再选一个模型即可对比</span>
-      )}
+      </li>
+    ))}
+  </ul>
+  <span class="ml-auto flex items-center gap-3">
+    <a
+      href={modelsUrl({ ...state, cmp: [] })}
+      rel="nofollow"
+      data-keep-scroll
+      data-astro-history="replace"
+      data-cmp-clear
+      class="press text-sm text-mute hover:text-ink"
+    >
+      清空
+    </a>
+    <a
+      href={compareUrl(cmp)}
+      rel="nofollow"
+      data-pending-text="正在打开对比…"
+      data-cmp-start
+      hidden={cmp.length < 2}
+      class="press inline-flex min-h-10 items-center rounded-[10px] bg-ink px-4 text-sm font-bold text-white no-underline"
+    >
+      开始对比
+    </a>
+    <span data-cmp-hint hidden={cmp.length >= 2} class="text-sm text-mute">
+      再选一个模型即可对比
     </span>
-  </aside>
-)}
+  </span>
+</aside>
+
+<style is:global>
+  .compare-tray:not([hidden]) {
+    animation: rise-in var(--motion-base) var(--ease-out) both;
+  }
+  .cmp-chip {
+    animation: rise-in var(--motion-fast) var(--ease-out) both;
+  }
+</style>

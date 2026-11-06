@@ -4,6 +4,7 @@
 - 近 FRESH_HOURS 小时采集到过的报价才算新鲜：有货最低价与有货店铺数只算新鲜、有货、
   且没被标记（拼车 / 价格待核实）的；被标记的照常展示，只是不决定最低价；
 - 排序：可比的有货报价按价格从低到高，其后被标记的，再后无货，最后是可能已失效的。
+- 对外文案（商品名、规格、简介、报价标题）经 sanitize.public_text 去敏。
 """
 
 import re
@@ -15,6 +16,7 @@ from statistics import median
 from app.core.errors import AppError
 from app.domains.shops.models import ShopOffer, ShopProduct
 from app.domains.shops.repository import ShopRepository
+from app.domains.shops.sanitize import public_text
 from app.domains.shops.schemas import ShopOfferOut, ShopProductDetail, ShopProductSummary
 
 FRESH_HOURS = 48
@@ -66,10 +68,10 @@ def _summary_fields(
     ]
     return {
         "slug": product.slug,
-        "name": product.name,
+        "name": public_text(product.name),
         "platform": product.platform,
         "product_type": product.product_type,
-        "spec": product.spec,
+        "spec": public_text(product.spec),
         "min_price": min((o.price for o in eligible if o.price is not None), default=None),
         "in_stock_shops": len({o.source_id for o in eligible}),
         "offer_count": len(offers),
@@ -116,10 +118,10 @@ class ShopService:
         return ShopProductDetail.model_validate(
             {
                 **_summary_fields(product, offers, now, flags),
-                "summary": product.summary,
+                "summary": public_text(product.summary),
                 "offers": [
                     ShopOfferOut(
-                        title=o.title,
+                        title=public_text(o.title),
                         price=o.price,
                         stock=o.stock,
                         in_stock=o.in_stock,

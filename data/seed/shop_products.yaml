@@ -1,6 +1,11 @@
 # 卡网比价的标准商品（归类目标）。aliases 是常见叫法，供人工核对归类时参考。
-# status: hidden 的商品照样参与归类（准确识别出来），但不对外展示：
-#   identity-verification（真人 / KYC 验证）帮人绕过实名验证，风险高。
+# status: hidden 的商品照样参与归类（准确识别出来，不混进别的商品），但不对外展示。
+# 原则：涉及灰黑产的一律不展示（用户可以自己去店铺找，站点不主动罗列）：
+#   - 接码 / 真人 KYC 验证：帮人绕过手机号、实名验证；
+#   - 虚拟卡：常用于绕过支付风控；教育邮箱：常用于冒领学生优惠；
+#   - 成品邮箱（Gmail / Outlook / iCloud / 其他）：批量注册小号的原料；
+#   - Apple ID、推特、Telegram 账号与会员：非 AI 的社交平台账号，灰产关联深。
+# 标题里的「接码」等敏感词对外展示时替换为中性说法，见 backend/app/domains/shops/sanitize.py。
 # 导入：cd backend && uv run python -m app.cli.seed（按 slug upsert）
 
 - slug: chatgpt-free-account
@@ -332,7 +337,7 @@
     - 谷歌账号
     - gmail 邮箱
   sort_order: 220
-  status: active
+  status: hidden
 - slug: outlook-account
   name: Outlook / Hotmail 邮箱
   platform: 邮箱
@@ -347,7 +352,7 @@
     - oauth2
     - graph 令牌
   sort_order: 230
-  status: active
+  status: hidden
 - slug: education-email
   name: 教育邮箱
   platform: 邮箱
@@ -361,7 +366,7 @@
     - edu mail
     - .edu
   sort_order: 240
-  status: active
+  status: hidden
 - slug: email-account
   name: 其他邮箱
   platform: 邮箱
@@ -374,7 +379,7 @@
     - 企业邮箱
     - 其他邮箱
   sort_order: 250
-  status: active
+  status: hidden
 - slug: icloud-email
   name: iCloud 邮箱
   platform: 邮箱
@@ -392,7 +397,7 @@
     - icloud 母号
     - icloud 子号
   sort_order: 260
-  status: active
+  status: hidden
 - slug: virtual-card
   name: 虚拟卡
   platform: 其他
@@ -410,7 +415,7 @@
     - "485954"
     - paypal 虚拟卡
   sort_order: 270
-  status: active
+  status: hidden
 - slug: openai-phone-verification
   name: OpenAI / ChatGPT 接码
   platform: 接码
@@ -423,7 +428,7 @@
     - gpt 接码
     - codex 接码
   sort_order: 280
-  status: active
+  status: hidden
 - slug: google-phone-verification
   name: Google / Gemini 接码
   platform: 接码
@@ -436,7 +441,7 @@
     - gemini 接码
     - 谷歌接码
   sort_order: 290
-  status: active
+  status: hidden
 - slug: paypal-phone-verification
   name: PayPal 接码
   platform: 接码
@@ -448,7 +453,7 @@
     - paypal 验证
     - paypal 手机验证
   sort_order: 300
-  status: active
+  status: hidden
 - slug: phone-verification
   name: 通用接码
   platform: 接码
@@ -464,7 +469,7 @@
     - 手机号验证
     - 通用接码
   sort_order: 310
-  status: active
+  status: hidden
 - slug: identity-verification
   name: 真人 / KYC 验证
   platform: 接码
@@ -600,7 +605,7 @@
     - 土区 id
     - apple 账号
   sort_order: 400
-  status: active
+  status: hidden
 - slug: x-twitter-account
   name: X / 推特账号
   platform: 其他
@@ -617,7 +622,7 @@
     - x/twitter
     - x-twitter
   sort_order: 410
-  status: active
+  status: hidden
 - slug: x-twitter-premium
   name: X Premium / 推特会员
   platform: 其他
@@ -635,7 +640,7 @@
     - 蓝标
     - premium+
   sort_order: 420
-  status: active
+  status: hidden
 - slug: telegram-account
   name: Telegram 账号
   platform: 其他
@@ -652,7 +657,7 @@
     - 电报账号
     - telegram 老号
   sort_order: 430
-  status: active
+  status: hidden
 - slug: telegram-premium
   name: Telegram Premium / Pro 会员
   platform: 其他
@@ -670,7 +675,7 @@
     - telegram stars
     - 星星代充
   sort_order: 440
-  status: active
+  status: hidden
 - slug: gift-card
   name: 礼品卡
   platform: 其他

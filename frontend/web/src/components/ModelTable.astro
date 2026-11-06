@@ -1,7 +1,8 @@
 ---
 /**
- * 模型列表表格。每行带「对比」开关：只是改网址里的 cmp 参数的普通链接，
- * 不需要 JS，也不下发数据。
+ * 模型列表表格。每行带「对比」开关：本身是改网址里 cmp 参数的普通链接（没有 JS 时照常可用）；
+ * 有 JS 时由 scripts/compare-select.ts 在页面内直接切换，不走整页导航。
+ * 三种状态（加入 / 已加入 / 已满）都渲染出来，由行上的 data-selected 和表格的 data-full 决定显示哪个。
  */
 import { familyLabel } from "../lib/families";
 import { formatContext, formatMinOutput } from "../lib/format";
@@ -19,7 +20,10 @@ const cmp = state.cmp ?? [];
 const full = cmp.length >= MAX_COMPARE;
 ---
 
-<div class="overflow-x-auto rounded-(--radius-card) bg-card">
+<div
+  class="compare-table overflow-x-auto rounded-(--radius-card) bg-card"
+  data-full={full ? "" : undefined}
+>
   <table class="w-full min-w-[680px] text-sm">
     <thead>
       <tr class="border-b border-line text-left text-xs text-mute">
@@ -36,14 +40,13 @@ const full = cmp.length >= MAX_COMPARE;
     </thead>
     <tbody>
       {models.map((m) => {
-        const selected = cmp.includes(m.slug);
+        const toggleHref = modelsUrl({ ...state, cmp: toggleCompare(cmp, m.slug) });
         return (
           <tr
-            class:list={[
-              "border-b border-line last:border-b-0",
-              "row-fade",
-              selected ? "bg-hot/5" : "hover:bg-hover",
-            ]}
+            data-compare-row={m.slug}
+            data-name={m.name}
+            data-selected={cmp.includes(m.slug) ? "" : undefined}
+            class="compare-row row-fade border-b border-line last:border-b-0"
           >
             <td class="px-4 py-3">
               <a href={`/models/${m.slug}`} class="font-medium no-underline hover:text-hot">
@@ -58,33 +61,31 @@ const full = cmp.length >= MAX_COMPARE;
             </td>
             <td class="px-4 py-3 text-right font-mono">{m.price_count}</td>
             <td class="px-4 py-2 text-right">
-              {selected ? (
-                <a
-                  href={modelsUrl({ ...state, cmp: toggleCompare(cmp, m.slug) })}
-                  rel="nofollow"
-                  data-keep-scroll
-                  data-astro-history="replace"
-                  aria-label={`从对比中移除 ${m.name}`}
-                  class="press inline-flex min-h-9 items-center rounded-lg bg-hot px-3 text-xs font-bold whitespace-nowrap text-white no-underline"
-                >
-                  ✓ 已加入
-                </a>
-              ) : full ? (
-                <span class="text-xs text-mute" title={`最多同时对比 ${MAX_COMPARE} 个模型`}>
-                  已满
-                </span>
-              ) : (
-                <a
-                  href={modelsUrl({ ...state, cmp: toggleCompare(cmp, m.slug) })}
-                  rel="nofollow"
-                  data-keep-scroll
-                  data-astro-history="replace"
-                  aria-label={`把 ${m.name} 加入对比`}
-                  class="press inline-flex min-h-9 items-center rounded-lg border border-line px-3 text-xs whitespace-nowrap no-underline hover:border-ink"
-                >
-                  ＋ 对比
-                </a>
-              )}
+              <a
+                href={toggleHref}
+                rel="nofollow"
+                data-keep-scroll
+                data-astro-history="replace"
+                data-cmp-toggle={m.slug}
+                aria-label={`从对比中移除 ${m.name}`}
+                class="cmp-on press inline-flex min-h-9 items-center rounded-lg bg-hot px-3 text-xs font-bold whitespace-nowrap text-white no-underline"
+              >
+                ✓ 已加入
+              </a>
+              <span class="cmp-full text-xs text-mute" title={`最多同时对比 ${MAX_COMPARE} 个模型`}>
+                已满
+              </span>
+              <a
+                href={toggleHref}
+                rel="nofollow"
+                data-keep-scroll
+                data-astro-history="replace"
+                data-cmp-toggle={m.slug}
+                aria-label={`把 ${m.name} 加入对比`}
+                class="cmp-add press inline-flex min-h-9 items-center rounded-lg border border-line px-3 text-xs whitespace-nowrap no-underline hover:border-ink"
+              >
+                ＋ 对比
+              </a>
             </td>
           </tr>
         );
@@ -92,3 +93,20 @@ const full = cmp.length >= MAX_COMPARE;
     </tbody>
   </table>
 </div>
+
+<style is:global>
+  .compare-row:hover {
+    background: var(--color-hover);
+  }
+  .compare-row[data-selected] {
+    background: color-mix(in srgb, var(--color-hot) 5%, transparent);
+  }
+  /* 每行只显示一个开关：已加入 / 已满 / 加入 */
+  .compare-row:not([data-selected]) .cmp-on,
+  .compare-row[data-selected] .cmp-full,
+  .compare-row[data-selected] .cmp-add,
+  .compare-table:not([data-full]) .cmp-full,
+  .compare-table[data-full] .compare-row:not([data-selected]) .cmp-add {
+    display: none;
+  }
+</style>

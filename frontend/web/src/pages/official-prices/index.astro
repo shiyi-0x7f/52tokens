@@ -1,8 +1,10 @@
 ---
-import BrandMark from "../../components/BrandMark.astro";
+import CategoryBanner from "../../components/CategoryBanner.astro";
+import CategoryTabs, { type CategoryTab } from "../../components/CategoryTabs.astro";
 import EmptyState from "../../components/EmptyState.astro";
 import BaseLayout from "../../layouts/BaseLayout.astro";
 import { internalGet } from "../../lib/api";
+import { brandOf } from "../../lib/brand";
 import { formatPrice, formatRelative } from "../../lib/format";
 import { loadOr } from "../../lib/load";
 import type { OfficialPlanSummary } from "../../lib/types";
@@ -14,7 +16,35 @@ const apps = [...new Set(plans.map((p) => p.app_slug))].map((slug) => {
   const items = plans.filter((p) => p.app_slug === slug);
   return { slug, name: items[0]?.app_name ?? slug, plans: items };
 });
-const fetchedAt = plans.map((p) => p.fetched_at).find(Boolean);
+const fetchedAt = plans
+  .map((p) => p.fetched_at)
+  .filter((v): v is string => v !== null)
+  .sort()
+  .at(-1);
+
+// 所有应用都渲染进页面，只显示当前的（网址参数 ?app=，无效时取第一个）；
+// 点击切换在页面内完成，见 CategoryTabs
+const requested = Astro.url.searchParams.get("app");
+const active = apps.find((a) => a.slug === requested) ?? apps[0] ?? null;
+const tabs: CategoryTab[] = apps.map((a, i) => ({
+  key: a.slug,
+  label: a.name,
+  href: i === 0 ? "/official-prices" : `/official-prices?${new URLSearchParams({ app: a.slug })}`,
+  count: a.plans.length,
+  brandKeys: [a.slug],
+}));
+
+/** 该应用里最便宜的入门价（按人民币，不分档位） */
+const entryOf = (items: OfficialPlanSummary[]) =>
+  items
+    .flatMap((p) => (p.cheapest?.cny_price ? [{ plan: p, cny: Number(p.cheapest.cny_price) }] : []))
+    .sort((a, b) => a.cny - b.cny)[0];
+const PERIOD: Record<string, string> = { monthly: "月付", annual: "年付" };
+/** 最便宜地区比美区省多少（%）；没有美区价或不比美区便宜时为 null */
+const saving = (p: OfficialPlanSummary) => {
+  const pct = p.cheapest?.vs_us_percent;
+  return pct !== null && pct !== undefined && pct < 100 ? 100 - pct : null;
+};
 ---
 
 <BaseLayout
@@ -23,10 +53,9 @@ const fetchedAt = plans.map((p) => p.fetched_at).find(Boolean);
 >
   <header class="mb-5">
     <h1 class="text-2xl font-black">官方订阅地区价</h1>
-    <p class="mt-1 text-sm text-mute">
-      同一个官方订阅，在不同国家 / 地区的 App Store 价格差别很大。下面按人民币折算比较。
-      {fetchedAt && `价格${formatRelative(fetchedAt)}核实。`}
-    </p>
+    {fetchedAt && (
+      <p class="mt-1 text-sm text-mute">各国 App Store 价格，{formatRelative(fetchedAt)}核实</p>
+    )}
   </header>
 
   {!ok ? (
@@ -34,54 +63,97 @@ const fetchedAt = plans.map((p) => p.fetched_at).find(Boolean);
   ) : plans.length === 0 ? (
     <EmptyState title="价格整理中" hint="核实后会在这里列出。" />
   ) : (
-    apps.map((app) => (
-      <section class="mb-6">
-        <h2 class="mb-3 flex items-center gap-2 font-black">
-          <BrandMark name={app.name} keys={[app.slug]} size="sm" />
-          {app.name}
-        </h2>
-        <div class="overflow-x-auto rounded-(--radius-card) bg-card">
-          <table class="w-full min-w-[560px] text-sm">
-            <thead>
-              <tr class="border-b border-line text-left text-xs text-mute">
-                <th class="px-4 py-2.5 font-medium">订阅</th>
-                <th class="px-4 py-2.5 text-right font-medium">美区</th>
-                <th class="px-4 py-2.5 text-right font-medium">最便宜地区</th>
-              </tr>
-            </thead>
-            <tbody>
-              {app.plans.map((p) => (
-                <tr class="border-b border-line last:border-b-0">
-                  <td class="px-4 py-3">
-                    <a href={`/official-prices/${p.app_slug}/${p.plan_slug}`} class="font-medium">
-                      {p.plan_name}
-                    </a>
-                    <span class="ml-2 text-xs text-mute">{p.region_count} 个地区</span>
-                  </td>
-                  <td class="px-4 py-3 text-right font-mono whitespace-nowrap">
-                    {p.us ? `${p.us.price_text} ≈ ${formatPrice(p.us.cny_price, "CNY")}` : "—"}
-                  </td>
-                  <td class="px-4 py-3 text-right whitespace-nowrap">
-                    {p.cheapest ? (
-                      <>
-                        <span class="text-sub">{p.cheapest.country_label}</span>{" "}
-                        <span class="font-mono font-bold text-hot">
-                          {formatPrice(p.cheapest.cny_price, "CNY")}
+    <div data-category-root>
+      <CategoryTabs tabs={tabs} activeKey={active?.slug ?? null} label="订阅应用" />
+      {apps.map((app) => {
+        const brand = brandOf(app.name, app.slug);
+        const entry = entryOf(app.plans);
+        return (
+          <section
+            data-category-panel={app.slug}
+            hidden={app !== active}
+            aria-labelledby={`app-title-${app.slug}`}
+          >
+            <CategoryBanner
+              name={app.name}
+              brandKeys={[app.slug]}
+              titleId={`app-title-${app.slug}`}
+            >
+              <span>{app.plans.length} 个档位</span>
+              {entry && (
+                <span>
+                  最低{" "}
+                  <b class="font-mono text-base text-hot">
+                    {formatPrice(String(entry.cny), "CNY")}
+                  </b>{" "}
+                  起（{entry.plan.plan_name} · {entry.plan.cheapest?.country_label}）
+                </span>
+              )}
+            </CategoryBanner>
+            <ul class="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+              {app.plans.map((p) => {
+                const off = saving(p);
+                const pct = p.cheapest?.vs_us_percent ?? null;
+                return (
+                  <li>
+                    <a
+                      href={`/official-prices/${p.app_slug}/${p.plan_slug}`}
+                      class="press flex h-full flex-col rounded-(--radius-card) bg-card p-4 no-underline hover:-translate-y-0.5 hover:shadow-md"
+                    >
+                      <span class="flex items-start justify-between gap-2">
+                        <span class="font-bold">{p.plan_name}</span>
+                        <span class="rounded-full bg-chip px-2 py-0.5 text-xs text-sub">
+                          {PERIOD[p.billing_period] ?? p.billing_period}
                         </span>
-                      </>
-                    ) : (
-                      "—"
-                    )}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      </section>
-    ))
+                      </span>
+                      {p.cheapest ? (
+                        <>
+                          <span class="mt-3 flex items-baseline gap-2">
+                            <span class="font-mono text-2xl font-black text-hot">
+                              {formatPrice(p.cheapest.cny_price, "CNY")}
+                            </span>
+                            <span class="text-sm text-sub">{p.cheapest.country_label}</span>
+                            {off !== null && (
+                              <span class="ml-auto rounded-full bg-tone-green-bg px-2 py-0.5 text-xs font-bold text-tone-green">
+                                省 {off}%
+                              </span>
+                            )}
+                          </span>
+                          {pct !== null && (
+                            <span
+                              class="mt-3 block h-1.5 overflow-hidden rounded-full bg-chip"
+                              role="img"
+                              aria-label={`最便宜地区是美区价格的 ${pct}%`}
+                            >
+                              <span
+                                class="block h-full rounded-full"
+                                style={`width:${Math.min(pct, 100)}%;background:${brand.color}`}
+                              />
+                            </span>
+                          )}
+                          <span class="mt-2 flex justify-between gap-2 text-xs text-mute">
+                            <span>
+                              {p.us
+                                ? `美区 ${p.us.price_text} ≈ ${formatPrice(p.us.cny_price, "CNY")}`
+                                : "美区暂无价格"}
+                            </span>
+                            <span>{p.region_count} 个地区 →</span>
+                          </span>
+                        </>
+                      ) : (
+                        <span class="mt-3 text-sm text-mute">暂无地区价格</span>
+                      )}
+                    </a>
+                  </li>
+                );
+              })}
+            </ul>
+          </section>
+        );
+      })}
+    </div>
   )}
-  <p class="text-xs text-mute">
+  <p class="mt-6 text-xs text-mute">
     价格来自各国 App Store 的公开页面；订阅需要对应地区的 Apple ID 和当地支付方式，App Store
     价格可能含当地税费，与官网网页订阅价不同。
   </p>

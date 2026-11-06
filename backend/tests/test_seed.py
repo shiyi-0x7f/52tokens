@@ -130,12 +130,32 @@ async def test_repository_seed_files_are_valid(db_session: AsyncSession) -> None
     # 重复导入幂等
     again = await seed(db_session, DEFAULT_SEED_DIR)
     assert again == counts
-    # 帮人绕过实名验证的商品照样参与归类，但不对外展示
-    kyc = await db_session.scalar(
-        select(ShopProduct).where(ShopProduct.slug == "identity-verification")
-    )
-    assert kyc is not None
-    assert kyc.status == PublishStatus.HIDDEN
+    # 涉及灰黑产的商品照样参与归类，但不对外展示（见 shop_products.yaml 顶部说明）
+    risky = {
+        "identity-verification",
+        "openai-phone-verification",
+        "google-phone-verification",
+        "paypal-phone-verification",
+        "phone-verification",
+        "virtual-card",
+        "education-email",
+        "gmail-account",
+        "outlook-account",
+        "email-account",
+        "icloud-email",
+        "apple-id-account",
+        "x-twitter-account",
+        "x-twitter-premium",
+        "telegram-account",
+        "telegram-premium",
+    }
+    rows = (
+        await db_session.execute(
+            select(ShopProduct.slug, ShopProduct.status).where(ShopProduct.slug.in_(risky))
+        )
+    ).all()
+    assert {slug for slug, _ in rows} == risky
+    assert all(status == PublishStatus.HIDDEN for _, status in rows)
     # 仓库种子里的平台只放核实过的名称和官网，要么发布，要么明确下线（如已停服），不留草稿
     drafts = await db_session.scalar(
         select(func.count()).select_from(Platform).where(Platform.status == PublishStatus.DRAFT)
