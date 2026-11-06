@@ -1,0 +1,118 @@
+---
+/**
+ * 卡网比价的搜索与快速筛选。本身是一个 GET 表单（没有 JS 时提交后由服务端筛选）；
+ * 有 JS 时由 scripts/products-filter.ts 即时筛选，不提交、不刷新。
+ * 选项少，用可点选的标签（复选 / 单选），不用下拉框。
+ */
+import type { ProductFilter } from "../lib/product-filter";
+
+interface Props {
+  filter: ProductFilter;
+  /** 页面上实际有的商品类型 */
+  types: string[];
+  /** 当前大类：没有 JS 时提交表单要带上 */
+  platform: string | null;
+}
+const { filter, types, platform } = Astro.props;
+const chip =
+  "press inline-flex min-h-9 shrink-0 cursor-pointer items-center gap-1 rounded-full border border-line bg-card px-3 text-sm whitespace-nowrap select-none hover:border-ink has-[:checked]:border-ink has-[:checked]:bg-ink has-[:checked]:font-bold has-[:checked]:text-white has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-hot/40";
+---
+
+<form method="get" action="/products" role="search" data-product-filter class="mb-4 space-y-3">
+  {platform && <input type="hidden" name="platform" value={platform} />}
+  <div class="flex gap-2">
+    <label class="sr-only" for="product-search">
+      搜索商品
+    </label>
+    <input
+      id="product-search"
+      type="search"
+      name="q"
+      value={filter.q}
+      maxlength="50"
+      placeholder="搜索商品，如 Plus、Team、Kiro"
+      autocomplete="off"
+      enterkeyhint="search"
+      class="press min-h-11 min-w-0 flex-1 rounded-[10px] border border-line bg-card px-3 focus:border-ink focus:outline-none"
+    />
+    <button
+      type="submit"
+      class="filter-submit press min-h-11 cursor-pointer rounded-[10px] bg-ink px-4 font-bold text-white"
+    >
+      搜索
+    </button>
+  </div>
+
+  <div class="scrollbar-thin -mx-4 flex items-center gap-2 overflow-x-auto px-4 pb-1 sm:mx-0 sm:flex-wrap sm:px-0">
+    <label class={chip}>
+      <input type="checkbox" name="stock" value="1" checked={filter.inStock} class="sr-only" />
+      只看有货
+    </label>
+    <span class="h-5 w-px shrink-0 bg-line" aria-hidden="true"></span>
+    {types.map((t) => (
+      <label class={chip}>
+        <input
+          type="checkbox"
+          name="type"
+          value={t}
+          checked={filter.types.includes(t)}
+          class="sr-only"
+        />
+        {t}
+      </label>
+    ))}
+    <span class="h-5 w-px shrink-0 bg-line" aria-hidden="true"></span>
+    <fieldset class="flex shrink-0 gap-1 rounded-full bg-chip p-1">
+      <legend class="sr-only">排序</legend>
+      <label class="sort-option">
+        <input
+          type="radio"
+          name="sort"
+          value=""
+          checked={filter.sort === "default"}
+          class="sr-only"
+        />
+        默认
+      </label>
+      <label class="sort-option">
+        <input
+          type="radio"
+          name="sort"
+          value="price"
+          checked={filter.sort === "price"}
+          class="sr-only"
+        />
+        价格最低
+      </label>
+    </fieldset>
+  </div>
+</form>
+
+<style is:global>
+  .sort-option {
+    display: inline-flex;
+    min-height: 1.75rem;
+    cursor: pointer;
+    align-items: center;
+    border-radius: 9999px;
+    padding: 0 0.75rem;
+    font-size: 0.875rem;
+    color: var(--color-sub);
+    transition:
+      background-color var(--motion-fast) ease,
+      color var(--motion-fast) ease;
+  }
+  .sort-option:has(:checked) {
+    background: var(--color-card);
+    color: var(--color-ink);
+    font-weight: 700;
+    box-shadow: 0 1px 2px rgb(0 0 0 / 0.08);
+  }
+  .sort-option:has(:focus-visible) {
+    outline: 2px solid color-mix(in srgb, var(--color-hot) 40%, transparent);
+  }
+  /* 有 JS 时即时筛选，不需要搜索按钮 */
+  [data-filter-live] .filter-submit {
+    display: none;
+  }
+</style>
