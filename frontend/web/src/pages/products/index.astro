@@ -2,6 +2,7 @@
 import CategoryBanner from "../../components/CategoryBanner.astro";
 import CategoryTabs, { type CategoryTab } from "../../components/CategoryTabs.astro";
 import EmptyState from "../../components/EmptyState.astro";
+import ProductFilterBar from "../../components/ProductFilterBar.astro";
 import ShopDisclaimer from "../../components/ShopDisclaimer.astro";
 import TypeChip from "../../components/TypeChip.astro";
 import BaseLayout from "../../layouts/BaseLayout.astro";
@@ -9,6 +10,13 @@ import { internalGet } from "../../lib/api";
 import { brandOf } from "../../lib/brand";
 import { formatPrice } from "../../lib/format";
 import { loadOr } from "../../lib/load";
+import {
+  type FilterableProduct,
+  compareByPrice,
+  isFiltering,
+  matches,
+  parseProductFilter,
+} from "../../lib/product-filter";
 import { shopTypeTone } from "../../lib/tones";
 import type { ShopProductSummary } from "../../lib/types";
 
@@ -28,11 +36,35 @@ const groups = [...new Set(products.map((p) => p.platform))]
 // 点击切换在页面内完成，见 CategoryTabs
 const requested = Astro.url.searchParams.get("platform");
 const active = groups.find((g) => g.platform === requested) ?? groups[0] ?? null;
-const tabs: CategoryTab[] = groups.map((g, i) => ({
+
+// 搜索与筛选：首屏按网址参数筛好（没有 JS 时也正确），之后由 scripts/products-filter.ts 即时更新。
+// 有搜索词时结果跨大类：所有有匹配的大类都显示
+const filter = parseProductFilter(Astro.url.searchParams);
+const filtering = isFiltering(filter);
+const searching = filter.q !== "";
+const filterable = (p: ShopProductSummary): FilterableProduct => ({
+  name: p.name,
+  spec: p.spec,
+  platform: p.platform,
+  productType: p.product_type,
+  inStock: p.in_stock_shops > 0,
+  price: p.min_price ? Number(p.min_price) : null,
+});
+const views = groups.map((g) => {
+  const items = g.items.map((p, order) => ({ p, order, f: filterable(p) }));
+  if (filter.sort === "price") items.sort((a, b) => compareByPrice(a.f, b.f) || a.order - b.order);
+  const shown = items.filter((x) => matches(x.f, filter)).length;
+  return { ...g, items, shown, visible: searching ? shown > 0 : g === active };
+});
+const nothing = views.every((v) => !v.visible || v.shown === 0);
+const types = [...new Set(products.map((p) => p.product_type))];
+
+const tabs: CategoryTab[] = views.map((g, i) => ({
   key: g.platform,
   label: g.platform,
   href: i === 0 ? "/products" : `/products?${new URLSearchParams({ platform: g.platform })}`,
-  count: g.items.length,
+  count: filtering ? g.shown : g.items.length,
+  empty: filtering && g.shown === 0,
 }));
 const stats = (items: ShopProductSummary[]) => {
   const prices = items.flatMap((p) => (p.min_price ? [Number(p.min_price)] : []));
@@ -66,15 +98,32 @@ const stats = (items: ShopProductSummary[]) => {
   ) : products.length === 0 ? (
     <EmptyState title="报价采集中" hint="店铺报价采集后会在这里列出。" />
   ) : (
-    <div class="mt-6" data-category-root>
+    <div class="mt-6" data-category-root data-searching={searching ? "" : undefined}>
+      <ProductFilterBar
+        filter={filter}
+        types={types}
+        platform={active && active !== groups[0] ? active.platform : null}
+      />
       <CategoryTabs tabs={tabs} activeKey={active?.platform ?? null} label="商品大类" />
-      {groups.map((g, gi) => {
-        const { lowest, inStock } = stats(g.items);
+      <div data-filter-empty hidden={!nothing}>
+        <EmptyState title="没有符合条件的商品" hint="换个关键词，或少选几个筛选条件。">
+          <a
+            href="/products"
+            data-filter-clear
+            class="mt-4 inline-block text-sm font-bold text-hot"
+          >
+            清除搜索和筛选
+          </a>
+        </EmptyState>
+      </div>
+      {views.map((g, gi) => {
+        const { lowest, inStock } = stats(g.items.map((x) => x.p));
         return (
           <section
             data-category-panel={g.platform}
-            hidden={g !== active}
+            hidden={!g.visible}
             aria-labelledby={`group-title-${gi}`}
+            class="mb-6"
           >
             <CategoryBanner name={g.platform} titleId={`group-title-${gi}`}>
               <span>{g.items.length} 个商品</span>
@@ -88,8 +137,18 @@ const stats = (items: ShopProductSummary[]) => {
               )}
             </CategoryBanner>
             <ul class="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-              {g.items.map((p) => (
-                <li>
+              {g.items.map(({ p, order, f }) => (
+                <li
+                  data-product
+                  data-order={order}
+                  data-name={f.name}
+                  data-spec={f.spec}
+                  data-platform={f.platform}
+                  data-type={f.productType}
+                  data-stock={f.inStock ? "1" : undefined}
+                  data-price={f.price ?? undefined}
+                  hidden={!matches(f, filter)}
+                >
                   <a
                     href={`/products/${p.slug}`}
                     class="press flex h-full flex-col overflow-hidden rounded-(--radius-card) bg-card no-underline hover:-translate-y-0.5 hover:shadow-md"
@@ -132,3 +191,7 @@ const stats = (items: ShopProductSummary[]) => {
     </div>
   )}
 </BaseLayout>
+
+<script>
+  import "../../scripts/products-filter";
+</script>

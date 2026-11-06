@@ -16,6 +16,8 @@ export interface CategoryTab {
   label: string;
   href: string;
   count: number;
+  /** 筛选后没有匹配项：变淡显示 */
+  empty?: boolean;
   /** 品牌查找键（平台 slug、应用 slug 等），查不到时用 label 取色 */
   brandKeys?: string[];
 }
@@ -39,6 +41,7 @@ const { tabs, activeKey, label } = Astro.props;
             href={t.href}
             data-category-tab={t.key}
             aria-current={t.key === activeKey ? "page" : undefined}
+            data-empty={t.empty ? "" : undefined}
             class="category-tab press group inline-flex min-h-11 items-center gap-2 rounded-full py-1.5 pr-4 pl-1.5 text-sm whitespace-nowrap no-underline"
             style={`--brand:${brand.color};--on-brand:${brand.dark ? "#18181b" : "#ffffff"}`}
           >
@@ -116,6 +119,19 @@ const { tabs, activeKey, label } = Astro.props;
       background-color var(--motion-base) ease;
   }
 
+  /* 搜索时结果跨大类，不突出某一个大类；没有匹配的大类变淡 */
+  [data-category-root][data-searching] .category-indicator {
+    opacity: 0;
+  }
+  [data-category-root][data-searching] .category-tab[aria-current="page"] {
+    color: var(--color-sub);
+    font-weight: inherit;
+    background: transparent;
+  }
+  .category-tab[data-empty] {
+    opacity: 0.45;
+  }
+
   /* 切换后内容快速淡入（从 hidden 变为显示时动画会重新播放） */
   [data-category-panel]:not([hidden]) {
     animation: rise-in var(--motion-fast) var(--ease-out) both;
@@ -175,11 +191,13 @@ const { tabs, activeKey, label } = Astro.props;
       history.replaceState(history.state, "", tab.getAttribute("href") ?? location.href);
     });
 
-    // 字体加载、窗口变化后按钮宽度会变，重新对齐底块
-    new ResizeObserver(() => {
+    // 字体加载、窗口变化、筛选后数字变化都会改变按钮宽度，重新对齐底块
+    const observer = new ResizeObserver(() => {
       const active = tabs.find((t) => t.getAttribute("aria-current") === "page");
       if (active) place(list, active);
-    }).observe(list);
+    });
+    observer.observe(list);
+    for (const t of tabs) observer.observe(t);
   }
 
   document.addEventListener("astro:page-load", () => {
