@@ -39,7 +39,7 @@
 ### 2.2 边界（必须遵守）
 
 - **只采集活动信息，不代用户签到、不托管用户账号/Cookie**。代签到涉及凭据安全和平台 ToS，一旦出事会直接毁掉 SEO 与商业信誉。
-- 用"**签到提醒**"代替代签到：用户订阅某平台后，每天通过 Telegram / 邮件 / Web Push 提醒——这是最好的留存功能。
+- 用"**签到提醒**"代替代签到：用户订阅某平台后，每天通过 QQ 机器人 / 邮件 / Web Push 提醒——这是最好的留存功能。
 - 过期活动自动下沉到"已结束"，不删除（保留页面权重，并引导到同平台进行中的活动）。
 - 不绕过登录墙、验证码、WAF；社区来源只取公开内容并保留出处。
 
@@ -87,7 +87,7 @@ LLM 只负责"从文本里抽结构化字段 + 给置信度"，**发布必须过
 
 ### 3.2 社交分发与回访
 
-- **Telegram 频道 + Bot**：新活动 / 降价自动推送；Bot 支持订阅"签到提醒""某模型降价提醒"
+- **QQ 机器人**（后期做）：新活动 / 降价推送与"签到提醒""某模型降价提醒"等订阅都由 QQ 机器人触发；不做 Telegram 频道自动推送
 - **RSS**：`/deals/rss.xml`、每个平台单独的 feed（只含标题 + 链接 + 摘要，不含结构化价格字段）
 - **邮件周报**："本周 AI 羊毛"（建立自有邮件列表，后续可商业化）
 - **Web Push**：签到提醒
@@ -116,7 +116,7 @@ LLM 只负责"从文本里抽结构化字段 + 给置信度"，**发布必须过
 | 优惠活动域 | `backend/app/domains/deals/`：`deals`、`deal_platforms`、`deal_sources`、`deal_snapshots`、`deal_submissions` | 与 offers 同样分"原始 → 审核 → 公开"三层 |
 | 页面变更监测 | 采集器插件 `page_watch`：抓取 → 正文提取 → hash diff → 有变更才进 LLM | 控制 LLM 成本 |
 | LLM 抽取 | 统一 `llm_extractor` 服务（OpenAI 兼容协议），输出 Pydantic schema + 置信度；用**硅基流动**，`SILICONFLOW_BASE_URL` / `SILICONFLOW_API_KEY` / `LLM_EXTRACT_MODEL` 走 `.env` | 分两档：免费小模型（如 Qwen3-8B）做初筛/分类，便宜的中等模型（如 Qwen3-30B-A3B）做字段抽取；具体模型和价格上线前从 `/v1/models` 核实 |
-| 提醒与订阅 | `subscriptions` 表 + arq 定时任务 → Telegram Bot / SMTP / Web Push | 本地用 `dev-mailhog` 测邮件 |
+| 提醒与订阅 | `subscriptions` 表 + arq 定时任务 → QQ 机器人 / SMTP / Web Push | 本地用 `dev-mailhog` 测邮件 |
 | 价格时间序列 | 已实现：`model_price_history`（每个对外展示的平台×模型）与 `shop_product_price_history`（每个标准商品的有货最低价、有货店铺数，规则复用比价页）；按北京时间每天一行，worker 每 6 小时快照、同一天覆盖，手动 `python -m app.cli.collect history` | 支撑历史图与月报；对外读接口和历史图等数据攒够再做 |
 | SEO 基础设施 | 公开站分片 sitemap 端点、JSON-LD 组件、satori 分享图；后端数据变更 → 清页面缓存（Redis + Cloudflare purge） | |
 | 搜索 | 先用 PostgreSQL `pg_trgm` + 全文检索 | 量大再考虑 Meilisearch（需另行同意） |
@@ -130,7 +130,7 @@ LLM 只负责"从文本里抽结构化字段 + 给置信度"，**发布必须过
 | --- | --- | --- |
 | **P0 骨架**（1 周） | monorepo、`.editorconfig`/`.gitattributes`、pre-commit、门禁命令、CI、`start-dev.sh`、统一响应/错误码/日志、账号与后台登录、采集器插件框架 + 任务队列；后端只开放内网 + 服务令牌、公开站限流 middleware、Turnstile、Docker 化（compose dev/prod） | `check` 全绿；空站可跑 |
 | **P1 官方 API + 优惠活动**（2–3 周） | 模型/平台/套餐数据；活动收录、审核后台、提交表单；`/models`、`/free`、`/deals` 程序化页面；sitemap / JSON-LD / OG 图；RSS；`/go` 出站跳转 | 上线、提交搜索引擎；收录 ≥ 50 平台、≥ 100 条活动 |
-| **P2 官方订阅地区价 + 提醒** | 地区价采集与汇率换算、`/official-prices/{plan}/{region}`；Telegram 频道/Bot、签到提醒、降价提醒、邮件周报；价格历史 | 有回访用户与订阅列表 |
+| **P2 官方订阅地区价 + 提醒** | 地区价采集与汇率换算、`/official-prices/{plan}/{region}`；QQ 机器人（后期）、签到提醒、降价提醒、邮件周报；价格历史 | 有回访用户与订阅列表 |
 | **P3 卡网订阅比价** | 卡网采集器（shop_api / dujiao / html / browser）、标准商品归类、有货最低价、反馈与风险标签 | 覆盖主流卡网，最低价规则有测试 |
 | **P4 商业化深化** | 赞助位、商家认证、数据 API、月度报告 | 第一笔非 AFF 收入 |
 
@@ -139,7 +139,7 @@ LLM 只负责"从文本里抽结构化字段 + 给置信度"，**发布必须过
 ## 7. 指标
 
 - 流量：自然搜索点击（GSC / 百度）、收录页数、外链域数
-- 回访：周活、Telegram/邮件订阅数、提醒开启数
+- 回访：周活、QQ 机器人/邮件订阅数、提醒开启数
 - 商业：`/go` 出站点击、AFF 转化、赞助收入
 - 数据质量：活动平均"最近确认时间"、过期活动及时下沉率、审核待办积压
 
@@ -148,7 +148,8 @@ LLM 只负责"从文本里抽结构化字段 + 给置信度"，**发布必须过
 | 日期 | 决策 | 影响 |
 | --- | --- | --- |
 | 2026-10-22 | LLM 用**硅基流动**（便宜优先） | 见第 5 节 LLM 行 |
-| 2026-10-22 | **不做国内备案** | 服务器放海外 / 香港（宝塔照常），国内访问走优化线路或套 CDN；SEO 主攻 Google / Bing，百度收录预期偏低；国内流量更依赖社交分发（Telegram、社区、公众号外链） |
+| 2026-10-22 | **不做国内备案** | 服务器放海外 / 香港（宝塔照常），国内访问走优化线路或套 CDN；SEO 主攻 Google / Bing，百度收录预期偏低；国内流量更依赖社交分发（QQ 群 / 机器人、社区、公众号外链） |
+| 2026-11-06 | **不做 Telegram 频道自动推送**，推送与提醒后期改由 **QQ 机器人**触发 | 第 3.2 节社交分发、第 5 节提醒与订阅、P2 分期都改为 QQ 机器人；采集来源里的公开 Telegram 频道不受影响 |
 | 2026-10-22 | **公开页面不下发 JSON**，防止低成本逆向 | 架构改为 BFF：后端只对内网开放；SEO 页面照常输出 HTML；付费数据 API 是唯一的 JSON 出口；见 `dev_docs/architecture/data-protection.md` |
 | 2026-10-22 | 前端改用 **Astro（公开站）+ React/Vite SPA（后台）**，不用 Next.js | Astro 默认只输出 HTML、不带激活数据，天然满足"不下发 JSON"，页面更轻；后台代码不进公开站；代价是页面缓存刷新与分享图自行接入 |
 | 2026-10-22 | **LLM 直连硅基流动，不走 ADC** | 52tokens 自带轻量 OpenAI 兼容客户端（`SILICONFLOW_*` 配置），不依赖 ADC |
