@@ -143,6 +143,32 @@ async def test_shop_api_uses_settled_price() -> None:
     assert "自动发货" in items[0].tags
 
 
+async def test_shop_api_falls_back_to_listed_price_when_quote_fails() -> None:
+    """单个商品的结算价接口报错（实测 wzyp.cn 偶发 520）不连累整家店：退回标价。"""
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        path = request.url.path
+        if path == "/shopApi/Shop/info":
+            return httpx.Response(200, json={"code": 1, "data": {"nickname": "店"}})
+        if path == "/shopApi/Shop/categoryList":
+            return httpx.Response(200, json={"code": 1, "data": [{"id": 5, "goods_count": 2}]})
+        if path == "/shopApi/Shop/goodsList":
+            goods = [
+                {"name": "GPT Plus 卡密", "price": "100", "goods_key": "k1"},
+                {"name": "Claude Pro 卡密", "price": "150", "goods_key": "k2"},
+            ]
+            return httpx.Response(200, json={"code": 1, "data": {"list": goods}})
+        if path == "/shopApi/Shop/getGoodsPrice":
+            if json.loads(request.content)["goods_key"] == "k1":
+                return httpx.Response(520)
+            return httpx.Response(200, json={"code": 1, "data": {"total_amount": "153"}})
+        return httpx.Response(200, json={"data": []})
+
+    items, errors = await _collect("shopApi", "https://pay.test/shop/abc", handler)
+    assert errors == []
+    assert sorted(i.price for i in items) == [Decimal("100.00"), Decimal("153.00")]
+
+
 async def test_shop_api_requires_merchant_url() -> None:
     items, errors = await _collect("shopApi", "https://pay.test", _routes({}))
     assert items == []

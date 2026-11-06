@@ -219,6 +219,12 @@
 - host: upgrade.xiaoheiwan.com
   base_url: https://upgrade.xiaoheiwan.com
   collector_kind: xiaoheiwan
+# 链动小铺（wzyp.cn，ShopApi 多商户平台）：每个商户一条 /shop/<token>；商品链接可在后台自动反查店铺。
+# 机房 / 代理 IP 会被阿里云 WAF 要求滑块验证，采集机器需直连（NO_PROXY 加 wzyp.cn）
+- host: wzyp.cn
+  base_url: https://wzyp.cn
+  collector_kind: shopApi
+  entry_url: https://wzyp.cn/shop/mirage
 # 16688 多商户平台：每个商户一条，店铺地址必须用 www 域名（裸域名 301 会让 POST 丢掉请求体）
 - host: www.16688.com.cn
   base_url: https://www.16688.com.cn

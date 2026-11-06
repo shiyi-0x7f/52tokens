@@ -1,24 +1,61 @@
-"""ShopApi 多商户平台：同一域名下有很多商户，店铺地址必须是具体商户的 /shop/<token>。
+"""ShopApi 多商户平台（链动小铺 wzyp.cn 等）：同一域名下有很多商户，店铺地址必须是具体商户的
+/shop/<token>；只有商品链接 /item/<goods_key> 时，可用 resolve_item_shop 反查所属店铺。
 
 价格取平台结算接口给出的实付金额（含支付手续费），拿不到时退回标价。
+注意：wzyp.cn 前面有阿里云 WAF，机房 / 代理 IP 发出的请求会被要求滑块验证（返回验证页，
+这里按失败处理、不尝试绕过）；家宽等普通出口 IP 可以正常访问公开接口。
 """
 
 import re
 from typing import Any, ClassVar
 from urllib.parse import unquote, urlsplit
 
+import httpx
+from loguru import logger
+
 from app.collectors.registry import register
-from app.collectors.shops.base import ShopCollector, ShopFetchError, ShopItem, ShopTarget, make_item
+from app.collectors.shops.base import (
+    ShopCollector,
+    ShopFetchError,
+    ShopItem,
+    ShopTarget,
+    base_url_of,
+    make_item,
+)
 from app.collectors.shops.parse import clean_text, compact, integer, number
 
 _MAX_PAGES = 10
 _PAGE_SIZE = 100
 _SHOP_TOKEN = re.compile(r"/shop/([^/?#]+)")
+_ITEM_KEY = re.compile(r"/item/([^/?#]+)")
 
 
 def shop_token(url: str) -> str | None:
     m = _SHOP_TOKEN.search(urlsplit(url).path)
     return unquote(m.group(1)) if m else None
+
+
+def item_key(url: str) -> str | None:
+    m = _ITEM_KEY.search(urlsplit(url).path)
+    return unquote(m.group(1)) if m else None
+
+
+async def resolve_item_shop(client: httpx.AsyncClient, url: str) -> str:
+    """商品链接 → 所属商户的店铺地址（公开商品详情接口里的 user.token）。"""
+    key = item_key(url)
+    if not key:
+        raise ShopFetchError("不是商品链接（/item/<goods_key>）")
+    base = base_url_of(url)
+    detail = await ShopApiCollector(client).post_json(
+        f"{base}/shopApi/Shop/goodsInfo", {"goods_key": key, "trade_no": ""}, url
+    )
+    if not _ok(detail):
+        message = detail.get("msg") if isinstance(detail, dict) else None
+        raise ShopFetchError(f"商品详情不可用：{clean_text(message) or '未知原因'}")
+    token = ((detail.get("data") or {}).get("user") or {}).get("token")
+    if not token:
+        raise ShopFetchError("商品详情里没有店铺信息")
+    return f"{base}/shop/{token}"
 
 
 def _ok(payload: Any) -> bool:
@@ -119,16 +156,21 @@ class ShopApiCollector(ShopCollector):
         price = listed
         if goods_key and listed is not None:
             await self.pause()
-            quote = await self.post_json(
-                f"{base}/shopApi/Shop/getGoodsPrice",
-                {
-                    "goods_key": goods_key,
-                    "quantity": 1,
-                    "coupon_code": "",
-                    "channel_id": channel_id,
-                },
-                url,
-            )
+            try:
+                quote = await self.post_json(
+                    f"{base}/shopApi/Shop/getGoodsPrice",
+                    {
+                        "goods_key": goods_key,
+                        "quantity": 1,
+                        "coupon_code": "",
+                        "channel_id": channel_id,
+                    },
+                    url,
+                )
+            except (httpx.HTTPError, ShopFetchError) as exc:
+                # 单个商品的结算价查询失败（如 520）不连累整家店铺：退回标价
+                logger.debug("结算价查询失败，用标价 {} {}", url, exc)
+                quote = None
             total = number((quote.get("data") or {}).get("total_amount")) if _ok(quote) else None
             price = total if total is not None else listed
         extend = g.get("extend") or {}
