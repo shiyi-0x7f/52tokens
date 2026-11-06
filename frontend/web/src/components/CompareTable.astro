@@ -1,0 +1,95 @@
+---
+/** 模型参数对比表：任意组合对比页与精选「A vs B」页共用。 */
+import type { CompareRow } from "../lib/compare";
+import { familyLabel } from "../lib/families";
+import type { ModelDetail } from "../lib/types";
+
+interface Props {
+  models: ModelDetail[];
+  /** 要显示的行（如「只看不同项」过滤后的） */
+  rows: CompareRow[];
+  /** 全部行：用于给行起稳定的过渡动画名，不传等于 rows */
+  allRows?: CompareRow[];
+  /** 传了才在表头显示「移除」链接 */
+  removeUrl?: ((slug: string) => string) | undefined;
+}
+const { models, rows, allRows = rows, removeUrl } = Astro.props;
+
+const groups = [...new Set(rows.map((r) => r.group))].map((group) => ({
+  group,
+  rows: rows.filter((r) => r.group === group),
+}));
+const cellClass = (row: CompareRow, i: number) =>
+  row.cells[i]?.best ? "bg-good/10 font-bold text-good" : "";
+---
+
+<div class="scrollbar-thin overflow-x-auto rounded-(--radius-card) bg-card">
+  <table class="w-full min-w-[640px] table-fixed text-sm">
+    <colgroup>
+      <col class="w-36 sm:w-44" />
+      {models.map(() => (
+        <col />
+      ))}
+    </colgroup>
+    <thead>
+      <tr class="border-b border-line align-top">
+        <th class="sticky left-0 z-10 bg-card px-4 py-3 text-left text-xs font-medium text-mute">
+          参数
+        </th>
+        {models.map((m) => (
+          <th class="px-4 py-3 text-left">
+            <a href={`/models/${m.slug}`} class="block font-black no-underline hover:text-hot">
+              {m.name}
+            </a>
+            <span class="mt-0.5 block text-xs font-normal text-mute">{familyLabel(m.family)}</span>
+            {removeUrl && (
+              <a
+                href={removeUrl(m.slug)}
+                rel="nofollow"
+                data-keep-scroll
+                data-astro-history="replace"
+                class="press mt-1 inline-block text-xs font-normal text-mute hover:text-ink"
+                aria-label={`从对比中移除 ${m.name}`}
+              >
+                移除
+              </a>
+            )}
+          </th>
+        ))}
+      </tr>
+    </thead>
+    {groups.map(({ group, rows: groupRows }) => (
+      <tbody>
+        <tr>
+          <th
+            colspan={models.length + 1}
+            scope="colgroup"
+            class="bg-chip px-4 py-2 text-left text-xs font-bold text-sub"
+          >
+            {group}
+          </th>
+        </tr>
+        {groupRows.map((row) => (
+          <tr
+            transition:name={`compare-row-${allRows.indexOf(row)}`}
+            class="border-b border-line last:border-b-0"
+          >
+            <th
+              scope="row"
+              class="sticky left-0 z-10 bg-card px-4 py-3 text-left font-medium text-sub"
+            >
+              {row.label}
+            </th>
+            {row.cells.map((cell, i) => (
+              <td class:list={["px-4 py-3 font-mono", cellClass(row, i)]}>
+                {cell.text}
+                {cell.best && <span class="sr-only">（最优）</span>}
+              </td>
+            ))}
+          </tr>
+        ))}
+      </tbody>
+    ))}
+  </table>
+  <slot />
+</div>

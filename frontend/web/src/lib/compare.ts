@@ -19,10 +19,10 @@ export interface CompareRow {
   same: boolean;
 }
 
-type PriceField = "input_price" | "output_price" | "cache_read_price";
+export type PriceField = "input_price" | "output_price" | "cache_read_price";
 
 /** 模型在某价格项上的最低付费价：有人民币价用人民币，否则美元 */
-function lowest(
+export function lowest(
   model: ModelDetail,
   field: PriceField,
 ): { value: number; currency: Currency } | null {

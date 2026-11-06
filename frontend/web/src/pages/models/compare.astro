@@ -1,13 +1,13 @@
 ---
 /**
  * 模型参数对比（类似手机参数对比页）。任意组合会产生无数 URL，所以不让搜索引擎收录；
- * 精选的「A vs B」页面以后单独做。
+ * 后台精选的组合另有可收录的 /models/{a}-vs-{b} 页面。
  */
+import CompareTable from "../../components/CompareTable.astro";
 import EmptyState from "../../components/EmptyState.astro";
 import BaseLayout from "../../layouts/BaseLayout.astro";
 import { internalGet, isNotFound } from "../../lib/api";
-import { buildCompareRows, type CompareRow } from "../../lib/compare";
-import { familyLabel } from "../../lib/families";
+import { buildCompareRows } from "../../lib/compare";
 import { compareUrl, modelsUrl, parseCompare } from "../../lib/models-url";
 import type { ModelDetail } from "../../lib/types";
 
@@ -29,17 +29,11 @@ const kept = models.map((m) => m.slug);
 
 const rows = models.length >= 2 ? buildCompareRows(models) : [];
 const shown = onlyDiff ? rows.filter((r) => !r.same) : rows;
-const groups = [...new Set(shown.map((r) => r.group))].map((group) => ({
-  group,
-  rows: shown.filter((r) => r.group === group),
-}));
 
 const removeUrl = (slug: string) => {
   const rest = kept.filter((s) => s !== slug);
   return rest.length >= 2 ? compareUrl(rest, onlyDiff) : modelsUrl({ cmp: rest });
 };
-const cellClass = (row: CompareRow, i: number) =>
-  row.cells[i]?.best ? "bg-good/10 font-bold text-good" : "";
 const title = models.map((m) => m.name).join(" vs ");
 ---
 
@@ -93,78 +87,11 @@ const title = models.map((m) => m.name).join(" vs ");
       </a>
     </EmptyState>
   ) : (
-    <div class="scrollbar-thin overflow-x-auto rounded-(--radius-card) bg-card">
-      <table class="w-full min-w-[640px] table-fixed text-sm">
-        <colgroup>
-          <col class="w-36 sm:w-44" />
-          {models.map(() => (
-            <col />
-          ))}
-        </colgroup>
-        <thead>
-          <tr class="border-b border-line align-top">
-            <th class="sticky left-0 z-10 bg-card px-4 py-3 text-left text-xs font-medium text-mute">
-              参数
-            </th>
-            {models.map((m) => (
-              <th class="px-4 py-3 text-left">
-                <a href={`/models/${m.slug}`} class="block font-black no-underline hover:text-hot">
-                  {m.name}
-                </a>
-                <span class="mt-0.5 block text-xs font-normal text-mute">
-                  {familyLabel(m.family)}
-                </span>
-                <a
-                  href={removeUrl(m.slug)}
-                  rel="nofollow"
-                  data-keep-scroll
-                  data-astro-history="replace"
-                  class="press mt-1 inline-block text-xs font-normal text-mute hover:text-ink"
-                  aria-label={`从对比中移除 ${m.name}`}
-                >
-                  移除
-                </a>
-              </th>
-            ))}
-          </tr>
-        </thead>
-        {groups.map(({ group, rows: groupRows }) => (
-          <tbody>
-            <tr>
-              <th
-                colspan={models.length + 1}
-                scope="colgroup"
-                class="bg-chip px-4 py-2 text-left text-xs font-bold text-sub"
-              >
-                {group}
-              </th>
-            </tr>
-            {groupRows.map((row) => (
-              <tr
-                transition:name={`compare-row-${rows.indexOf(row)}`}
-                class="border-b border-line last:border-b-0"
-              >
-                <th
-                  scope="row"
-                  class="sticky left-0 z-10 bg-card px-4 py-3 text-left font-medium text-sub"
-                >
-                  {row.label}
-                </th>
-                {row.cells.map((cell, i) => (
-                  <td class:list={["px-4 py-3 font-mono", cellClass(row, i)]}>
-                    {cell.text}
-                    {cell.best && <span class="sr-only">（最优）</span>}
-                  </td>
-                ))}
-              </tr>
-            ))}
-          </tbody>
-        ))}
-      </table>
+    <CompareTable models={models} rows={shown} allRows={rows} removeUrl={removeUrl}>
       {onlyDiff && shown.length === 0 && (
         <p class="px-4 py-6 text-center text-sm text-mute">这几个模型的各项参数都相同。</p>
       )}
-    </div>
+    </CompareTable>
   )}
   {models.length >= 2 && (
     <p class="mt-3 text-xs text-mute">

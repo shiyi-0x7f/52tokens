@@ -4,10 +4,14 @@ import { api } from "./client";
 import type {
   BatchStatus,
   CheckReport,
+  ComparisonInput,
+  ComparisonUpdate,
   Deal,
   DealInput,
   DealStatus,
   Me,
+  ModelBrief,
+  ModelComparison,
   Page,
   Platform,
   Price,
@@ -204,6 +208,59 @@ export function useSyncShopSource() {
   return useMutation({
     mutationFn: (id: number) => api<ShopSyncReport>("POST", `/shop-sources/${id}/sync`),
     onSettled: () => client.invalidateQueries({ queryKey: ["shop-sources"] }),
+  });
+}
+
+/** 按名称或 slug 搜已发布的模型（最多 20 个），选择对比模型用 */
+export const useModelSearch = (q: string) =>
+  useQuery({
+    queryKey: ["models", q],
+    queryFn: () => api<ModelBrief[]>("GET", "/models", { params: q ? { q } : {} }),
+    placeholderData: keepPreviousData,
+    staleTime: 5 * 60_000,
+  });
+
+export interface ComparisonQuery {
+  q?: string | undefined;
+  page: number;
+  page_size: number;
+}
+
+export const useComparisons = (query: ComparisonQuery) =>
+  useQuery({
+    queryKey: ["model-comparisons", query],
+    queryFn: () =>
+      api<Page<ModelComparison>>("GET", "/model-comparisons", { params: { ...query } }),
+    placeholderData: keepPreviousData,
+  });
+
+export function useSaveComparison() {
+  const client = useQueryClient();
+  return useMutation({
+    mutationFn: (
+      args: { id: number; input: ComparisonUpdate } | { id?: undefined; input: ComparisonInput },
+    ) =>
+      args.id === undefined
+        ? api<ModelComparison>("POST", "/model-comparisons", { body: args.input })
+        : api<ModelComparison>("PUT", `/model-comparisons/${args.id}`, { body: args.input }),
+    onSuccess: () => client.invalidateQueries({ queryKey: ["model-comparisons"] }),
+  });
+}
+
+export function useComparisonVisibility() {
+  const client = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, visible }: { id: number; visible: boolean }) =>
+      api<ModelComparison>("POST", `/model-comparisons/${id}/${visible ? "show" : "hide"}`),
+    onSuccess: () => client.invalidateQueries({ queryKey: ["model-comparisons"] }),
+  });
+}
+
+export function useDeleteComparison() {
+  const client = useQueryClient();
+  return useMutation({
+    mutationFn: (id: number) => api<null>("DELETE", `/model-comparisons/${id}`),
+    onSuccess: () => client.invalidateQueries({ queryKey: ["model-comparisons"] }),
   });
 }
 
