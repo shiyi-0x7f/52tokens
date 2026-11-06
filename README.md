@@ -36,6 +36,10 @@ bash start-dev.sh                # 端口被占用会自动 +1 并回写 .env.de
 
 数据库首次使用需要在 `dev-postgres` 里建项目专属库和账号（库名、账号均为 `tokens52`），迁移由 `start-dev.sh` 自动执行。
 
+## 生产部署
+
+宝塔 + Docker Compose（PostgreSQL / Redis 用宝塔自带的）：复制 `.env.prod.example` 为 `.env.prod` 填好后执行 `./start-prod.sh --seed`。完整步骤（数据库授权、Nginx 反代、HTTPS、上线检查）见 [dev_docs/devops/deployment.md](dev_docs/devops/deployment.md)。
+
 ## 测试与质量门禁
 
 ```bash
