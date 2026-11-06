@@ -117,7 +117,7 @@ LLM 只负责"从文本里抽结构化字段 + 给置信度"，**发布必须过
 | 页面变更监测 | 采集器插件 `page_watch`：抓取 → 正文提取 → hash diff → 有变更才进 LLM | 控制 LLM 成本 |
 | LLM 抽取 | 统一 `llm_extractor` 服务（OpenAI 兼容协议），输出 Pydantic schema + 置信度；用**硅基流动**，`SILICONFLOW_BASE_URL` / `SILICONFLOW_API_KEY` / `LLM_EXTRACT_MODEL` 走 `.env` | 分两档：免费小模型（如 Qwen3-8B）做初筛/分类，便宜的中等模型（如 Qwen3-30B-A3B）做字段抽取；具体模型和价格上线前从 `/v1/models` 核实 |
 | 提醒与订阅 | `subscriptions` 表 + arq 定时任务 → Telegram Bot / SMTP / Web Push | 本地用 `dev-mailhog` 测邮件 |
-| 价格时间序列 | `price_history` 表（按日聚合快照） | 支撑历史图与月报 |
+| 价格时间序列 | 已实现：`model_price_history`（每个对外展示的平台×模型）与 `shop_product_price_history`（每个标准商品的有货最低价、有货店铺数，规则复用比价页）；按北京时间每天一行，worker 每 6 小时快照、同一天覆盖，手动 `python -m app.cli.collect history` | 支撑历史图与月报；对外读接口和历史图等数据攒够再做 |
 | SEO 基础设施 | 公开站分片 sitemap 端点、JSON-LD 组件、satori 分享图；后端数据变更 → 清页面缓存（Redis + Cloudflare purge） | |
 | 搜索 | 先用 PostgreSQL `pg_trgm` + 全文检索 | 量大再考虑 Meilisearch（需另行同意） |
 | 统计 | Umami 自托管（隐私友好、无 Cookie 横幅）+ 出站点击埋点（AFF 转化归因） | |

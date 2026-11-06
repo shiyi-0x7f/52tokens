@@ -22,6 +22,8 @@ from app.domains.deals.repository import DealRepository
 from app.domains.deals.source_repository import DealSourceRepository
 from app.domains.deals.watch import DealWatchService
 from app.domains.deals.watch_batch import BatchCheckService, BatchSummary
+from app.domains.history.repository import HistoryRepository
+from app.domains.history.service import PriceHistoryService
 from app.domains.shops.repository import ShopRepository
 from app.domains.shops.sync import ShopSyncService
 from app.integrations.llm import llm_from_settings
@@ -102,6 +104,20 @@ async def check_deal_liveness(ctx: dict[str, Any]) -> dict[str, Any]:
     async with get_sessionmaker()() as session:
         report = await DealLivenessService(DealRepository(session), ctx["http"]).check_all()
     return report.model_dump() | {"errors": []}
+
+
+async def snapshot_price_history(ctx: dict[str, Any]) -> dict[str, Any]:
+    """把当前对外展示的价格记入当天（北京时间）的价格历史，同一天重复执行会覆盖当天的值。"""
+    async with get_sessionmaker()() as session:
+        service = PriceHistoryService(HistoryRepository(session), ShopRepository(session))
+        report = await service.snapshot(datetime.now(UTC))
+    logger.info(
+        "价格历史快照完成 日期={} 模型价格={} 卡网商品={}",
+        report.day,
+        report.model_prices,
+        report.shop_products,
+    )
+    return report.model_dump(mode="json") | {"errors": []}
 
 
 async def watch_deal_sources(ctx: dict[str, Any]) -> dict[str, Any]:
