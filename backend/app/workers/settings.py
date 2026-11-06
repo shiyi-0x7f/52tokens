@@ -13,6 +13,7 @@ from app.workers.tasks import (
     check_deal_liveness,
     run_collector,
     snapshot_price_history,
+    sync_official_prices,
     sync_openrouter,
     sync_shops,
     watch_deal_sources,
@@ -46,6 +47,7 @@ class WorkerSettings:
         check_deal_liveness,
         sync_shops,
         snapshot_price_history,
+        sync_official_prices,
     ]
     # 每 6 小时同步一次 OpenRouter 价格（错开整点）；活动来源每 6 小时检查一次（会调用 LLM，
     # 启动时不跑）
@@ -59,6 +61,8 @@ class WorkerSettings:
         # 价格历史：跟在卡网同步之后，每 6 小时记一次；同一天覆盖，启动时也记一次，
         # 避免 worker 停过一段时间漏掉当天
         cron(snapshot_price_history, hour={3, 9, 15, 21}, minute=57, run_at_startup=True),
+        # 订阅地区价每天一次（App Store 价格变得慢，汇率按天更新）；约 200 个页面，几分钟跑完
+        cron(sync_official_prices, hour={4}, minute=37),
     ]
     on_startup = startup
     on_shutdown = shutdown

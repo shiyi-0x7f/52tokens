@@ -148,7 +148,7 @@
 
 字段同上，另有 `prices`（全部有价格的地区，按人民币价升序）和 `missing_regions`（没上架该档位的地区名）。不存在 → `404`。
 
-数据来源：`data/seed/official_plans.yaml` + `data/seed/official_prices.json`（种子导入，按（应用, 档位）和（档位, 地区）upsert）。
+数据来源：App Store 地区价采集器（见下方「自动采集」），档位与地区以 `data/official/app_store.yaml` 为准。
 
 ### `GET /internal/v1/shop-products`
 
@@ -270,6 +270,14 @@ Google / SCC 不可达 → `502`；Google 或 SCC 凭据未配置 → `503`。
 
 | 卡网店铺（`data/seed/shop_sources.yaml` / 后台登记） | `uv run python -m app.cli.collect shops` | worker 每 3 小时（2/5/8/…/23 点 47 分） | 16 种店铺系统各一个采集插件（`app/collectors/shops/`），只读公开商品列表；见下方规则 |
 | 活动存活检查（已发布活动的官方出处） | `uv run python -m app.cli.collect liveness` | worker 每天 3 点 27 分 | 见下方规则 |
+| 官方订阅地区价（各 App 在各国 App Store 的公开页面） | `uv run python -m app.cli.collect official` | worker 每天 4 点 37 分 | 配置 `data/official/app_store.yaml`（App、48 个地区、各档位匹配规则）；见下方规则 |
+
+订阅地区价采集规则（`official/sync.py`、`collectors/app_store.py`）：
+- 读页面里的「App 内购买项目」（内嵌 JSON `addOns` + `text-pair` HTML），按档位的 `include` / `exclude` 关键词匹配；同名项目（如月付和年付都叫 ChatGPT Plus）按折合美元落在 `price_band_usd` 内的取，仍有多个取最便宜，价格相同标为待核实不写入。
+- 汇率以美元为基准，主用 Frankfurter，缺币种时改用 open.er-api.com；两者都拿不到全部币种时整批放弃，已有数据不变。人民币价 = 当地价 × 当天汇率，`fx_date` 记汇率日期。
+- 抓取 / 解析失败（含 403 限流）不动该 App 该地区的数据；App Store 返回 404 或「此項目無法使用」提示时，各档位标为 `missing`（该地区没上架）；页面正常但没匹配到某档位：原来有价格的保留，原来没有的标为 `missing`。
+- 档位按配置同步：新增 / 改名直接生效，配置里删掉的档位连同地区价一起删除。
+- 对 App Store 保持克制：2 并发、每槽请求间隔 1 秒，403 / 429 / 5xx 重试两次（等 2、4 秒）。短时间连续跑多轮会被 403 限流。
 
 卡网采集规则（`shops/sync.py`）：
 - 店铺按店铺地址唯一：单店铺系统 = 域名首页；ShopApi（链动小铺等）/ ShopGoodsApi（16688 等）多商户平台必须是具体商户的 `/shop/<token>`，只有域名时记为失败并提示补地址；ShopGoodsApi 平台的裸域名会 301 到 www，店铺地址直接写 www 域名（POST 被重定向会丢请求体）。

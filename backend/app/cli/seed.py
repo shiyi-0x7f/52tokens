@@ -7,9 +7,8 @@ confirmed_at（核实时间），没有核实时间的条目导入后保持草�
 """
 
 import asyncio
-import json
 import sys
-from datetime import date, datetime
+from datetime import datetime
 from decimal import Decimal
 from pathlib import Path
 from typing import Any
@@ -33,7 +32,6 @@ from app.domains.catalog.models import (
     PublishStatus,
 )
 from app.domains.deals.models import Deal, DealCycle, DealSource, DealStatus, DealType
-from app.domains.official.models import OfficialPlan, OfficialRegionPrice
 from app.domains.shops.models import ShopCollectorKind, ShopProduct, ShopSource
 
 DEFAULT_SEED_DIR = REPO_ROOT / "data" / "seed"
@@ -127,44 +125,6 @@ class ShopSourceSeed(_Strict):
         return self.model_dump() | {"entry_url": self.entry_url or self.base_url}
 
 
-class OfficialPlanSeed(_Strict):
-    app_slug: str
-    app_name: str
-    provider: str
-    plan_slug: str
-    plan_name: str
-    billing_period: str
-    sort_order: int = 0
-
-
-class OfficialPriceSeed(_Strict):
-    app_slug: str
-    plan_slug: str
-    country_code: str
-    country_label: str
-    currency: str
-    price_text: str = ""
-    price_value: Decimal | None = None
-    cny_price: Decimal | None = None
-    fx_rate_to_cny: Decimal | None = None
-    fx_date: date | None = None
-    source_url: str
-    status: str
-    fetched_at: datetime
-
-
-def _load_json_rows(seed_dir: Path, name: str) -> list[dict[str, Any]]:
-    """大批量数据用 JSON：{"rows": [...]}。"""
-    path = seed_dir / f"{name}.json"
-    if not path.exists():
-        return []
-    data = json.loads(path.read_text(encoding="utf-8"))
-    rows = data.get("rows") if isinstance(data, dict) else None
-    if not isinstance(rows, list):
-        raise ValueError(f'{path} 必须是 {{"rows": [...]}}')
-    return rows
-
-
 def _load(seed_dir: Path, name: str) -> list[dict[str, Any]]:
     path = seed_dir / f"{name}.yaml"
     if not path.exists():
@@ -198,10 +158,6 @@ async def seed(session: AsyncSession, seed_dir: Path = DEFAULT_SEED_DIR) -> dict
     sources = [SourceSeed.model_validate(r) for r in _load(seed_dir, "deal_sources")]
     shop_products = [ShopProductSeed.model_validate(r) for r in _load(seed_dir, "shop_products")]
     shop_sources = [ShopSourceSeed.model_validate(r) for r in _load(seed_dir, "shop_sources")]
-    plans = [OfficialPlanSeed.model_validate(r) for r in _load(seed_dir, "official_plans")]
-    official_prices = [
-        OfficialPriceSeed.model_validate(r) for r in _load_json_rows(seed_dir, "official_prices")
-    ]
 
     await _upsert(session, Platform, [p.model_dump() for p in platforms], ["slug"])
     await _upsert(session, AIModel, [m.model_dump() for m in models], ["slug"])
@@ -239,30 +195,7 @@ async def seed(session: AsyncSession, seed_dir: Path = DEFAULT_SEED_DIR) -> dict
     # 卡网：商品按 slug、店铺按店铺地址 upsert；店铺的采集状态不在种子里，不会被覆盖
     await _upsert(session, ShopProduct, [p.model_dump() for p in shop_products], ["slug"])
     await _upsert(session, ShopSource, [s.row() for s in shop_sources], ["entry_url"])
-
-    # 官方订阅地区价：档位按（应用, 档位）、价格按（档位, 地区）upsert
-    await _upsert(session, OfficialPlan, [p.model_dump() for p in plans], ["app_slug", "plan_slug"])
-    plan_ids = {
-        (a, p): i
-        for a, p, i in (
-            await session.execute(
-                select(OfficialPlan.app_slug, OfficialPlan.plan_slug, OfficialPlan.id)
-            )
-        ).all()
-    }
-    price_rows = []
-    for op in official_prices:
-        key = (op.app_slug, op.plan_slug)
-        if key not in plan_ids:
-            raise ValueError(f"引用了不存在的订阅档位：{key}")
-        price_rows.append(
-            op.model_dump(exclude={"app_slug", "plan_slug"}) | {"plan_id": plan_ids[key]}
-        )
-    # 一次插入的参数数量有上限，分批
-    for i in range(0, len(price_rows), 200):
-        await _upsert(
-            session, OfficialRegionPrice, price_rows[i : i + 200], ["plan_id", "country_code"]
-        )
+    # 官方订阅地区价不走种子：由采集器按 data/official/app_store.yaml 同步
 
     await session.commit()
     return {
@@ -273,8 +206,6 @@ async def seed(session: AsyncSession, seed_dir: Path = DEFAULT_SEED_DIR) -> dict
         "deal_sources": len(sources),
         "shop_products": len(shop_products),
         "shop_sources": len(shop_sources),
-        "official_plans": len(plans),
-        "official_prices": len(official_prices),
     }
 
 
