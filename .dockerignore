@@ -1,0 +1,17 @@
+# 构建上下文是仓库根目录；依赖在镜像里重新安装，不带本机的
+.git
+**/node_modules
+**/.venv
+**/__pycache__
+**/.mypy_cache
+**/.pytest_cache
+**/.ruff_cache
+**/dist
+**/.astro
+backend/tests
+frontend/*/test
+dev_docs
+marketing
+# 密钥不进镜像：运行时由 compose 的 env_file 注入
+.env.*
+!.env.*.example

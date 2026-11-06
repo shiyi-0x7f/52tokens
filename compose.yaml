@@ -1,0 +1,83 @@
+# 公共服务定义；生产用 compose.prod.yaml 叠加：
+#   docker compose -f compose.yaml -f compose.prod.yaml --env-file .env.prod up -d
+#
+# PostgreSQL / Redis 用宝塔自带的（宿主机上），容器经 host.docker.internal 访问，
+# 连接信息全在 .env.prod 里，这里不写死。
+x-backend: &backend
+  build:
+    context: .
+    dockerfile: backend/Dockerfile
+  image: 52tokens-backend:latest
+  env_file: .env.prod
+  environment:
+    APP_ENV: prod
+  extra_hosts:
+    - "host.docker.internal:host-gateway"
+  restart: unless-stopped
+
+services:
+  api:
+    <<: *backend
+    healthcheck:
+      test:
+        - CMD
+        - python
+        - -c
+        - "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8100/health', timeout=5)"
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 20s
+
+  worker:
+    <<: *backend
+    command: ["arq", "app.workers.settings.WorkerSettings"]
+    depends_on:
+      api:
+        condition: service_healthy
+
+  web:
+    build:
+      context: .
+      dockerfile: frontend/web/Dockerfile
+      # 构建时写进产物的值（见 Dockerfile 说明），取自 --env-file .env.prod
+      args:
+        SITE_URL: ${SITE_URL:?SITE_URL 未设置}
+        TURNSTILE_SITE_KEY: ${TURNSTILE_SITE_KEY:-}
+        WECHAT_CALLBACK_ORIGIN: ${WECHAT_CALLBACK_ORIGIN:-}
+        REDIS_KEY_PREFIX: ${REDIS_KEY_PREFIX:-52tokens:}
+        TRUSTED_IP_HEADER: ${TRUSTED_IP_HEADER:-}
+        RATE_LIMIT_PER_MINUTE: ${RATE_LIMIT_PER_MINUTE:-120}
+    image: 52tokens-web:latest
+    env_file: .env.prod
+    environment:
+      # 公开站经 Docker 内网调用后端；后端的 /internal/* 不经过宝塔 Nginx 对外
+      API_INTERNAL_URL: http://api:8100
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    depends_on:
+      api:
+        condition: service_healthy
+    restart: unless-stopped
+    healthcheck:
+      test:
+        - CMD
+        - node
+        - -e
+        - "fetch('http://127.0.0.1:4321/healthz').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 20s
+
+  admin:
+    build:
+      context: .
+      dockerfile: frontend/admin/Dockerfile
+    image: 52tokens-admin:latest
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "-q", "-O", "-", "http://127.0.0.1/healthz"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
