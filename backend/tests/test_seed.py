@@ -67,8 +67,6 @@ async def test_seed_is_idempotent_and_updates(tmp_path: Path, db_session: AsyncS
         "deal_sources": 0,
         "shop_products": 0,
         "shop_sources": 0,
-        "official_plans": 0,
-        "official_prices": 0,
     }
 
     await seed(db_session, seed_dir)
@@ -129,8 +127,6 @@ async def test_repository_seed_files_are_valid(db_session: AsyncSession) -> None
     assert counts["platforms"] > 0
     assert counts["shop_products"] > 0
     assert counts["shop_sources"] > 0
-    assert counts["official_plans"] > 0
-    assert counts["official_prices"] > 0
     # 重复导入幂等
     again = await seed(db_session, DEFAULT_SEED_DIR)
     assert again == counts

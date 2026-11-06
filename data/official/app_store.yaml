@@ -1,0 +1,123 @@
+# 官方订阅地区价采集配置：App、地区、各档位的匹配规则（唯一来源）。
+#
+# 采集器（backend/app/collectors/app_store.py）逐个抓取 App 在各地区 App Store 的公开页面，
+# 读取「App 内购买项目」列表，按下面的规则把项目匹配到档位：
+#   - include 里的词都出现、exclude 里的词都不出现（不区分大小写，括号/横线等视为空格）；
+#   - 同名项目有多个价格（如月付和年付同名）时，取折合美元落在 price_band_usd 内的；
+#     仍有多个时取最便宜的，价格相同则标为待核实、不写入。
+# 同步时按本文件更新档位（新增 / 改名 / 删除），删除的档位连同其地区价一起删掉。
+# 档位名称以 App Store 当前在卖的为准，改名或新增档位时同步修改这里。
+#
+# 注意：YAML 会把 NO / no 解析成 false，挪威的代码必须加引号。
+
+apps:
+  - slug: chatgpt
+    name: ChatGPT
+    provider: OpenAI
+    app_store_id: "6448311069"
+    app_store_slug: chatgpt
+    plans:
+      - { slug: go-monthly, name: ChatGPT Go, billing_period: monthly, sort_order: 1010,
+          include: [ChatGPT Go], exclude: [Annual, Year, Credits, Plus, Pro], price_band_usd: [4, 15] }
+      - { slug: plus-monthly, name: ChatGPT Plus, billing_period: monthly, sort_order: 1020,
+          include: [ChatGPT Plus], exclude: [Annual, Year, Credits, Pro], price_band_usd: [8, 35] }
+      - { slug: pro-100, name: ChatGPT Pro 100, billing_period: monthly, sort_order: 1030,
+          include: [ChatGPT Pro 100], exclude: [Annual, Year, Credits], price_band_usd: [75, 140] }
+      - { slug: pro-200, name: ChatGPT Pro 200, billing_period: monthly, sort_order: 1040,
+          include: [ChatGPT Pro 200], exclude: [Annual, Year, Credits], price_band_usd: [150, 260] }
+      - { slug: pro-500, name: ChatGPT Pro 500, billing_period: monthly, sort_order: 1050,
+          include: [ChatGPT Pro 500], exclude: [Annual, Year, Credits], price_band_usd: [350, 700] }
+
+  - slug: claude
+    name: Claude
+    provider: Anthropic
+    app_store_id: "6473753684"
+    app_store_slug: claude-by-anthropic
+    plans:
+      - { slug: pro-monthly, name: Claude Pro, billing_period: monthly, sort_order: 2010,
+          include: [Claude Pro, Monthly], exclude: [Annual, Year, Max, Ultra], price_band_usd: [15, 35] }
+      - { slug: max-monthly, name: Claude Max, billing_period: monthly, sort_order: 2020,
+          include: [Claude Max, Monthly], exclude: [Annual, Year], price_band_usd: [90, 180] }
+      - { slug: ultra-monthly, name: Claude Ultra, billing_period: monthly, sort_order: 2030,
+          include: [Claude Ultra, Monthly], exclude: [Annual, Year], price_band_usd: [180, 350] }
+      - { slug: pro-annual, name: Claude Pro Annual, billing_period: annual, sort_order: 2040,
+          include: [Claude Pro, Annual], exclude: [Max, Ultra], price_band_usd: [160, 260] }
+
+  - slug: gemini
+    name: Gemini
+    provider: Google
+    app_store_id: "6477489729"
+    app_store_slug: google-gemini
+    plans:
+      - { slug: ai-plus, name: Google AI Plus, billing_period: monthly, sort_order: 3010,
+          include: [Google AI Plus], exclude: [Annual, Year, Pro, Ultra], price_band_usd: [3, 15] }
+      - { slug: ai-pro, name: Google AI Pro, billing_period: monthly, sort_order: 3020,
+          include: [Google AI Pro], exclude: [Annual, Year, Plus, Ultra], price_band_usd: [12, 35] }
+      - { slug: ai-ultra, name: Google AI Ultra, billing_period: monthly, sort_order: 3030,
+          include: [Google AI Ultra], exclude: [Annual, Year, Plus, Pro], price_band_usd: [150, 300] }
+
+  - slug: grok
+    name: Grok
+    provider: xAI
+    app_store_id: "6670324846"
+    app_store_slug: grok
+    plans:
+      - { slug: supergrok-lite, name: SuperGrok Lite, billing_period: monthly, sort_order: 4010,
+          include: [SuperGrok Lite], exclude: [Annual, Year, Plus, Heavy], price_band_usd: [5, 20] }
+      - { slug: supergrok, name: SuperGrok, billing_period: monthly, sort_order: 4020,
+          include: [SuperGrok], exclude: [Annual, Year, Lite, Plus, Heavy], price_band_usd: [20, 45] }
+      - { slug: supergrok-plus, name: SuperGrok Plus, billing_period: monthly, sort_order: 4030,
+          include: [SuperGrok Plus], exclude: [Annual, Year], price_band_usd: [70, 140] }
+      - { slug: supergrok-heavy, name: SuperGrok Heavy, billing_period: monthly, sort_order: 4040,
+          include: [SuperGrok Heavy], exclude: [Annual, Year, Lite], price_band_usd: [220, 400] }
+
+# storefront_id：App Store 区域标识，随请求头 X-Apple-Store-Front 发送，避免被按 IP 跳到别的区
+regions:
+  - { code: US, label: 美国, storefront: us, storefront_id: "143441", currency: USD }
+  - { code: TR, label: 土耳其, storefront: tr, storefront_id: "143480", currency: TRY }
+  - { code: PH, label: 菲律宾, storefront: ph, storefront_id: "143474", currency: PHP }
+  - { code: JP, label: 日本, storefront: jp, storefront_id: "143462", currency: JPY }
+  - { code: SG, label: 新加坡, storefront: sg, storefront_id: "143464", currency: SGD }
+  - { code: HK, label: 香港, storefront: hk, storefront_id: "143463", currency: HKD }
+  - { code: GB, label: 英国, storefront: gb, storefront_id: "143444", currency: GBP }
+  - { code: CA, label: 加拿大, storefront: ca, storefront_id: "143455", currency: CAD }
+  - { code: AU, label: 澳大利亚, storefront: au, storefront_id: "143460", currency: AUD }
+  - { code: NZ, label: 新西兰, storefront: nz, storefront_id: "143461", currency: NZD }
+  - { code: KR, label: 韩国, storefront: kr, storefront_id: "143466", currency: KRW }
+  - { code: IN, label: 印度, storefront: in, storefront_id: "143467", currency: INR }
+  - { code: ID, label: 印度尼西亚, storefront: id, storefront_id: "143476", currency: IDR }
+  - { code: TH, label: 泰国, storefront: th, storefront_id: "143475", currency: THB }
+  - { code: MY, label: 马来西亚, storefront: my, storefront_id: "143473", currency: MYR }
+  - { code: BR, label: 巴西, storefront: br, storefront_id: "143503", currency: BRL }
+  - { code: MX, label: 墨西哥, storefront: mx, storefront_id: "143468", currency: MXN }
+  - { code: ZA, label: 南非, storefront: za, storefront_id: "143472", currency: ZAR }
+  - { code: CH, label: 瑞士, storefront: ch, storefront_id: "143459", currency: CHF }
+  - { code: SE, label: 瑞典, storefront: se, storefront_id: "143456", currency: SEK }
+  - { code: "NO", label: 挪威, storefront: "no", storefront_id: "143457", currency: NOK }
+  - { code: DK, label: 丹麦, storefront: dk, storefront_id: "143458", currency: DKK }
+  - { code: PL, label: 波兰, storefront: pl, storefront_id: "143478", currency: PLN }
+  - { code: CZ, label: 捷克, storefront: cz, storefront_id: "143489", currency: CZK }
+  - { code: HU, label: 匈牙利, storefront: hu, storefront_id: "143482", currency: HUF }
+  - { code: RO, label: 罗马尼亚, storefront: ro, storefront_id: "143487", currency: RON }
+  - { code: DE, label: 德国, storefront: de, storefront_id: "143443", currency: EUR }
+  - { code: FR, label: 法国, storefront: fr, storefront_id: "143442", currency: EUR }
+  - { code: ES, label: 西班牙, storefront: es, storefront_id: "143454", currency: EUR }
+  - { code: IT, label: 意大利, storefront: it, storefront_id: "143450", currency: EUR }
+  - { code: NL, label: 荷兰, storefront: nl, storefront_id: "143452", currency: EUR }
+  - { code: IE, label: 爱尔兰, storefront: ie, storefront_id: "143449", currency: EUR }
+  - { code: PT, label: 葡萄牙, storefront: pt, storefront_id: "143453", currency: EUR }
+  - { code: BE, label: 比利时, storefront: be, storefront_id: "143446", currency: EUR }
+  - { code: AT, label: 奥地利, storefront: at, storefront_id: "143445", currency: EUR }
+  - { code: FI, label: 芬兰, storefront: fi, storefront_id: "143447", currency: EUR }
+  - { code: GR, label: 希腊, storefront: gr, storefront_id: "143448", currency: EUR }
+  - { code: IL, label: 以色列, storefront: il, storefront_id: "143491", currency: ILS }
+  - { code: AR, label: 阿根廷, storefront: ar, storefront_id: "143505", currency: USD }
+  - { code: CO, label: 哥伦比亚, storefront: co, storefront_id: "143501", currency: COP }
+  - { code: EG, label: 埃及, storefront: eg, storefront_id: "143516", currency: EGP }
+  - { code: NG, label: 尼日利亚, storefront: ng, storefront_id: "143561", currency: NGN }
+  - { code: PE, label: 秘鲁, storefront: pe, storefront_id: "143507", currency: PEN }
+  - { code: PK, label: 巴基斯坦, storefront: pk, storefront_id: "143477", currency: PKR }
+  - { code: TW, label: 中国台湾, storefront: tw, storefront_id: "143470", currency: TWD }
+  - { code: UA, label: 乌克兰, storefront: ua, storefront_id: "143492", currency: USD }
+  - { code: VN, label: 越南, storefront: vn, storefront_id: "143471", currency: VND }
+  - { code: BO, label: 玻利维亚, storefront: bo, storefront_id: "143556", currency: USD }

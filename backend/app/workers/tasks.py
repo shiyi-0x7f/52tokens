@@ -7,6 +7,7 @@ import httpx
 from loguru import logger
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
+from app.collectors.app_store import load_config as load_app_store_config
 from app.collectors.base import SourceConfig
 from app.collectors.openrouter import MODELS_URL, OpenRouterModelsCollector
 from app.collectors.page_watch import PageWatchCollector
@@ -24,8 +25,11 @@ from app.domains.deals.watch import DealWatchService
 from app.domains.deals.watch_batch import BatchCheckService, BatchSummary
 from app.domains.history.repository import HistoryRepository
 from app.domains.history.service import PriceHistoryService
+from app.domains.official.repository import OfficialRepository
+from app.domains.official.sync import OfficialSyncService
 from app.domains.shops.repository import ShopRepository
 from app.domains.shops.sync import ShopSyncService
+from app.integrations.fx import FxError
 from app.integrations.llm import llm_from_settings
 
 
@@ -97,6 +101,45 @@ async def sync_shops(ctx: dict[str, Any]) -> dict[str, Any]:
         "created": sum(r.created for r in reports),
         "errors": [],
     }
+
+
+OFFICIAL_SYNC_LOCK = "official_sync:running"
+OFFICIAL_SYNC_LOCK_TTL = 3600
+
+
+async def sync_official_prices(ctx: dict[str, Any]) -> dict[str, Any]:
+    """抓取各 App 在各地区 App Store 的订阅价并入库。已有一批在跑时跳过；汇率拿不到时整批放弃。"""
+    store = get_store()
+    if not await store.set_if_absent(
+        OFFICIAL_SYNC_LOCK, datetime.now(UTC).isoformat(), OFFICIAL_SYNC_LOCK_TTL
+    ):
+        logger.info("已有一批订阅地区价同步在进行，本次跳过")
+        return {"skipped": True, "errors": []}
+    try:
+        async with get_sessionmaker()() as session:
+            service = OfficialSyncService(
+                OfficialRepository(session), ctx["http"], load_app_store_config()
+            )
+            report = await service.sync_all()
+    except FxError as exc:
+        logger.error("订阅地区价同步放弃，已有数据不变：{}", exc)
+        return {"errors": [str(exc)]}
+    finally:
+        await store.delete(OFFICIAL_SYNC_LOCK)
+    logger.info(
+        "订阅地区价同步完成 汇率={}@{} 页面成功={} 未上架={} 失败={} 有价={} 保留={} 待核实={}",
+        report.fx_source,
+        report.fx_date,
+        report.pages_ok,
+        report.pages_not_found,
+        report.pages_failed,
+        report.available,
+        report.kept,
+        report.ambiguous,
+    )
+    # 个别地区失败不算整批失败（明细在 issues）；全部失败才报错
+    errors = ["全部页面抓取失败"] if report.pages_ok == 0 and report.pages_not_found == 0 else []
+    return report.model_dump() | {"errors": errors}
 
 
 async def check_deal_liveness(ctx: dict[str, Any]) -> dict[str, Any]:

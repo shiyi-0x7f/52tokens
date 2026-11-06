@@ -74,7 +74,7 @@ export interface ModelComparison {
   updated_at: string;
 }
 
-/** 官方订阅地区价（各国 App Store）；人民币价按快照当天汇率折算 */
+/** 官方订阅地区价（各国 App Store）；人民币价按核实当天的汇率折算 */
 export interface RegionPrice {
   country_code: string;
   country_label: string;
