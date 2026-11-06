@@ -2,7 +2,8 @@
 /**
  * 跳转第三方网站前的页内提示：点击带 data-leave 的链接时弹出，确认后才打开链接。
  *
- * 链接上的属性：data-leave="deal|shop"、data-leave-host（目标域名）、data-leave-label（平台 / 店铺）、
+ * 链接上的属性：data-leave="deal|shop"、data-leave-host（目标域名，可省略：卡网店铺不显示网址）、
+ * data-leave-label（平台 / 店铺）、
  * data-leave-title（活动 / 商品标题）、data-leave-promoted（推广链接时为 1）。
  * 没有 JS 或浏览器不支持 <dialog> 时不拦截，链接照常打开。BaseLayout 里放一次即可。
  */
@@ -89,7 +90,10 @@ import PromotedLabel from "./PromotedLabel.astro";
     event.preventDefault();
 
     const data = link.dataset;
-    setField(dialog, "host", data.leaveHost ?? "");
+    const host = data.leaveHost ?? "";
+    setField(dialog, "host", host);
+    const hostEl = dialog.querySelector<HTMLElement>('[data-field="host"]');
+    if (hostEl) hostEl.hidden = host === "";
     setField(dialog, "label", data.leaveLabel ?? "");
     setField(dialog, "title", data.leaveTitle ?? "");
     for (const block of dialog.querySelectorAll<HTMLElement>("[data-kind]")) {
@@ -102,7 +106,7 @@ import PromotedLabel from "./PromotedLabel.astro";
     if (go) {
       go.href = link.href;
       go.rel = link.rel;
-      go.textContent = `继续前往 ${data.leaveHost ?? ""}`;
+      go.textContent = host ? `继续前往 ${host}` : "继续前往";
     }
     dialog.showModal();
     go?.focus();

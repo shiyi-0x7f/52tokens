@@ -127,7 +127,33 @@ async def test_detail_orders_offers(db_session: AsyncSession, db_client: httpx.A
         ("50.00", False, True),
         ("60.00", True, False),
     ]
-    assert data["offers"][0]["shop"] == "a.test"
+    # 店铺只给代号，同一店铺代号相同；页面数据里不出现域名
+    assert data["offers"][0]["shop"].startswith("店铺 ")
+    assert len({o["shop"] for o in data["offers"]}) == 1
+    # 测试工厂的 external_id 拼了域名（真实数据是哈希），所以只检查展示字段
+    assert all("a.test" not in o["shop"] + o["title"] for o in data["offers"])
+
+
+async def test_urls_and_domains_are_removed_from_public_text(
+    db_session: AsyncSession, db_client: httpx.AsyncClient
+) -> None:
+    plus = await _product(db_session, "chatgpt-plus")
+    a = await _source(db_session, "a.test")
+    await _offer(
+        db_session,
+        a,
+        plus,
+        "60",
+        title="GPT Plus 官网faka.example.shop 下单（https://x.example.com/buy）质保",
+        tags=["www.example.top 专区"],
+    )
+    await db_session.commit()
+
+    offer = (await db_client.get("/internal/v1/shop-products/chatgpt-plus", headers=AUTH)).json()[
+        "data"
+    ]["offers"][0]
+    assert offer["title"] == "GPT Plus 官网 下单 质保"
+    assert offer["tags"] == ["专区"]
 
 
 async def test_shared_access_and_outlier_prices_do_not_set_lowest(
