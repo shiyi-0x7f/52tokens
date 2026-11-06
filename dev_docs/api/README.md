@@ -78,6 +78,20 @@
     "is_free": false, "free_note": "", "source_url": "https://...", "confirmed_at": "2026-10-22T02:00:00Z" } ] }
 ```
 
+### `GET /internal/v1/model-comparisons?model=`
+
+后台精选的模型对比（公开站据此生成可收录的 `/models/{a}-vs-{b}` 页面和 sitemap）。只返回组合已发布、且两个模型都已发布的；按 `sort_order`、`id` 排序。带 `model`（模型 slug）时只返回含该模型的组合。`model_a` / `model_b` 的顺序就是规范网址的顺序。
+
+```json
+[ { "model_a": { "slug": "deepseek-v3-2", "name": "DeepSeek V3.2", "family": "deepseek" },
+    "model_b": { "slug": "qwen3-max", "name": "Qwen3 Max", "family": "qwen" },
+    "intro": "", "updated_at": "2026-11-06T01:10:00Z" } ]
+```
+
+### `GET /internal/v1/model-comparisons/{slug_x}/{slug_y}`
+
+按两个模型查组合，**不分先后**；返回收录时的顺序，公开站用它把反过来的网址 301 到规范网址。没有收录 → `404`（`40400`），此时对比页照常渲染但 `noindex`。
+
 ### `GET /internal/v1/deals?deal_type=&platform=&include_expired=false&limit=50`
 
 - `deal_type`：`checkin_points` / `signup_credit` / `free_quota` / `invite_reward` / `discount` / `student` / `trial` / `event`
@@ -206,6 +220,13 @@ Google / SCC 不可达 → `502`；Google 或 SCC 凭据未配置 → `503`。
 | `GET /api/admin/prices?platform_id=&q=&page=&page_size=` | 价格列表 |
 | `POST /api/admin/prices` | 按（平台, 模型）新建或更新价格；保存即视为已核实并发布；模型不存在时需填 `model_name` 和 `family` |
 | `POST /api/admin/prices/{id}/hide` / `show` | 隐藏 / 恢复价格 |
+
+| `GET /api/admin/models?q=` | 按名称或 slug 搜已发布的模型（最多 20 个），供选择对比模型 |
+| `GET /api/admin/model-comparisons?q=&page=&page_size=` | 精选对比列表，按 `sort_order`、`id` 排序 |
+| `POST /api/admin/model-comparisons` | 收录 `{ model_a_slug, model_b_slug, intro, sort_order }`；两个模型相同 `422`，模型不存在 `400`，同一对模型不分先后已收录过 `409` |
+| `PUT /api/admin/model-comparisons/{id}` | 编辑 `{ intro, sort_order }`（模型不能改，需删除后重新收录） |
+| `POST /api/admin/model-comparisons/{id}/hide` / `show` | 隐藏 / 恢复（隐藏后页面改为 `noindex`、移出 sitemap） |
+| `DELETE /api/admin/model-comparisons/{id}` | 删除 |
 
 | `GET /api/admin/sources?platform_id=&page=&page_size=` | 活动监测来源列表 |
 | `POST /api/admin/sources` | 添加来源 `{ platform_id, url, label, enabled }`；同一 URL 只能登记一次（`409`） |

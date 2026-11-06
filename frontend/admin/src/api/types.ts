@@ -186,10 +186,38 @@ export interface ShopSyncReport {
 
 export type Currency = "CNY" | "USD";
 
+export interface ModelBrief {
+  id: number;
+  slug: string;
+  name: string;
+  family: string;
+}
+
+/** 精选模型对比：A、B 的顺序即公开站网址 /models/{a}-vs-{b} 的顺序 */
+export interface ModelComparison {
+  id: number;
+  model_a: ModelBrief;
+  model_b: ModelBrief;
+  intro: string;
+  sort_order: number;
+  status: PublishStatus;
+  updated_at: string;
+}
+
+export interface ComparisonUpdate {
+  intro: string;
+  sort_order: number;
+}
+
+export interface ComparisonInput extends ComparisonUpdate {
+  model_a_slug: string;
+  model_b_slug: string;
+}
+
 export interface Price {
   id: number;
   platform: Platform;
-  model: { id: number; slug: string; name: string; family: string };
+  model: ModelBrief;
   currency: Currency;
   input_price: string | null;
   output_price: string | null;

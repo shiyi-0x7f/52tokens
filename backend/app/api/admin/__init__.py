@@ -5,7 +5,7 @@
 
 from fastapi import APIRouter, Depends
 
-from app.api.admin import deals, me, prices, shops, sources
+from app.api.admin import comparisons, deals, me, prices, shops, sources
 from app.api.deps import require_admin
 
 router = APIRouter(prefix="/api/admin", dependencies=[Depends(require_admin)])
@@ -14,3 +14,4 @@ router.include_router(deals.router)
 router.include_router(prices.router)
 router.include_router(sources.router)
 router.include_router(shops.router)
+router.include_router(comparisons.router)

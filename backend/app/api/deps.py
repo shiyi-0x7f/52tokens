@@ -18,6 +18,8 @@ from app.domains.accounts.sessions import SessionService
 from app.domains.catalog.admin import PriceAdminService
 from app.domains.catalog.repository import CatalogRepository
 from app.domains.catalog.service import CatalogService
+from app.domains.comparisons.repository import ComparisonRepository
+from app.domains.comparisons.service import ComparisonAdminService, ComparisonService
 from app.domains.deals.admin import DealAdminService
 from app.domains.deals.repository import DealRepository
 from app.domains.deals.service import DealService
@@ -167,6 +169,18 @@ def get_shop_admin_service(session: SessionDep, http: HttpDep) -> ShopAdminServi
 
 
 ShopAdminServiceDep = Annotated[ShopAdminService, Depends(get_shop_admin_service)]
+
+
+def get_comparison_service(session: SessionDep) -> ComparisonService:
+    return ComparisonService(ComparisonRepository(session))
+
+
+def get_comparison_admin_service(session: SessionDep) -> ComparisonAdminService:
+    return ComparisonAdminService(ComparisonRepository(session))
+
+
+ComparisonServiceDep = Annotated[ComparisonService, Depends(get_comparison_service)]
+ComparisonAdminServiceDep = Annotated[ComparisonAdminService, Depends(get_comparison_admin_service)]
 
 
 def get_batch_check_service(store: StoreDep) -> BatchCheckService:

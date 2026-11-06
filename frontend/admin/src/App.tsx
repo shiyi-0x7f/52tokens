@@ -5,6 +5,7 @@ import { createBrowserRouter, Navigate, RouterProvider } from "react-router";
 
 import { ApiError } from "./api/client";
 import { AdminLayout } from "./layout/AdminLayout";
+import { ComparisonsPage } from "./pages/ComparisonsPage";
 import { DealsPage } from "./pages/DealsPage";
 import { PricesPage } from "./pages/PricesPage";
 import { ShopSourcesPage } from "./pages/ShopSourcesPage";
@@ -31,6 +32,7 @@ const router = createBrowserRouter(
         { index: true, element: <Navigate to="/deals" replace /> },
         { path: "deals", element: <DealsPage /> },
         { path: "prices", element: <PricesPage /> },
+        { path: "comparisons", element: <ComparisonsPage /> },
         { path: "sources", element: <SourcesPage /> },
         { path: "shops", element: <ShopSourcesPage /> },
         { path: "*", element: <Navigate to="/deals" replace /> },

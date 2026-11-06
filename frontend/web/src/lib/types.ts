@@ -60,6 +60,20 @@ export interface ModelDetail {
   prices: Price[];
 }
 
+export interface ModelRef {
+  slug: string;
+  name: string;
+  family: string;
+}
+
+/** 后台精选的模型对比；顺序即规范网址 /models/{a}-vs-{b} 的顺序 */
+export interface ModelComparison {
+  model_a: ModelRef;
+  model_b: ModelRef;
+  intro: string;
+  updated_at: string;
+}
+
 /** 官方订阅地区价（各国 App Store）；人民币价按快照当天汇率折算 */
 export interface RegionPrice {
   country_code: string;

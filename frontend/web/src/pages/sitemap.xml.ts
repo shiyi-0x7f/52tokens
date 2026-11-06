@@ -2,7 +2,14 @@ import type { APIRoute } from "astro";
 
 import { internalGet } from "../lib/api";
 import { buildSitemap, type SitemapEntry } from "../lib/sitemap";
-import type { Deal, ModelSummary, OfficialPlanSummary, ShopProductSummary } from "../lib/types";
+import type {
+  Deal,
+  ModelComparison,
+  ModelSummary,
+  OfficialPlanSummary,
+  ShopProductSummary,
+} from "../lib/types";
+import { vsPath } from "../lib/vs";
 
 const STATIC_PATHS = [
   "/",
@@ -16,12 +23,13 @@ const STATIC_PATHS = [
 
 export const GET: APIRoute = async ({ site }) => {
   const base = site ?? new URL("http://127.0.0.1:4321");
-  const [models, deals, shopProducts, plans] = await Promise.all([
+  const [models, deals, shopProducts, plans, comparisons] = await Promise.all([
     internalGet<ModelSummary[]>("/models"),
     // 已结束的活动页面保留，同样进 sitemap
     internalGet<Deal[]>("/deals", { include_expired: true, limit: 100 }),
     internalGet<ShopProductSummary[]>("/shop-products"),
     internalGet<OfficialPlanSummary[]>("/official-plans"),
+    internalGet<ModelComparison[]>("/model-comparisons"),
   ]);
   // 平台页只收有活动的平台（没有活动的平台页是 noindex），lastmod 取其活动最近的核实时间
   const platformLastmod = new Map<string, string>();
@@ -32,6 +40,10 @@ export const GET: APIRoute = async ({ site }) => {
   const entries: SitemapEntry[] = [
     ...STATIC_PATHS.map((path) => ({ loc: new URL(path, base).href })),
     ...models.map((m) => ({ loc: new URL(`/models/${m.slug}`, base).href })),
+    // 只收后台精选的对比；其余组合页面是 noindex
+    ...comparisons.map((c) => ({
+      loc: new URL(vsPath(c.model_a.slug, c.model_b.slug), base).href,
+    })),
     // 免费页只收有免费渠道的模型；其余模型的免费页可能是 noindex
     ...models
       .filter((m) => m.has_free)
