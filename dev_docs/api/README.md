@@ -237,7 +237,7 @@ Google / SCC 不可达 → `502`；Google 或 SCC 凭据未配置 → `503`。
 | `POST /api/admin/sources/{id}/check` | 立即检查一次，同步返回 `{ source_id, status, created, reconfirmed, error }`，`status` 为 `failed` / `unchanged` / `extracted`；含 LLM 调用，可能耗时数十秒 |
 
 | `GET /api/admin/shop-sources?collector_kind=&state=ok\|failed\|unchecked&q=&page=&page_size=` | 卡网店铺列表，按报价数倒序 |
-| `POST /api/admin/shop-sources` | 登记店铺 `{ entry_url, collector_kind, name, enabled }`；同一店铺地址只能登记一次（`409`）；多商户平台（`shopApi` / `shopGoodsApi`）填具体商户的 `/shop/<token>` |
+| `POST /api/admin/shop-sources` | 登记店铺 `{ entry_url, collector_kind, name, enabled }`；同一店铺地址只能登记一次（`409`）；多商户平台（`shopApi` / `shopGoodsApi`）填具体商户的 `/shop/<token>`；`shopApi`（链动小铺 wzyp.cn 等）也可以填商品链接 `/item/<goods_key>`，经公开商品详情接口反查成所属商户的店铺地址，查不到时 `400` |
 | `PUT /api/admin/shop-sources/{id}` | 编辑店铺 |
 | `POST /api/admin/shop-sources/{id}/sync` | 立即采集一个店铺，同步返回 `{ source_id, status, offers, created, gone, error }` |
 
@@ -280,6 +280,7 @@ Google / SCC 不可达 → `502`；Google 或 SCC 凭据未配置 → `503`。
 - 对 App Store 保持克制：2 并发、每槽请求间隔 1 秒，403 / 429 / 5xx 重试两次（等 2、4 秒）。短时间连续跑多轮会被 403 限流。
 
 卡网采集规则（`shops/sync.py`）：
+- 链动小铺（wzyp.cn，原 ldxp.cn）前面有阿里云 WAF：机房 / 代理 IP 发出的请求会被要求滑块验证，采集器把验证页按失败处理、不尝试绕过；家宽等普通出口 IP 用如实的 User-Agent 即可访问公开接口。运行采集的机器若配置了 `HTTP_PROXY` / `HTTPS_PROXY`，需要把 `wzyp.cn` 加进 `NO_PROXY`。
 - 店铺按店铺地址唯一：单店铺系统 = 域名首页；ShopApi（链动小铺等）/ ShopGoodsApi（16688 等）多商户平台必须是具体商户的 `/shop/<token>`，只有域名时记为失败并提示补地址；ShopGoodsApi 平台的裸域名会 301 到 www，店铺地址直接写 www 域名（POST 被重定向会丢请求体）。
 - 报价按（店铺, 链接 + 标题哈希）upsert，每次用 `shops/classify` 的规则把标题归到标准商品（`data/seed/shop_products.yaml`）；后台人工指定的（`match_method=manual`）不覆盖。
 - 采集成功但这次没出现的报价标为无货，不删除；一个商品都没采到按失败处理；失败只记在店铺上（`last_error`、`fail_count`），报价不动。

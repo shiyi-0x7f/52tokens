@@ -4,8 +4,11 @@ from datetime import datetime
 from typing import Literal
 from urllib.parse import urlsplit
 
+import httpx
 from pydantic import BaseModel, ConfigDict, Field, HttpUrl
 
+from app.collectors.shops.base import ShopFetchError
+from app.collectors.shops.shop_api import item_key, resolve_item_shop, shop_token
 from app.core.errors import AppError
 from app.domains.common import Page, PageQuery
 from app.domains.shops.models import ShopCollectorKind, ShopSource
@@ -14,7 +17,8 @@ from app.domains.shops.sync import ShopSyncReport, ShopSyncService
 
 
 class ShopSourceIn(BaseModel):
-    entry_url: HttpUrl  # 店铺地址；多商户平台填具体商户的 /shop/<token>
+    # 店铺地址；多商户平台填具体商户的 /shop/<token>，ShopApi 平台也可以填商品链接 /item/<key>
+    entry_url: HttpUrl
     collector_kind: ShopCollectorKind
     name: str = Field(default="", max_length=80)
     enabled: bool = True
@@ -79,7 +83,23 @@ class ShopAdminService:
         source.name = data.name.strip()
         source.enabled = data.enabled
 
+    async def _normalize(self, data: ShopSourceIn) -> ShopSourceIn:
+        """多商户平台只给了商品链接时，换成所属商户的店铺地址。"""
+        url = str(data.entry_url)
+        if (
+            data.collector_kind != ShopCollectorKind.SHOP_API
+            or shop_token(url)
+            or not item_key(url)
+        ):
+            return data
+        try:
+            shop_url = await resolve_item_shop(self.sync_service.http, url)
+        except (ShopFetchError, httpx.HTTPError) as exc:
+            raise AppError("BAD_REQUEST", f"没能从商品链接找到所属店铺：{exc}") from exc
+        return data.model_copy(update={"entry_url": HttpUrl(shop_url)})
+
     async def create(self, data: ShopSourceIn) -> ShopSourceAdminOut:
+        data = await self._normalize(data)
         if await self.repo.entry_url_taken(str(data.entry_url).rstrip("/")):
             raise AppError("CONFLICT", "这个店铺地址已经登记过")
         source = ShopSource()
@@ -91,6 +111,7 @@ class ShopAdminService:
 
     async def update(self, source_id: int, data: ShopSourceIn) -> ShopSourceAdminOut:
         source = await self._source(source_id)
+        data = await self._normalize(data)
         if await self.repo.entry_url_taken(str(data.entry_url).rstrip("/"), exclude_id=source_id):
             raise AppError("CONFLICT", "这个店铺地址已经登记过")
         self._apply(source, data)

@@ -1,5 +1,6 @@
 """后台卡网店铺：登记（含多商户地址）、去重、筛选、立即采集。"""
 
+import json
 from collections.abc import AsyncIterator
 
 import httpx
@@ -21,6 +22,11 @@ async def shop_http(app: FastAPI, monkeypatch: pytest.MonkeyPatch) -> AsyncItera
     def handler(request: httpx.Request) -> httpx.Response:
         if request.url.path == "/user/api/index/commodity":
             return httpx.Response(200, json={"data": goods})
+        if request.url.path == "/shopApi/Shop/goodsInfo":
+            key = json.loads(request.content)["goods_key"]
+            if key == "pn0atr":
+                return httpx.Response(200, json={"code": 1, "data": {"user": {"token": "tok1"}}})
+            return httpx.Response(200, json={"code": 0, "msg": "商品不存在", "data": None})
         return httpx.Response(404)
 
     async with httpx.AsyncClient(transport=httpx.MockTransport(handler)) as http:
@@ -57,6 +63,23 @@ async def test_multi_merchant_platform_allows_several_shops_per_host(
         assert resp.status_code == 200
     rows = (await admin.get("/api/admin/shop-sources", params={"q": "pay.test"})).json()["data"]
     assert rows["total"] == 2
+
+
+async def test_item_link_is_resolved_to_merchant_shop(admin: httpx.AsyncClient) -> None:
+    body = {"entry_url": "https://pay.test/item/pn0atr", "collector_kind": "shopApi"}
+    created = (await admin.post("/api/admin/shop-sources", json=body, headers=CSRF)).json()["data"]
+    assert created["entry_url"] == "https://pay.test/shop/tok1"
+
+    # 同一商户的另一个商品链接 → 同一个店铺，按重复处理
+    again = await admin.post("/api/admin/shop-sources", json=body, headers=CSRF)
+    assert again.status_code == 409
+
+
+async def test_unknown_item_link_is_rejected(admin: httpx.AsyncClient) -> None:
+    body = {"entry_url": "https://pay.test/item/gone", "collector_kind": "shopApi"}
+    resp = await admin.post("/api/admin/shop-sources", json=body, headers=CSRF)
+    assert resp.status_code == 400
+    assert "商品不存在" in resp.json()["message"]
 
 
 async def test_failed_sync_is_reported(admin: httpx.AsyncClient) -> None:

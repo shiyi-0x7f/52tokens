@@ -88,7 +88,7 @@ export function ShopSourceModal({ open, source, onClose }: Props) {
           rules={[{ required: true, type: "url", message: "请填写完整链接" }]}
           extra={
             kind === "shopApi"
-              ? "多商户平台：填具体商户的店铺页，例如 https://wzyp.cn/shop/XXXX"
+              ? "多商户平台：填具体商户的店铺页 https://wzyp.cn/shop/XXXX，或直接贴商品链接 https://wzyp.cn/item/XXXX（自动换成所属店铺）"
               : kind === "shopGoodsApi"
                 ? "多商户平台：填具体商户的店铺页，要带 www，例如 https://www.16688.com.cn/shop/S123456"
                 : "一般填店铺首页"
