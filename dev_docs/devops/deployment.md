@@ -22,7 +22,7 @@ api / worker / web 用 `network_mode: host`：宝塔的 PostgreSQL / Redis 默�
 | `52tokens-frontend` | 公开站（`frontend/web/Dockerfile`）；只有 `SITE_URL` 在构建时写进产物，其余配置运行时注入 |
 | `52tokens-admin` | 后台静态 SPA（`frontend/admin/Dockerfile`）；访问路径不写进镜像，容器启动时按 `ADMIN_BASE_PATH` 生成 |
 
-**后台路径**：不用 `/admin/`（容易被扫描）。路径只写在服务器 `.env.prod` 的 `ADMIN_BASE_PATH` 和宝塔 Nginx 配置里，**不进仓库**（仓库是公开的），robots.txt 里也不列。生成一个：`echo "/$(openssl rand -hex 6)/"`。换路径只需改这两处并 `./start-prod.sh`、重载 Nginx，不用重新构建镜像。后台接口 `/api/admin/` 不变，它靠登录 + 管理员校验保护。
+**后台路径**：不用 `/admin/`（容易被扫描）。路径只写在服务器 `.env.prod` 的 `ADMIN_BASE_PATH` 和宝塔 Nginx 配置里，**不进仓库**（仓库是公开的），robots.txt 里也不列。首次 `./start-prod.sh` 自动生成并打印；要换路径就把 `.env.prod` 里的值清空再 `./start-prod.sh`（会重新生成），然后改 Nginx 并重载，不用重新构建镜像。后台接口 `/api/admin/` 不变，它靠登录 + 管理员校验保护。
 
 | 文件 | 作用 |
 | --- | --- |
@@ -68,11 +68,12 @@ docker login crpi-bveintih61x5c20a.cn-hangzhou.personal.cr.aliyuncs.com
 ```bash
 cd /www/wwwroot/52tokens
 cp .env.prod.example .env.prod
-openssl rand -hex 32        # 生成 INTERNAL_API_TOKEN
 vim .env.prod
 ```
 
-必须填写：`DATABASE_URL`、`REDIS_URL`（主机用 `host.docker.internal`）、`INTERNAL_API_TOKEN`、`TURNSTILE_*`、`SCC_*`、`GOOGLE_*`、`ADMIN_EMAILS`、`SILICONFLOW_API_KEY`。`SITE_URL`、`GOOGLE_REDIRECT_URI` 已按 `52tokens.cc` 填好。
+必须填写：`DATABASE_URL`、`REDIS_URL`（主机用 `127.0.0.1`）、`TURNSTILE_*`、`SCC_*`、`GOOGLE_*`、`ADMIN_EMAILS`、`SILICONFLOW_API_KEY`。`SITE_URL`、`GOOGLE_REDIRECT_URI` 已按 `52tokens.cc` 填好。
+
+`INTERNAL_API_TOKEN` 和 `ADMIN_BASE_PATH` 保持占位值即可：`start-prod.sh` 首次运行时自动生成随机值写回 `.env.prod`（之后保持不变），并在最后打印后台地址。
 
 外部平台要同步登记：
 
@@ -105,7 +106,7 @@ $C exec worker python -m app.cli.collect official   # App Store 订阅地区价�
 
 ### 7. 宝塔站点与 HTTPS
 
-宝塔 → 网站 → 添加站点 `52tokens.cc`（纯静态即可）→ SSL 申请 Let's Encrypt 并开启强制 HTTPS → 配置文件：把 `deploy/nginx-52tokens.conf` 的内容粘贴进 `server { }`（替换默认的 `location /`），**把其中的 `/<ADMIN_BASE_PATH>/` 换成 `.env.prod` 里的真实路径**，保存。
+宝塔 → 网站 → 添加站点 `52tokens.cc`（纯静态即可）→ SSL 申请 Let's Encrypt 并开启强制 HTTPS → 配置文件：把 `deploy/nginx-52tokens.conf` 的内容粘贴进 `server { }`（替换默认的 `location /`），**把其中的 `/<ADMIN_BASE_PATH>/` 换成 `start-prod.sh` 打印的后台路径**（也就是 `.env.prod` 里的值），保存。
 
 ### 8. 上线检查
 
