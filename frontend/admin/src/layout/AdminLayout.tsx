@@ -13,7 +13,9 @@ import { useMe } from "../api/queries";
 import { WEB_ORIGIN } from "../lib/env";
 
 // 登录在公开站完成（会话 Cookie 同域共享）；dev 下公开站和后台端口不同，新窗口打开登录页
-const LOGIN_URL = WEB_ORIGIN ? `${WEB_ORIGIN}/login` : "/login?next=%2Fadmin%2F";
+const LOGIN_URL = WEB_ORIGIN
+  ? `${WEB_ORIGIN}/login`
+  : `/login?next=${encodeURIComponent(import.meta.env.BASE_URL)}`;
 
 const MENU = [
   { key: "/deals", icon: <GiftOutlined />, label: <NavLink to="/deals">活动审核</NavLink> },

@@ -39,7 +39,8 @@ const router = createBrowserRouter(
       ],
     },
   ],
-  { basename: "/admin" },
+  // 路由前缀跟随部署路径（开发 /admin/，生产由容器启动时替换），去掉末尾斜杠
+  { basename: import.meta.env.BASE_URL.replace(/\/$/, "") },
 );
 
 // 主题与公开站一致：品牌红、10px 圆角

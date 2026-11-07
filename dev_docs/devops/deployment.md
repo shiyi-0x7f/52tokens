@@ -4,7 +4,7 @@
 
 ```
 浏览器 ──HTTPS──▶ 宝塔 Nginx ─┬─ /            → 127.0.0.1:4321  web（Astro SSR）
-                              ├─ /admin/      → 127.0.0.1:5174  admin（静态 SPA）
+                              ├─ /<后台路径>/ → 127.0.0.1:5174  admin（静态 SPA；路径见下）
                               ├─ /api/admin/  → 127.0.0.1:8100  api（FastAPI）
                               └─ /internal/   → 404（只给 web 经本机 http://127.0.0.1:8100 调用）
 worker（arq 定时采集）── 无端口
@@ -20,7 +20,9 @@ api / worker / web 用 `network_mode: host`：宝塔的 PostgreSQL / Redis 默�
 | --- | --- |
 | `52tokens-backend` | api 与 worker 共用（`backend/Dockerfile`） |
 | `52tokens-frontend` | 公开站（`frontend/web/Dockerfile`）；只有 `SITE_URL` 在构建时写进产物，其余配置运行时注入 |
-| `52tokens-admin` | 后台静态 SPA（`frontend/admin/Dockerfile`） |
+| `52tokens-admin` | 后台静态 SPA（`frontend/admin/Dockerfile`）；访问路径不写进镜像，容器启动时按 `ADMIN_BASE_PATH` 生成 |
+
+**后台路径**：不用 `/admin/`（容易被扫描）。路径只写在服务器 `.env.prod` 的 `ADMIN_BASE_PATH` 和宝塔 Nginx 配置里，**不进仓库**（仓库是公开的），robots.txt 里也不列。生成一个：`echo "/$(openssl rand -hex 6)/"`。换路径只需改这两处并 `./start-prod.sh`、重载 Nginx，不用重新构建镜像。后台接口 `/api/admin/` 不变，它靠登录 + 管理员校验保护。
 
 | 文件 | 作用 |
 | --- | --- |
@@ -103,7 +105,7 @@ $C exec worker python -m app.cli.collect official   # App Store 订阅地区价�
 
 ### 7. 宝塔站点与 HTTPS
 
-宝塔 → 网站 → 添加站点 `52tokens.cc`（纯静态即可）→ SSL 申请 Let's Encrypt 并开启强制 HTTPS → 配置文件：把 `deploy/nginx-52tokens.conf` 的内容粘贴进 `server { }`（替换默认的 `location /`），保存。
+宝塔 → 网站 → 添加站点 `52tokens.cc`（纯静态即可）→ SSL 申请 Let's Encrypt 并开启强制 HTTPS → 配置文件：把 `deploy/nginx-52tokens.conf` 的内容粘贴进 `server { }`（替换默认的 `location /`），**把其中的 `/<ADMIN_BASE_PATH>/` 换成 `.env.prod` 里的真实路径**，保存。
 
 ### 8. 上线检查
 
@@ -113,7 +115,7 @@ curl -I https://52tokens.cc/internal/v1/meta        # 必须是 404
 curl -s https://52tokens.cc/sitemap.xml | head      # 网址应是 https://52tokens.cc/...
 ```
 
-浏览器打开首页、`/products`、`/official-prices`、`/admin/`（用 `ADMIN_EMAILS` 里的邮箱经 Google 登录）。
+浏览器打开首页、`/products`、`/official-prices`、后台 `https://52tokens.cc<ADMIN_BASE_PATH>`（用 `ADMIN_EMAILS` 里的邮箱经 Google 登录）。`https://52tokens.cc/admin/` 应该是 404。
 
 ### 9. 提交搜索引擎
 

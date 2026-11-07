@@ -73,6 +73,9 @@ services:
 
   admin:
     image: ${IMAGE_REGISTRY:?IMAGE_REGISTRY 未设置}/52tokens-admin:${IMAGE_TAG:-latest}
+    environment:
+      # 后台访问路径（如 /a8f3c9e1b2d4/），只写在 .env.prod 里；宝塔 Nginx 的反代路径要一致
+      ADMIN_BASE_PATH: ${ADMIN_BASE_PATH:?ADMIN_BASE_PATH 未设置}
     restart: unless-stopped
     healthcheck:
       test: ["CMD", "wget", "-q", "-O", "-", "http://127.0.0.1/healthz"]
