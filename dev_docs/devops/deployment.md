@@ -11,13 +11,20 @@ worker（arq 定时采集）── 无端口
 api / worker / web ──▶ host.docker.internal ──▶ 宝塔 PostgreSQL / Redis
 ```
 
+镜像**在本机构建、推到阿里云 ACR**，服务器只拉取不构建：
+
+| 镜像（`crpi-bveintih61x5c20a.cn-hangzhou.personal.cr.aliyuncs.com/shiyi_acr/…`） | 内容 |
+| --- | --- |
+| `52tokens-backend` | api 与 worker 共用（`backend/Dockerfile`） |
+| `52tokens-frontend` | 公开站（`frontend/web/Dockerfile`）；只有 `SITE_URL` 在构建时写进产物，其余配置运行时注入 |
+| `52tokens-admin` | 后台静态 SPA（`frontend/admin/Dockerfile`） |
+
 | 文件 | 作用 |
 | --- | --- |
+| `deploy/build-push.sh` | **本机**：构建三个镜像（linux/amd64）并推送，标签为提交短哈希 + `latest` |
+| `start-prod.sh` | **服务器**：拉取 → 迁移 →（可选导入种子）→ 启动 |
 | `compose.yaml` / `compose.prod.yaml` | 服务定义 / 生产叠加（端口只绑 127.0.0.1） |
-| `backend/Dockerfile` | api 与 worker 共用镜像 |
-| `frontend/web/Dockerfile`、`frontend/admin/Dockerfile` | 公开站、后台 |
 | `deploy/nginx-52tokens.conf` | 宝塔站点的反代规则 |
-| `start-prod.sh` | 构建 → 迁移 →（可选导入种子）→ 启动 |
 | `.env.prod.example` | 生产配置模板，复制成 `.env.prod`（不入库） |
 
 ## 一、首次部署
@@ -41,12 +48,19 @@ api / worker / web ──▶ host.docker.internal ──▶ 宝塔 PostgreSQL / 
 
 Redis：设置密码（`requirepass`），`bind` 里加上 `172.17.0.1`，重启。本项目用 db `6`、key 前缀 `52tokens:`。
 
-### 4. 把代码放到服务器
+### 4. 把部署文件放到服务器
 
-仓库目前没有远程地址，二选一：
+服务器只需要 compose 文件、`start-prod.sh`、Nginx 规则和 `.env.prod`（代码都在镜像里），直接克隆仓库最省事：
 
-- **推荐：私有 Git 仓库**。本机在 GitHub 建私有仓库后 `git remote add origin … && git push -u origin main`，服务器上 `git clone` 到 `/www/wwwroot/52tokens`。以后更新只需 `git pull`。
-- **或直接上传**：本机 `git archive --format=zip -o 52tokens.zip main`，在宝塔「文件」上传到 `/www/wwwroot/52tokens` 解压（不要带 `node_modules`、`.venv`、`.env.*`）。
+```bash
+cd /www/wwwroot && git clone https://github.com/shiyi-0x7f/52tokens.git && cd 52tokens
+```
+
+登录 ACR（用阿里云容器镜像服务的访问凭证，只需一次）：
+
+```bash
+docker login crpi-bveintih61x5c20a.cn-hangzhou.personal.cr.aliyuncs.com
+```
 
 ### 5. 生产配置
 
@@ -67,9 +81,17 @@ vim .env.prod
 
 ### 6. 启动
 
+镜像要先在本机推上去（仓库根目录，Git Bash 下；本机已 `docker login` 过 ACR）：
+
+```bash
+deploy/build-push.sh        # 构建并推送三个镜像
+```
+
+然后在服务器上：
+
 ```bash
 chmod +x start-prod.sh
-./start-prod.sh --seed      # 首次：构建镜像、迁移、导入 data/seed、启动
+./start-prod.sh --seed      # 首次：拉取镜像、迁移、导入 data/seed、启动
 ```
 
 worker 启动时会先同步一次 OpenRouter 价格、记一次价格历史；其余数据第一次手动跑一下，不用等定时任务：
@@ -101,13 +123,19 @@ Google Search Console、Bing Webmaster 添加站点并提交 `https://52tokens.c
 ## 二、日常
 
 ```bash
+# 本机：发布新版本
+deploy/build-push.sh
+
+# 服务器：更新
 cd /www/wwwroot/52tokens
-git pull && ./start-prod.sh            # 更新代码（种子有改动时加 --seed）
+git pull && ./start-prod.sh            # 拉取新镜像并替换（种子有改动时加 --seed）
 $C ps                                   # 状态（健康检查每 30 秒）
 $C logs -f --tail=200 api worker web    # 日志
 ```
 
-- 改了 `SITE_URL`、`TURNSTILE_SITE_KEY` 等构建时写进公开站的值，要重新构建（`./start-prod.sh` 会重新构建）。
+- **回滚**：`.env.prod` 里把 `IMAGE_TAG` 填成之前的提交短哈希，再 `./start-prod.sh`。
+- 只有 `SITE_URL` 是构建时写进公开站的，改了要重新 `deploy/build-push.sh`；其余配置（Turnstile、限流等）改 `.env.prod` 后 `./start-prod.sh` 即可。
+- compose 文件、`start-prod.sh`、Nginx 规则有改动时服务器才需要 `git pull`；只改代码时 `git pull` 也无害。
 - 数据库备份：宝塔 → 计划任务 → 备份数据库，每天一次。
 
 ## 三、已知限制

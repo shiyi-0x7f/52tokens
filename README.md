@@ -38,7 +38,7 @@ bash start-dev.sh                # 端口被占用会自动 +1 并回写 .env.de
 
 ## 生产部署
 
-宝塔 + Docker Compose（PostgreSQL / Redis 用宝塔自带的）：复制 `.env.prod.example` 为 `.env.prod` 填好后执行 `./start-prod.sh --seed`。完整步骤（数据库授权、Nginx 反代、HTTPS、上线检查）见 [dev_docs/devops/deployment.md](dev_docs/devops/deployment.md)。
+宝塔 + Docker Compose（PostgreSQL / Redis 用宝塔自带的），镜像经阿里云 ACR 分发：本机 `deploy/build-push.sh` 构建并推送，服务器上复制 `.env.prod.example` 为 `.env.prod` 填好后执行 `./start-prod.sh --seed`（只拉取不构建）。完整步骤（数据库授权、Nginx 反代、HTTPS、上线检查）见 [dev_docs/devops/deployment.md](dev_docs/devops/deployment.md)。
 
 ## 测试与质量门禁
 

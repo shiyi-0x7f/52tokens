@@ -19,6 +19,8 @@ export default defineConfig({
   vite: {
     plugins: [tailwindcss()],
   },
+  // 除 SITE_URL（上面的 site，构建时写进产物）外都在运行时读取（server + secret），
+  // 同一个镜像换环境只改 .env，不用重新构建
   env: {
     schema: {
       API_INTERNAL_URL: envField.string({
@@ -34,26 +36,27 @@ export default defineConfig({
       }),
       REDIS_KEY_PREFIX: envField.string({
         context: "server",
-        access: "public",
+        access: "secret",
         default: "52tokens:",
       }),
       // 只有部署在可信反代之后才设置，例如 Cloudflare 的 cf-connecting-ip
-      TRUSTED_IP_HEADER: envField.string({ context: "server", access: "public", optional: true }),
+      TRUSTED_IP_HEADER: envField.string({ context: "server", access: "secret", optional: true }),
       RATE_LIMIT_PER_MINUTE: envField.number({
         context: "server",
-        access: "public",
+        access: "secret",
         default: 120,
       }),
       // SCC 微信扫码回调页所在的源（即 SCC 的 WX_OPEN_REDIRECT_URI 的源），
-      // 登录页只接受来自这个源的 postMessage
+      // 登录页只接受来自这个源的 postMessage。只在服务端渲染时写进 HTML 属性，不需要打进客户端代码
       WECHAT_CALLBACK_ORIGIN: envField.string({
-        context: "client",
-        access: "public",
+        context: "server",
+        access: "secret",
         default: "https://wxauth.11xy.cn",
       }),
+      // Turnstile 站点 key 本身是公开的；同样只在服务端渲染时写进 data-sitekey
       TURNSTILE_SITE_KEY: envField.string({
-        context: "client",
-        access: "public",
+        context: "server",
+        access: "secret",
         default: "1x00000000000000000000AA",
       }),
     },

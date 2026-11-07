@@ -3,7 +3,7 @@
  * Cloudflare Turnstile 人机验证。放在 <form> 内，提交时浏览器会带上
  * cf-turnstile-response 字段，由服务端转交后端校验。
  */
-import { TURNSTILE_SITE_KEY } from "astro:env/client";
+import { TURNSTILE_SITE_KEY } from "astro:env/server";
 
 interface Props {
   action?: string;
