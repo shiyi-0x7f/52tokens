@@ -3,26 +3,38 @@
 #
 # 镜像在本机构建并推到阿里云 ACR（deploy/build-push.sh），服务器只拉取不构建。
 # 镜像地址由 .env.prod 的 IMAGE_REGISTRY / IMAGE_TAG 决定。
-# PostgreSQL / Redis 用宝塔自带的（宿主机上），容器经 host.docker.internal 访问，
-# 连接信息全在 .env.prod 里，这里不写死。
+#
+# 网络：宝塔的 PostgreSQL / Redis 只监听 127.0.0.1，且不改宝塔配置，所以 api / worker / web
+# 用宿主机网络（network_mode: host），直接连 127.0.0.1。代价是端口映射不起作用、服务直接在
+# 宿主机上监听，因此这里显式让 api / web 只监听 127.0.0.1（镜像默认是 0.0.0.0），外部只能经宝塔
+# Nginx 访问。后台 admin（nginx 静态页，不连数据库）保持桥接网络 + 端口映射，避免和宝塔 Nginx 抢 80 端口。
 x-backend: &backend
   image: ${IMAGE_REGISTRY:?IMAGE_REGISTRY 未设置}/52tokens-backend:${IMAGE_TAG:-latest}
+  network_mode: host
   env_file: .env.prod
   environment:
     APP_ENV: prod
-  extra_hosts:
-    - "host.docker.internal:host-gateway"
   restart: unless-stopped
 
 services:
   api:
     <<: *backend
+    command:
+      - uvicorn
+      - app.main:app
+      - --host
+      - 127.0.0.1
+      - --port
+      - "${API_PORT:-8100}"
+      - --proxy-headers
+      - --forwarded-allow-ips
+      - "127.0.0.1"
     healthcheck:
       test:
         - CMD
         - python
         - -c
-        - "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8100/health', timeout=5)"
+        - "import urllib.request; urllib.request.urlopen('http://127.0.0.1:${API_PORT:-8100}/health', timeout=5)"
       interval: 30s
       timeout: 5s
       retries: 3
@@ -37,12 +49,13 @@ services:
 
   web:
     image: ${IMAGE_REGISTRY:?IMAGE_REGISTRY 未设置}/52tokens-frontend:${IMAGE_TAG:-latest}
+    network_mode: host
     env_file: .env.prod
     environment:
-      # 公开站经 Docker 内网调用后端；后端的 /internal/* 不经过宝塔 Nginx 对外
-      API_INTERNAL_URL: http://api:8100
-    extra_hosts:
-      - "host.docker.internal:host-gateway"
+      # 只监听本机；公开站经 127.0.0.1 调用后端，后端的 /internal/* 不经过宝塔 Nginx 对外
+      HOST: 127.0.0.1
+      PORT: "${WEB_PORT:-4321}"
+      API_INTERNAL_URL: "http://127.0.0.1:${API_PORT:-8100}"
     depends_on:
       api:
         condition: service_healthy
@@ -52,7 +65,7 @@ services:
         - CMD
         - node
         - -e
-        - "fetch('http://127.0.0.1:4321/healthz').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"
+        - "fetch('http://127.0.0.1:${WEB_PORT:-4321}/healthz').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"
       interval: 30s
       timeout: 5s
       retries: 3

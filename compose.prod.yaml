@@ -1,14 +1,7 @@
-# 生产叠加：端口只绑定 127.0.0.1，外部只能经宝塔 Nginx 访问（反代规则见 deploy/nginx-52tokens.conf）。
-# 端口取自 .env.prod。
+# 生产叠加：外部只能经宝塔 Nginx 访问（反代规则见 deploy/nginx-52tokens.conf）。
+# api / web 用宿主机网络、只监听 127.0.0.1（见 compose.yaml），不需要端口映射；
+# 只有 admin 走桥接网络，端口映射到宿主机 127.0.0.1。端口取自 .env.prod。
 services:
-  api:
-    ports:
-      - "127.0.0.1:${API_PORT:-8100}:8100"
-
-  web:
-    ports:
-      - "127.0.0.1:${WEB_PORT:-4321}:4321"
-
   admin:
     ports:
       - "127.0.0.1:${ADMIN_PORT:-5174}:80"
