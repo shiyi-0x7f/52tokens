@@ -1,0 +1,28 @@
+# 后台 SPA 容器内的 nginx：只在 ${ADMIN_BASE_PATH} 下托管静态文件，前端路由都回落到 index.html，
+# 其余路径一律 404。${ADMIN_BASE_PATH} 由 nginx 镜像启动时从环境变量替换（/etc/nginx/templates）。
+server {
+    listen 80;
+    server_name _;
+    root /usr/share/nginx/html;
+
+    location = /healthz {
+        access_log off;
+        return 200 "ok";
+    }
+
+    # 带哈希的静态资源可以长期缓存
+    location ${ADMIN_BASE_PATH}assets/ {
+        expires 1y;
+        add_header Cache-Control "public, immutable";
+        try_files $uri =404;
+    }
+
+    location ${ADMIN_BASE_PATH} {
+        add_header Cache-Control "no-cache";
+        try_files $uri $uri/ ${ADMIN_BASE_PATH}index.html;
+    }
+
+    location / {
+        return 404;
+    }
+}

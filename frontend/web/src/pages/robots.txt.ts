@@ -6,7 +6,7 @@ export const GET: APIRoute = ({ site }) => {
   const body = [
     "User-agent: *",
     "Allow: /",
-    "Disallow: /admin/",
+    // 不列后台路径：robots.txt 是公开的，列出来等于告诉别人后台在哪（后台页面本身是 noindex 的 SPA）
     "Disallow: /auth/",
     "Disallow: /go/",
     "",
