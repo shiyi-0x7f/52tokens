@@ -2,8 +2,8 @@
 #
 # 注意：@resvg/resvg-js 是原生模块，必须在目标系统（这里是镜像里的 Linux）上 pnpm install，
 # 不能拷贝开发机的 node_modules。
-# SITE_URL 和 Astro 的公开变量（TURNSTILE_SITE_KEY 等）在构建时写进产物，所以作为构建参数传入；
-# 密钥类变量（INTERNAL_API_TOKEN、REDIS_URL 等）运行时由 env_file 注入。
+# 只有 SITE_URL（Astro 的 site：canonical、sitemap、分享图的绝对地址）在构建时写进产物，作为构建参数传入；
+# 其余配置（TURNSTILE_SITE_KEY、INTERNAL_API_TOKEN、REDIS_URL 等）都在运行时由 env_file 注入。
 FROM node:22-bookworm-slim
 
 RUN corepack enable && corepack prepare pnpm@10.22.0 --activate
@@ -19,11 +19,6 @@ COPY shared shared
 COPY frontend/web frontend/web
 
 ARG SITE_URL
-ARG TURNSTILE_SITE_KEY
-ARG WECHAT_CALLBACK_ORIGIN
-ARG REDIS_KEY_PREFIX
-ARG TRUSTED_IP_HEADER
-ARG RATE_LIMIT_PER_MINUTE=120
 RUN test -n "$SITE_URL" || (echo "构建参数 SITE_URL 不能为空" && exit 1)
 RUN pnpm --filter @52tokens/web build
 

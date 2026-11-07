@@ -1,13 +1,12 @@
 # 公共服务定义；生产用 compose.prod.yaml 叠加：
 #   docker compose -f compose.yaml -f compose.prod.yaml --env-file .env.prod up -d
 #
+# 镜像在本机构建并推到阿里云 ACR（deploy/build-push.sh），服务器只拉取不构建。
+# 镜像地址由 .env.prod 的 IMAGE_REGISTRY / IMAGE_TAG 决定。
 # PostgreSQL / Redis 用宝塔自带的（宿主机上），容器经 host.docker.internal 访问，
 # 连接信息全在 .env.prod 里，这里不写死。
 x-backend: &backend
-  build:
-    context: .
-    dockerfile: backend/Dockerfile
-  image: 52tokens-backend:latest
+  image: ${IMAGE_REGISTRY:?IMAGE_REGISTRY 未设置}/52tokens-backend:${IMAGE_TAG:-latest}
   env_file: .env.prod
   environment:
     APP_ENV: prod
@@ -37,18 +36,7 @@ services:
         condition: service_healthy
 
   web:
-    build:
-      context: .
-      dockerfile: frontend/web/Dockerfile
-      # 构建时写进产物的值（见 Dockerfile 说明），取自 --env-file .env.prod
-      args:
-        SITE_URL: ${SITE_URL:?SITE_URL 未设置}
-        TURNSTILE_SITE_KEY: ${TURNSTILE_SITE_KEY:-}
-        WECHAT_CALLBACK_ORIGIN: ${WECHAT_CALLBACK_ORIGIN:-}
-        REDIS_KEY_PREFIX: ${REDIS_KEY_PREFIX:-52tokens:}
-        TRUSTED_IP_HEADER: ${TRUSTED_IP_HEADER:-}
-        RATE_LIMIT_PER_MINUTE: ${RATE_LIMIT_PER_MINUTE:-120}
-    image: 52tokens-web:latest
+    image: ${IMAGE_REGISTRY:?IMAGE_REGISTRY 未设置}/52tokens-frontend:${IMAGE_TAG:-latest}
     env_file: .env.prod
     environment:
       # 公开站经 Docker 内网调用后端；后端的 /internal/* 不经过宝塔 Nginx 对外
@@ -71,10 +59,7 @@ services:
       start_period: 20s
 
   admin:
-    build:
-      context: .
-      dockerfile: frontend/admin/Dockerfile
-    image: 52tokens-admin:latest
+    image: ${IMAGE_REGISTRY:?IMAGE_REGISTRY 未设置}/52tokens-admin:${IMAGE_TAG:-latest}
     restart: unless-stopped
     healthcheck:
       test: ["CMD", "wget", "-q", "-O", "-", "http://127.0.0.1/healthz"]

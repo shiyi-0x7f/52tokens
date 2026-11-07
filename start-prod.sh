@@ -1,11 +1,13 @@
 #!/usr/bin/env bash
-# 生产一键部署 / 更新：构建镜像 → 数据库迁移 → 启动（或滚动替换）所有服务。
+# 服务器一键部署 / 更新：从阿里云 ACR 拉取镜像 → 数据库迁移 → 启动（或替换）所有服务。不在服务器上构建。
+# 镜像由本机 deploy/build-push.sh 构建并推送。
 #
 # 用法（在服务器的仓库目录下）：
-#   ./start-prod.sh          构建、迁移、启动
-#   ./start-prod.sh --seed   另外导入 data/seed/ 种子（首次部署或种子有更新时）
+#   ./start-prod.sh          拉取、迁移、启动
+#   ./start-prod.sh --seed   另外导入 data/seed/ 种子（首次部署或种子有更新时；种子在镜像里）
 #
-# 前提：已按 dev_docs/devops/deployment.md 准备好 .env.prod、宝塔 PostgreSQL / Redis 与 Nginx。
+# 前提：已 docker login 到 ACR；已按 dev_docs/devops/deployment.md 准备好 .env.prod、
+# 宝塔 PostgreSQL / Redis 与 Nginx。
 set -euo pipefail
 cd "$(dirname "$0")"
 
@@ -14,8 +16,8 @@ ENV_FILE=".env.prod"
 
 COMPOSE=(docker compose -f compose.yaml -f compose.prod.yaml --env-file "$ENV_FILE")
 
-echo "==> 构建镜像"
-"${COMPOSE[@]}" build
+echo "==> 拉取镜像"
+"${COMPOSE[@]}" pull
 
 echo "==> 数据库迁移"
 "${COMPOSE[@]}" run --rm --no-deps api alembic upgrade head
