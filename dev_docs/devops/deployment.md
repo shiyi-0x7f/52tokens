@@ -6,10 +6,13 @@
 浏览器 ──HTTPS──▶ 宝塔 Nginx ─┬─ /            → 127.0.0.1:4321  web（Astro SSR）
                               ├─ /admin/      → 127.0.0.1:5174  admin（静态 SPA）
                               ├─ /api/admin/  → 127.0.0.1:8100  api（FastAPI）
-                              └─ /internal/   → 404（只给 web 容器经 Docker 内网 http://api:8100 调用）
+                              └─ /internal/   → 404（只给 web 经本机 http://127.0.0.1:8100 调用）
 worker（arq 定时采集）── 无端口
-api / worker / web ──▶ host.docker.internal ──▶ 宝塔 PostgreSQL / Redis
+api / worker / web（宿主机网络，只监听 127.0.0.1）──▶ 127.0.0.1 ──▶ 宝塔 PostgreSQL / Redis
+admin（桥接网络）── 端口映射到 127.0.0.1:5174
 ```
+
+api / worker / web 用 `network_mode: host`：宝塔的 PostgreSQL / Redis 默认只监听 127.0.0.1，这样**不用改宝塔的任何配置**。服务直接在宿主机上监听，compose 里已显式让它们只监听 127.0.0.1。
 
 镜像**在本机构建、推到阿里云 ACR**，服务器只拉取不构建：
 
@@ -23,7 +26,7 @@ api / worker / web ──▶ host.docker.internal ──▶ 宝塔 PostgreSQL / 
 | --- | --- |
 | `deploy/build-push.sh` | **本机**：构建三个镜像（linux/amd64）并推送，标签为提交短哈希 + `latest` |
 | `start-prod.sh` | **服务器**：拉取 → 迁移 →（可选导入种子）→ 启动 |
-| `compose.yaml` / `compose.prod.yaml` | 服务定义 / 生产叠加（端口只绑 127.0.0.1） |
+| `compose.yaml` / `compose.prod.yaml` | 服务定义（api / worker / web 用宿主机网络）/ 生产叠加（admin 端口映射） |
 | `deploy/nginx-52tokens.conf` | 宝塔站点的反代规则 |
 | `.env.prod.example` | 生产配置模板，复制成 `.env.prod`（不入库） |
 
@@ -40,13 +43,9 @@ api / worker / web ──▶ host.docker.internal ──▶ 宝塔 PostgreSQL / 
 
 ### 3. 数据库与 Redis（项目专属，不用 root）
 
-宝塔 → 数据库 → PostgreSQL：新建库 `tokens52`、用户 `tokens52`（强密码）。容器经 Docker 网桥访问宿主机，需要让 PostgreSQL 接受网桥来源：
+宝塔 → 数据库 → PostgreSQL：新建库 `tokens52`、用户 `tokens52`（强密码）。监听地址、`pg_hba.conf` 保持宝塔默认（本机 127.0.0.1）即可。
 
-- `postgresql.conf`：`listen_addresses = 'localhost,172.17.0.1'`（Docker 默认网桥网关；不确定时用 `ip addr show docker0` 查）
-- `pg_hba.conf` 加一行：`host  tokens52  tokens52  172.16.0.0/12  scram-sha-256`
-- 重启 PostgreSQL。
-
-Redis：设置密码（`requirepass`），`bind` 里加上 `172.17.0.1`，重启。本项目用 db `6`、key 前缀 `52tokens:`。
+Redis 保持宝塔默认（只监听 127.0.0.1）。本项目用 db `6`、key 前缀 `52tokens:`；有密码时 `REDIS_URL` 写成 `redis://:<密码>@127.0.0.1:6379/6`，没有就是 `redis://127.0.0.1:6379/6`。
 
 ### 4. 把部署文件放到服务器
 
